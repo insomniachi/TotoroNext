@@ -6,17 +6,38 @@
     xmlns:local="using:TotoroNext.Anime.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:taa="using:TotoroNext.Anime.Abstractions"
-    xmlns:vm="using:TotoroNext.Anime.ViewModels"
+    xmlns:utu="using:Uno.Toolkit.UI"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     mc:Ignorable="d">
 
-    <Grid>
+    <Grid Margin="36">
         <ItemsRepeater ItemsSource="{Binding Items}">
             <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="taa:SearchResult">
-                    <TextBlock Text="{Binding Title}" />
+                    <utu:Card HeaderContent="{Binding Title}"
+                              MediaContent="{Binding Image}"
+                              AutomationProperties.AutomationId="Elevated_Card_Media_Content"
+                              Style="{StaticResource ElevatedCardStyle}">
+                        <utu:Card.HeaderContentTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"
+                                           Margin="16,14,16,0"
+                                           Style="{ThemeResource TitleLarge}" />
+                            </DataTemplate>
+                        </utu:Card.HeaderContentTemplate>
+                        <utu:Card.MediaContentTemplate>
+                            <DataTemplate>
+                                <Image Source="{Binding}"
+                                       Stretch="Uniform"
+                                       MaxHeight="300" />
+                            </DataTemplate>
+                        </utu:Card.MediaContentTemplate>
+                    </utu:Card>
                 </DataTemplate>
             </ItemsRepeater.ItemTemplate>
+            <ItemsRepeater.Layout>
+                <UniformGridLayout ItemsStretch="Fill" MinItemHeight="300" MinItemWidth="200"/>
+            </ItemsRepeater.Layout>
         </ItemsRepeater>
     </Grid>
 </Page>
