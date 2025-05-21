@@ -14,29 +14,35 @@
         <ItemsRepeater ItemsSource="{Binding Items}">
             <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="taa:SearchResult">
-                    <utu:Card HeaderContent="{Binding Title}"
-                              MediaContent="{Binding Image}"
-                              AutomationProperties.AutomationId="Elevated_Card_Media_Content"
-                              Style="{StaticResource ElevatedCardStyle}">
+                    <utu:Card
+                        AutomationProperties.AutomationId="Elevated_Card_Media_Content"
+                        HeaderContent="{Binding Title}"
+                        MediaContent="{Binding Image}"
+                        Style="{StaticResource ElevatedCardStyle}">
                         <utu:Card.HeaderContentTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding}"
-                                           Margin="16,14,16,0"
-                                           Style="{ThemeResource TitleLarge}" />
+                                <TextBlock
+                                    Margin="16,14,16,0"
+                                    Style="{ThemeResource TitleLarge}"
+                                    Text="{Binding}" />
                             </DataTemplate>
                         </utu:Card.HeaderContentTemplate>
                         <utu:Card.MediaContentTemplate>
                             <DataTemplate>
-                                <Image Source="{Binding}"
-                                       Stretch="Uniform"
-                                       MaxHeight="300" />
+                                <Image
+                                    MaxHeight="300"
+                                    Source="{Binding}"
+                                    Stretch="Uniform" />
                             </DataTemplate>
                         </utu:Card.MediaContentTemplate>
                     </utu:Card>
                 </DataTemplate>
             </ItemsRepeater.ItemTemplate>
             <ItemsRepeater.Layout>
-                <UniformGridLayout ItemsStretch="Fill" MinItemHeight="300" MinItemWidth="200"/>
+                <UniformGridLayout
+                    ItemsStretch="Fill"
+                    MinItemHeight="300"
+                    MinItemWidth="200" />
             </ItemsRepeater.Layout>
         </ItemsRepeater>
     </Grid>

@@ -15,7 +15,7 @@ public sealed partial class DiscoverPage : Page
     {
         if(args.NewValue is DiscoverViewModel vm)
         {
-            await vm.Initialize();
+
         }
     }
 }
