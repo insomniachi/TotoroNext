@@ -1,0 +1,20 @@
+<Project ToolsVersion="15.0">
+  <!--
+    To update the version of Uno, you should instead update the Sdk version in the global.json file.
+
+    See https://aka.platform.uno/using-uno-sdk for more information.
+    See https://aka.platform.uno/using-uno-sdk#implicit-packages for more information regarding the Implicit Packages.
+  -->
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageVersion Include="CommunityToolkit.WinUI.Animations" Version="8.2.250402" />
+    <PackageVersion Include="CommunityToolkit.WinUI.Extensions" Version="8.2.250402" />
+    <PackageVersion Include="Flurl" Version="4.0.0" />
+    <PackageVersion Include="Flurl.Http" Version="4.0.2" />
+    <PackageVersion Include="HtmlAgilityPack" Version="1.12.1" />
+    <PackageVersion Include="System.Linq.Async" Version="6.0.1" />
+    <PackageVersion Include="Uno.Extensions.Hosting" Version="5.3.8" />
+    <PackageVersion Include="HtmlAgilityPack.CssSelectors.NetCore" Version="1.2.1" />
+  </ItemGroup>
+</Project>

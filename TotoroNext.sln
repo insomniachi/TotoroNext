@@ -1,0 +1,60 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36109.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext", "TotoroNext\TotoroNext.csproj", "{6BAE34B8-B5B3-4B1B-84F9-610A197231B1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{089100B1-113F-4E66-888A-E83F3999EAFD}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
+		Directory.Packages.props = Directory.Packages.props
+		global.json = global.json
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.Module", "TotoroNext.Modules\TotoroNext.Module.csproj", "{F44C02C9-771D-4843-AC91-0B225FB4BA40}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.Anime", "TotoroNext.Anime\TotoroNext.Anime.csproj", "{FECE801F-0D1D-445C-B5BB-6840536B85F8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.Anime.Abstractions", "TotoroNext.Anime.Abstractions\TotoroNext.Anime.Abstractions.csproj", "{93A3B5DD-C640-4167-98E6-3DD220D7471E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.AnimeHeaven", "TotoroNext.AnimePahe\TotoroNext.AnimeHeaven.csproj", "{DB9F2549-48F8-4227-90C2-282D0C78D584}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6BAE34B8-B5B3-4B1B-84F9-610A197231B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BAE34B8-B5B3-4B1B-84F9-610A197231B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BAE34B8-B5B3-4B1B-84F9-610A197231B1}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{6BAE34B8-B5B3-4B1B-84F9-610A197231B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BAE34B8-B5B3-4B1B-84F9-610A197231B1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BAE34B8-B5B3-4B1B-84F9-610A197231B1}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{F44C02C9-771D-4843-AC91-0B225FB4BA40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F44C02C9-771D-4843-AC91-0B225FB4BA40}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F44C02C9-771D-4843-AC91-0B225FB4BA40}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F44C02C9-771D-4843-AC91-0B225FB4BA40}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FECE801F-0D1D-445C-B5BB-6840536B85F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FECE801F-0D1D-445C-B5BB-6840536B85F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FECE801F-0D1D-445C-B5BB-6840536B85F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FECE801F-0D1D-445C-B5BB-6840536B85F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93A3B5DD-C640-4167-98E6-3DD220D7471E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93A3B5DD-C640-4167-98E6-3DD220D7471E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93A3B5DD-C640-4167-98E6-3DD220D7471E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93A3B5DD-C640-4167-98E6-3DD220D7471E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB9F2549-48F8-4227-90C2-282D0C78D584}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB9F2549-48F8-4227-90C2-282D0C78D584}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB9F2549-48F8-4227-90C2-282D0C78D584}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB9F2549-48F8-4227-90C2-282D0C78D584}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A7A67BC2-32EB-4DC4-830C-53BECA19D6AD}
+	EndGlobalSection
+EndGlobal
