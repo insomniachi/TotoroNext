@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.ViewModels;
 using TotoroNext.Anime.Views;
 using TotoroNext.Module;
@@ -9,11 +10,13 @@ public class AnimeModule : IModule
 {
     public void ConfigureNavigation(NavigationViewContext context)
     {
-        context.RegisterForNavigation<DiscoverPage, DiscoverViewModel>();
+        context.RegisterForNavigation<SearchProviderPage, SearchProviderViewModel>();
+        context.RegisterForNavigation<FindEpisodesPage, FindEpisodesViewModel, SearchResult>();
     }
 
     public void ConfigureServices(IServiceCollection services)
     {
-        services.AddNavigationViewItem<DiscoverViewModel>("Discover", new SymbolIcon(Symbol.World));
+        services.AddNavigationViewItem<SearchProviderViewModel>("Search", new SymbolIcon(Symbol.Find));
+        services.AddNavigationViewItem<FindEpisodesViewModel>("Episodes", new SymbolIcon(Symbol.World));
     }
 }

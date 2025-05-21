@@ -2,9 +2,9 @@ using TotoroNext.Anime.ViewModels;
 
 namespace TotoroNext.Anime.Views;
 
-public sealed partial class DiscoverPage : Page
+public sealed partial class SearchProviderPage : Page
 {
-    public DiscoverPage()
+    public SearchProviderPage()
     {
         InitializeComponent();
 
@@ -13,9 +13,9 @@ public sealed partial class DiscoverPage : Page
 
     private async void DiscoverPage_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
     {
-        if(args.NewValue is DiscoverViewModel vm)
+        if(args.NewValue is SearchProviderViewModel vm)
         {
-
+            vm.Initialize();
         }
     }
 }

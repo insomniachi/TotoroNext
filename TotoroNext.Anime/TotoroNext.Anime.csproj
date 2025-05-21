@@ -35,6 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" />
     <PackageReference Include="ReactiveUI" />
     <PackageReference Include="ReactiveUI.SourceGenerators">
       <PrivateAssets>all</PrivateAssets>
@@ -48,7 +49,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Page Update="Views\DiscoverPage.xaml">
+    <Page Update="Views\SearchProviderPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

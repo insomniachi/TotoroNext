@@ -33,14 +33,9 @@ internal class AnimeHeavenProvider(IHttpClientFactory httpClientFactory) : IAnim
         {
             var name = node.QuerySelector(".fastname").InnerText;
             var image = Url.Combine(client.BaseUrl, node.QuerySelector("img").GetAttributeValue("src", ""));
-            var url = Url.Combine(client.BaseUrl, node.GetAttributeValue("href", ""));
+            var id = node.GetAttributeValue("href", "").Split("?").Last();
 
-            yield return new SearchResult
-            {
-                Title = name,
-                Image = new Uri(image),
-                Id = url
-            };
+            yield return new SearchResult(this, id, name, new Uri(image));
         }
     }
 
@@ -57,11 +52,10 @@ internal class AnimeHeavenProvider(IHttpClientFactory httpClientFactory) : IAnim
 
         foreach (var item in items.Reverse())
         {
-            yield return new Episode
-            {
-                Id = item.GetAttributeValue("href", "").Split("?").Last(),
-                Number = float.Parse(item.QuerySelector(".watch2 .bc").InnerHtml)
-            };
+            var id = item.GetAttributeValue("href", "").Split("?").Last();
+            var number = float.Parse(item.QuerySelector(".watch2 .bc").InnerHtml);
+
+            yield return new Episode(id, number);
         }
     }
 
