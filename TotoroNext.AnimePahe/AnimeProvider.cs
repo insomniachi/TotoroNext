@@ -55,17 +55,15 @@ internal class AnimeHeavenProvider(IHttpClientFactory httpClientFactory) : IAnim
             var id = item.GetAttributeValue("href", "").Split("?").Last();
             var number = float.Parse(item.QuerySelector(".watch2 .bc").InnerHtml);
 
-            yield return new Episode(id, number);
+            yield return new Episode(this, animeId, id, number);
         }
     }
 
-    public async IAsyncEnumerable<VideoServer> GetServers(Uri uri, string episodeId)
+    public async IAsyncEnumerable<VideoServer> GetServers(string animeId, string episodeId)
     {
-        yield return new VideoServer
-        {
-            Name = "AnimeHeaven",
-            Url = new Uri(Url.Combine(uri.ToString(), $"/episode.php?{episodeId}")),
-        };
+        using var client = GetClient();
+
+        yield return new VideoServer("AnimeHeaven", new Uri(Url.Combine(client.BaseUrl, $"/episode.php?{episodeId}")));
 
         await Task.CompletedTask;
     }

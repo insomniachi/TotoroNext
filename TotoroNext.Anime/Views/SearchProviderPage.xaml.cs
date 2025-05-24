@@ -11,7 +11,7 @@ public sealed partial class SearchProviderPage : Page
         DataContextChanged += DiscoverPage_DataContextChanged;
     }
 
-    private async void DiscoverPage_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+    private void DiscoverPage_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
     {
         if(args.NewValue is SearchProviderViewModel vm)
         {

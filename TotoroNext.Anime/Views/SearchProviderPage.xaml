@@ -6,48 +6,45 @@
     xmlns:local="using:TotoroNext.Anime.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:taa="using:TotoroNext.Anime.Abstractions"
-    xmlns:utu="using:Uno.Toolkit.UI"
     xmlns:uen="using:Uno.Extensions.Navigation.UI"
+    xmlns:utu="using:Uno.Toolkit.UI"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     mc:Ignorable="d">
 
     <Grid Margin="36">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <AutoSuggestBox Text="{Binding Query, Mode=TwoWay}"/>
+        <AutoSuggestBox Text="{Binding Query, Mode=TwoWay}" />
 
-        <ListView ItemsSource="{Binding Items}" Grid.Row="1"
-                  uen:Navigation.Request="FindEpisodesViewModel">
-            <ListView.ItemTemplate>
+        <ItemsRepeater
+            Grid.Row="1"
+            uen:Navigation.Request="FindEpisodesViewModel"
+            ItemsSource="{Binding Items, Mode=OneWay}">
+            <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="taa:SearchResult">
-                    <utu:Card
-                        AutomationProperties.AutomationId="Elevated_Card_Media_Content"
-                        HeaderContent="{Binding Title}"
-                        MediaContent="{Binding Image}"
-                        Style="{StaticResource ElevatedCardStyle}">
-                        <utu:Card.HeaderContentTemplate>
-                            <DataTemplate>
-                                <TextBlock
-                                    Margin="16,14,16,0"
-                                    Style="{ThemeResource SubtitleTextBlockStyle}"
-                                    Text="{Binding}"
-                                    TextTrimming="CharacterEllipsis"/>
-                            </DataTemplate>
-                        </utu:Card.HeaderContentTemplate>
-                        <utu:Card.MediaContentTemplate>
-                            <DataTemplate>
-                                <Image
-                                    MaxHeight="500"
-                                    Source="{Binding}"
-                                    Stretch="Uniform" />
-                            </DataTemplate>
-                        </utu:Card.MediaContentTemplate>
-                    </utu:Card>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <Image
+                            Grid.Row="0"
+                            Source="{Binding Image}"
+                            Stretch="UniformToFill" />
+                        <TextBlock Grid.Row="1" Text="{Binding Title}" />
+                    </Grid>
                 </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
+            </ItemsRepeater.ItemTemplate>
+            <ItemsRepeater.Layout>
+                <UniformGridLayout
+                    ItemsJustification="Start"
+                    ItemsStretch="Fill"
+                    MinItemHeight="400"
+                    MinItemWidth="250" />
+            </ItemsRepeater.Layout>
+        </ItemsRepeater>
     </Grid>
 </Page>

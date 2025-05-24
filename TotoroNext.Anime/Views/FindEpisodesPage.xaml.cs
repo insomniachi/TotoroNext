@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -33,6 +33,7 @@ public sealed partial class FindEpisodesPage : Page
     {
         if(args.NewValue is FindEpisodesViewModel vm)
         {
+            MP.Player = vm.MediaPlayer;
             await vm.Initialize();
         }
     }

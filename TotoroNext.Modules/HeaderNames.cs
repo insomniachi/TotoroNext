@@ -185,7 +185,7 @@ public static class HeaderNames
     public static readonly string Range = "Range";
 
     /// <summary>Gets the <c>Referer</c> HTTP header name.</summary>
-    public static readonly string Referer = "Referer";
+    public static readonly string Referer = "referer";
 
     /// <summary>Gets the <c>Retry-After</c> HTTP header name.</summary>
     public static readonly string RetryAfter = "Retry-After";

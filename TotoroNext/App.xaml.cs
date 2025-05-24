@@ -42,7 +42,7 @@ public partial class App : Application
                                 LogLevel.Warning)
 
                         // Default filters for core Uno Platform namespaces
-                        .CoreLogLevel(LogLevel.Warning);
+                        .CoreLogLevel(LogLevel.Trace);
 
                     // Uno Platform namespace filter groups
                     // Uncomment individual methods to see more detailed logging

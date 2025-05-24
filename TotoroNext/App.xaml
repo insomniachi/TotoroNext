@@ -6,7 +6,6 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <MaterialToolkitTheme xmlns="using:Uno.Toolkit.UI.Material" />
                 <!--  Load WinUI resources  -->
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
                 <!--  Load Uno.UI.Toolkit resources  -->

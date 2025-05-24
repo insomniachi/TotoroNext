@@ -8,7 +8,7 @@ using TotoroNext.Anime.Abstractions;
 namespace TotoroNext.Anime.ViewModels;
 
 [UsedImplicitly]
-public partial class SearchProviderViewModel([FromKeyedServices("AnimeHeaven")]IAnimeProvider provider) : ReactiveObject
+public partial class SearchProviderViewModel([FromKeyedServices("AllAnime")]IAnimeProvider provider) : ReactiveObject
 {
     [Reactive]
     public partial string Query { get; set; }
@@ -18,7 +18,8 @@ public partial class SearchProviderViewModel([FromKeyedServices("AnimeHeaven")]I
         this.WhenAnyValue(x => x.Query)
             .Where(query => query is { Length: > 3 })
             .Throttle(TimeSpan.FromMilliseconds(500))
-            .SelectMany(async query => await provider.SearchAsync(query).ToListAsync());
+            .SelectMany(query => provider.SearchAsync(query).ToListAsync().AsTask())
+            .ObserveOn(RxApp.MainThreadScheduler);
 
 
     public void Initialize()
