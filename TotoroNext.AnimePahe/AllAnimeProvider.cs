@@ -2,11 +2,9 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 using Flurl.Http;
 using FlurlGraphQL;
 using TotoroNext.Anime.Abstractions;
-using TotoroNext.Module;
 using Uno.Logging;
 
 namespace TotoroNext.AnimeHeaven;
@@ -123,13 +121,18 @@ internal partial class AllAnimeProvider : IAnimeProvider
             .PostGraphQLQueryAsync()
             .ReceiveGraphQLRawSystemTextJsonResponse();
 
-        foreach (var item in jObject?["shows"]?["edges"]?.AsArray().OfType<System.Text.Json.Nodes.JsonObject>() ?? [])
+        foreach (var item in jObject?["shows"]?["edges"]?.AsArray().OfType<JsonObject>() ?? [])
         {
             var title = $"{item?["name"]}";
             var id = $"{item?["_id"]}";
-            var image = $"{item?["thumbnail"]}";
+            Uri? image = null;
+            try
+            {
+                image = new Uri($"{item?["thumbnail"]}");
+            }
+            catch { }
 
-            yield return new SearchResult(this, id, title, new Uri(image));
+            yield return new SearchResult(this, id, title, image);
         }
     }
 

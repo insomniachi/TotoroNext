@@ -1,5 +1,8 @@
+using System.Diagnostics;
+
 namespace TotoroNext.Anime.Abstractions;
 
+[DebuggerDisplay("{Name} ({Url})")]
 public class VideoServer(string name, Uri url, IVideoExtractor? videoExtractor = null)
 {
     private readonly IVideoExtractor? _extractor = videoExtractor;

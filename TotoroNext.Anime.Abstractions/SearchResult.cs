@@ -1,5 +1,8 @@
+using System.Diagnostics;
+
 namespace TotoroNext.Anime.Abstractions;
 
+[DebuggerDisplay("{Title}")]
 public class SearchResult(IAnimeProvider provider, string id, string title, Uri? image = null)
 {
     private readonly IAnimeProvider _provider = provider;

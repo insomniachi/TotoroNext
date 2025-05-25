@@ -1,5 +1,8 @@
+using System.Diagnostics;
+
 namespace TotoroNext.Anime.Abstractions;
 
+[DebuggerDisplay("{Url}")]
 public class VideoSource
 {
     public string? Title { get; set; }
