@@ -2,15 +2,60 @@
     x:Class="TotoroNext.Anime.Views.FindEpisodesPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ab="using:TotoroNext.Anime.Abstractions"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:flyleaf="using:FlyleafLib.Controls.WinUI"
     xmlns:local="using:TotoroNext.Anime.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    xmlns:uc="using:TotoroNext.Anime"
+    xmlns:utu="using:Uno.Toolkit.UI"
     mc:Ignorable="d">
 
     <Grid>
-        <flyleaf:FlyleafHost x:Name="MP" />
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <uc:MediaPlayerElementHost
+            x:Name="Host"
+            Grid.Row="0"
+            Grid.Column="0"
+            EngineType="Flyleaf" />
+
+        <Grid Grid.Row="1" Padding="16">
+            <utu:TabBar
+                ItemsSource="{x:Bind ViewModel.Servers, Mode=OneWay}"
+                SelectedIndex="0"
+                SelectedItem="{x:Bind ViewModel.SelectedServer, Mode=TwoWay}">
+                <utu:TabBar.ItemTemplate>
+                    <DataTemplate x:DataType="ab:VideoServer">
+                        <utu:TabBarItem Content="{x:Bind Name}" />
+                    </DataTemplate>
+                </utu:TabBar.ItemTemplate>
+            </utu:TabBar>
+        </Grid>
+
+        <StackPanel
+            Grid.RowSpan="2"
+            Grid.Column="1"
+            MinWidth="200"
+            MaxWidth="300">
+            <ListView ItemsSource="{x:Bind ViewModel.Episodes, Mode=OneWay}" SelectedItem="{x:Bind ViewModel.SelectedEpisode, Mode=TwoWay}">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="ab:Episode">
+                        <TextBlock>
+                            <Run Text="{x:Bind Number}" />
+                            <Run Text="{x:Bind Name}" />
+                        </TextBlock>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </StackPanel>
+
     </Grid>
 </Page>
 

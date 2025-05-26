@@ -8,13 +8,7 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Required">
 
-    <NavigationView MenuItemsSource="{Binding Items}">
-        <Grid>
-            <ContentControl
-                HorizontalContentAlignment="Stretch"
-                VerticalContentAlignment="Stretch"
-                uen:Region.Attached="True" />
-        </Grid>
+    <NavigationView uen:Region.Attached="True" MenuItemsSource="{Binding Items}">
+        <Grid uen:Region.Attached="True" uen:Region.Navigator="Visibility" />
     </NavigationView>
-
 </Page>

@@ -10,5 +10,5 @@ public class Episode(IAnimeProvider provider, string showId, string id, float nu
     public string Name { get; } = name;
     public Uri? Image { get; } = image;
 
-    public IAsyncEnumerable<VideoServer> GetServers() => _provider.GetServers(ShowId, Id);
+    public IAsyncEnumerable<VideoServer> GetServersAsync() => _provider.GetServersAsync(ShowId, Id);
 }

@@ -1,25 +1,26 @@
 ﻿<Project Sdk="Uno.Sdk">
   <PropertyGroup>
+    <TargetFramework>net9.0-windows10.0.26100</TargetFramework>
     <UnoSingleProject>true</UnoSingleProject>
     <OutputType>Library</OutputType>
     <!-- Ensures the .xr.xml files are generated in a proper layout folder -->
     <GenerateLibraryLayout>true</GenerateLibraryLayout>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!--
       UnoFeatures let's you quickly add and manage implicit package references based on the features you want to use.
       https://aka.platform.uno/singleproject-features
     -->
-
-    <UnoFeatures>
-        Hosting;
-        Http;
-        Navigation;
-        Toolkit;
-    </UnoFeatures>
-
+    <!--
+    <UnoFeatures></UnoFeatures>
+    -->
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)'=='net9.0-windows10.0.26100'">
+    <PackageReference Include="FlyleafLib.Controls.WinUI" />
+  </ItemGroup>  
 
   <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
     <!--
@@ -34,14 +35,10 @@
     -->
     <!-- <FrameworkReference Update="Microsoft.Windows.SDK.NET.Ref" RuntimeFrameworkVersion="10.0.22621.28" />
     <FrameworkReference Update="Microsoft.Windows.SDK.NET.Ref" TargetingPackVersion="10.0.22621.28" /> -->
-  </ItemGroup>
+  </ItemGroup>  
 
   <ItemGroup>
-    <PackageReference Include="Flurl.Http" />
-    <PackageReference Include="System.Linq.Async" />
+    <ProjectReference Include="..\TotoroNext.MediaEngine.Abstractions\TotoroNext.MediaEngine.Abstractions.csproj" />
+    <ProjectReference Include="..\TotoroNext.Modules\TotoroNext.Module.csproj" />
   </ItemGroup>
-
-   <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows10.0.26100'">
-       <PackageReference Include="ReactiveUI.WinUI" />
-   </ItemGroup>
 </Project>

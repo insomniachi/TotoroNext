@@ -8,7 +8,6 @@
     xmlns:taa="using:TotoroNext.Anime.Abstractions"
     xmlns:uen="using:Uno.Extensions.Navigation.UI"
     xmlns:utu="using:Uno.Toolkit.UI"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     mc:Ignorable="d">
 
     <Grid Margin="36" RowSpacing="8">
@@ -17,7 +16,10 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <AutoSuggestBox Text="{Binding Query, Mode=TwoWay}" />
+        <AutoSuggestBox
+            PlaceholderText="Search"
+            QueryIcon="Find"
+            Text="{Binding Query, Mode=TwoWay}" />
 
         <ScrollView Grid.Row="1">
             <ItemsRepeater uen:Navigation.Request="FindEpisodesViewModel" ItemsSource="{Binding Items, Mode=OneWay}">

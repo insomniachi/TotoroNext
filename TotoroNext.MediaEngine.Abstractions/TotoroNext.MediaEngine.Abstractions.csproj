@@ -1,4 +1,4 @@
-﻿<Project Sdk="Uno.Sdk">
+<Project Sdk="Uno.Sdk">
   <PropertyGroup>
     <UnoSingleProject>true</UnoSingleProject>
     <OutputType>Library</OutputType>
@@ -11,14 +11,9 @@
       UnoFeatures let's you quickly add and manage implicit package references based on the features you want to use.
       https://aka.platform.uno/singleproject-features
     -->
-
-    <UnoFeatures>
-        Hosting;
-        Http;
-        Navigation;
-        Toolkit;
-    </UnoFeatures>
-
+    <!--
+    <UnoFeatures></UnoFeatures>
+    -->
   </PropertyGroup>
 
   <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
@@ -35,13 +30,4 @@
     <!-- <FrameworkReference Update="Microsoft.Windows.SDK.NET.Ref" RuntimeFrameworkVersion="10.0.22621.28" />
     <FrameworkReference Update="Microsoft.Windows.SDK.NET.Ref" TargetingPackVersion="10.0.22621.28" /> -->
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Flurl.Http" />
-    <PackageReference Include="System.Linq.Async" />
-  </ItemGroup>
-
-   <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows10.0.26100'">
-       <PackageReference Include="ReactiveUI.WinUI" />
-   </ItemGroup>
 </Project>

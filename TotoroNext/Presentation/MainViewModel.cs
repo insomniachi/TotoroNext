@@ -1,10 +1,13 @@
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
+
 namespace TotoroNext.Presentation;
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ReactiveObject
 {
     private INavigator _navigator;
 
-    [ObservableProperty]
+    [Reactive]
     public partial string? Name { get; set; }
 
     public IEnumerable<NavigationViewItem> Items { get; }
@@ -20,15 +23,12 @@ public partial class MainViewModel : ObservableObject
         Title = "Main";
         Title += $" - {localizer["ApplicationName"]}";
         Title += $" - {appInfo?.Value?.Environment}";
-        GoToSecond = new AsyncRelayCommand(GoToSecondView);
     }
-    public string? Title { get; }
 
-    public ICommand GoToSecond { get; }
-
-    private async Task GoToSecondView()
+    public async Task NavigateToDefault()
     {
-        await _navigator.NavigateViewModelAsync<SecondViewModel>(this, data: new Entity(Name!));
+        await _navigator.NavigateRouteAsync(this, "./SearchProviderViewModel");
     }
 
+    public string? Title { get; }
 }

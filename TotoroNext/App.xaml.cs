@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.DependencyInjection;
 using TotoroNext.Module;
 using Uno.Resizetizer;
 
@@ -18,10 +19,13 @@ public partial class App : Application
 
     protected async override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        IModule[] modules = 
+        IModule[] modules =
         [
             new Anime.AnimeModule(),
             new AnimeHeaven.Module(),
+#if WINDOWS10_0_26100_0_OR_GREATER
+            new MediaEngine.Flyleaf.FlyleafModule(),
+#endif
         ];
 
         var builder = this.CreateBuilder(args)
@@ -91,15 +95,14 @@ public partial class App : Application
         MainWindow.SetWindowIcon();
 
         Host = await builder.NavigateAsync<Shell>();
+        Container.ConfigureServices(Host.Services);
     }
 
     private static void RegisterRoutes(IViewRegistry views, IRouteRegistry routes, IEnumerable<IModule> modules)
     {
         views.Register(
             new ViewMap(ViewModel: typeof(ShellViewModel)),
-            new ViewMap<MainPage, MainViewModel>(),
-            new DataViewMap<SecondPage, SecondViewModel, Entity>(),
-            new ViewMap<ThirdPage, ThirdViewModel>());
+            new ViewMap<MainPage, MainViewModel>());
 
         var context = new NavigationViewContext(views);
         foreach (var module in modules)
@@ -111,10 +114,10 @@ public partial class App : Application
             new RouteMap("", View: views.FindByViewModel<ShellViewModel>(),
             Nested:
             [
-                new ("One", View: views.FindByViewModel<MainViewModel>(), IsDefault:true),
-                new ("Two", View: views.FindByViewModel<SecondViewModel>()),
-                new ("Three", View: views.FindByViewModel<ThirdViewModel>()),
-                ..context.Routes
+                new ("Main", View: views.FindByViewModel<MainViewModel>(), IsDefault:true, Nested:
+                [
+                    ..context.Routes
+                ]),
             ])
         );
     }

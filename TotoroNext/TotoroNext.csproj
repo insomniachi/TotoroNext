@@ -1,7 +1,5 @@
 ﻿<Project Sdk="Uno.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net9.0-windows10.0.26100</TargetFrameworks>
-
     <OutputType>Exe</OutputType>
     <UnoSingleProject>true</UnoSingleProject>
 
@@ -52,16 +50,12 @@
     </UnoFeatures>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="Presentation\ThirdPage.xaml" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="CommunityToolkit.WinUI.Animations" />
     <PackageReference Include="CommunityToolkit.WinUI.Extensions" />
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="Presentation\ThirdPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
+    <PackageReference Include="ReactiveUI.SourceGenerators">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Styles\" />
@@ -70,5 +64,9 @@
     <ProjectReference Include="..\TotoroNext.AnimePahe\TotoroNext.AnimeHeaven.csproj" />
     <ProjectReference Include="..\TotoroNext.Anime\TotoroNext.Anime.csproj" />
   </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)'=='net9.0-windows10.0.26100'">
+        <ProjectReference Include="..\TotoroNext.MediaEngine.Flyleaf\TotoroNext.MediaEngine.Flyleaf.csproj" />
+    </ItemGroup>
 
 </Project>

@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Uno.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net9.0-windows10.0.26100</TargetFrameworks>
     <UnoSingleProject>true</UnoSingleProject>
     <OutputType>Library</OutputType>
     <!-- Ensures the .xr.xml files are generated in a proper layout folder -->
@@ -35,6 +34,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="MediaPlayerElementHost.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" />
     <PackageReference Include="ReactiveUI" />
     <PackageReference Include="ReactiveUI.SourceGenerators">
@@ -45,12 +48,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TotoroNext.Anime.Abstractions\TotoroNext.Anime.Abstractions.csproj" />
+    <ProjectReference Include="..\TotoroNext.MediaEngine.Abstractions\TotoroNext.MediaEngine.Abstractions.csproj" />
     <ProjectReference Include="..\TotoroNext.Modules\TotoroNext.Module.csproj" />
   </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows10.0.26100'">
-        <PackageReference Include="FlyleafLib.Controls.WinUI" />
-    </ItemGroup>
+  <ItemGroup>
+    <Page Update="MediaPlayerElementHost.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
 
   <ItemGroup>
     <Page Update="Views\SearchProviderPage.xaml">

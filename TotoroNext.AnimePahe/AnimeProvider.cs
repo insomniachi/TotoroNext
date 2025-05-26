@@ -59,7 +59,7 @@ internal class AnimeHeavenProvider(IHttpClientFactory httpClientFactory) : IAnim
         }
     }
 
-    public async IAsyncEnumerable<VideoServer> GetServers(string animeId, string episodeId)
+    public async IAsyncEnumerable<VideoServer> GetServersAsync(string animeId, string episodeId)
     {
         using var client = GetClient();
 

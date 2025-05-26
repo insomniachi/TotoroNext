@@ -6,10 +6,16 @@ using TotoroNext.Module;
 namespace TotoroNext.AnimeHeaven;
 internal static partial class VideoServers
 {
-    internal static async Task<VideoServer> FromMp4Upload(string name, string url)
+    internal static async Task<VideoServer?> FromMp4Upload(string name, string url)
     {
         var response = await url.GetStringAsync();
         var match = Mp4JuicyServerRegex().Match(response.Replace(" ", "").Replace("\n", ""));
+
+        if (!match.Success)
+        {
+            return null;
+        }
+
         return new VideoServer(name, new Uri(match.Groups[1].Value))
         {
             Headers =

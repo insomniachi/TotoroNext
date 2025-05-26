@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -32,13 +33,13 @@ internal partial class AllAnimeProvider : IAnimeProvider
 
         var details = episodeDetails.Deserialize<EpisodeDetails>();
 
-        foreach (var episode in details?.sub ?? [])
+        foreach (var episode in Enumerable.Reverse((details?.sub ?? [])))
         {
             yield return new Episode(this, animeId, episode, float.Parse(episode));
         }
     }
 
-    public async IAsyncEnumerable<VideoServer> GetServers(string animeId, string episodeId)
+    public async IAsyncEnumerable<VideoServer> GetServersAsync(string animeId, string episodeId)
     {
         var jsonNode = await Api
             .WithGraphQLQuery(EPISODE_QUERY)
@@ -70,7 +71,10 @@ internal partial class AllAnimeProvider : IAnimeProvider
             switch (item.sourceName)
             {
                 case "Mp4":
-                    yield return await VideoServers.FromMp4Upload(item.sourceName, item.sourceUrl);
+                    if(await VideoServers.FromMp4Upload(item.sourceName, item.sourceUrl) is { } server)
+                    {
+                        yield return server;
+                    }
                     continue;
                 case "Yt-mp4":
                     yield return VideoServers.WithReferer(item.sourceName, item.sourceUrl, "https://allanime.day/");
@@ -83,13 +87,26 @@ internal partial class AllAnimeProvider : IAnimeProvider
                     continue;
                 case "Ok":
                     continue;
+                case "Ss-Hls":
+                    continue;
+                case "Vid-mp4":
+                    continue;
                 default:
                     break;
             }
 
-            var response = await $"https://allanime.day{item.sourceUrl.Replace("clock", "clock.json")}".GetStringAsync();
-            var jObject = JsonNode.Parse(response)!.AsObject()!;
-            var links = jObject["links"].Deserialize<List<ApiV2Reponse>>() ?? [];
+            string? response = "";
+            List<ApiV2Reponse> links = [];
+            try
+            {
+                response = await $"https://allanime.day{item.sourceUrl.Replace("clock", "clock.json")}".GetStringAsync();
+                var jObject = JsonNode.Parse(response)!.AsObject()!;
+                links = jObject["links"].Deserialize<List<ApiV2Reponse>>() ?? [];
+            }
+            catch
+            {
+                continue;
+            }
 
             switch (item.sourceName)
             {
