@@ -61,11 +61,12 @@ public sealed partial class MediaPlayerElementHost : UserControl
         }
         var player = factory.CreatePlayer();
         var element = factory.CreateElement(player);
+        host.RootGrid.Children.Insert(0, element);
+        
         host.DispatcherQueue.TryEnqueue(() =>
         {
             host.Player = player;
         });
-        host.RootGrid.Children.Insert(0, element);
     }
 
     private void RootGrid_PointerMoved(object sender, PointerRoutedEventArgs e)

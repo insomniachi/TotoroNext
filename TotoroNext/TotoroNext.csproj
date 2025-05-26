@@ -48,6 +48,7 @@
       SkiaRenderer;
       Material;
     </UnoFeatures>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.WinUI.Animations" />
@@ -63,10 +64,11 @@
   <ItemGroup>
     <ProjectReference Include="..\TotoroNext.AnimePahe\TotoroNext.AnimeHeaven.csproj" />
     <ProjectReference Include="..\TotoroNext.Anime\TotoroNext.Anime.csproj" />
+    <ProjectReference Include="..\TotoroNext.MediaEngine.Vlc\TotoroNext.MediaEngine.Vlc.csproj" />
   </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)'=='net9.0-windows10.0.26100'">
-        <ProjectReference Include="..\TotoroNext.MediaEngine.Flyleaf\TotoroNext.MediaEngine.Flyleaf.csproj" />
-    </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)'=='net9.0-windows10.0.26100'">
+    <ProjectReference Include="..\TotoroNext.MediaEngine.Flyleaf\TotoroNext.MediaEngine.Flyleaf.csproj" />
+  </ItemGroup>
 
 </Project>

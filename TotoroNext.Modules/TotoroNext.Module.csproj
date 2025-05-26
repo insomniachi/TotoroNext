@@ -19,6 +19,8 @@
         Toolkit;
     </UnoFeatures>
 
+    <Platforms>AnyCPU;x64</Platforms>
+
   </PropertyGroup>
 
   <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
