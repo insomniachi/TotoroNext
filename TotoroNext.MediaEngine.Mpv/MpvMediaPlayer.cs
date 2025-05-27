@@ -49,9 +49,9 @@ internal class MpvMediaPlayer : IMediaPlayer
 		Task.Run(async () => await IpcLoop(pipeName));
 	}
 
-    private async Task IpcLoop(string pipePath)
+    private async Task IpcLoop(string pipeName)
     {
-        using var pipe = new NamedPipeClientStream(".", pipePath, PipeDirection.InOut, PipeOptions.Asynchronous);
+        using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
         _ipcStream = pipe;
         await pipe.ConnectAsync();
 
@@ -59,32 +59,18 @@ internal class MpvMediaPlayer : IMediaPlayer
         SendIpcCommand(pipe, new { command = new object[] { "observe_property", 1, "duration" } });
         SendIpcCommand(pipe, new { command = new object[] { "observe_property", 2, "time-pos" } });
 
-        var buffer = new byte[4096];
-        var sb = new StringBuilder();
+        using var reader = new StreamReader(pipe, Encoding.UTF8);
 
         while (pipe.IsConnected)
         {
-            int bytesRead = pipe.Read(buffer, 0, buffer.Length);
-            if (bytesRead > 0)
+            var line = await reader.ReadLineAsync();
+            if (!string.IsNullOrWhiteSpace(line))
             {
-                sb.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
-                string content = sb.ToString();
-                int idx;
-                while ((idx = content.IndexOf('\n')) >= 0)
-                {
-                    string line = content[..idx].Trim();
-                    content = content[(idx + 1)..];
-                    if (!string.IsNullOrWhiteSpace(line))
-                    {
-                        HandleIpcMessage(line);
-                    }
-                }
-                sb.Clear();
-                sb.Append(content);
+                HandleIpcMessage(line);
             }
             else
             {
-                Thread.Sleep(100);
+                await Task.Delay(100);
             }
         }
     }
