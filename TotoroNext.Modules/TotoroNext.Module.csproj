@@ -6,6 +6,8 @@
     <GenerateLibraryLayout>true</GenerateLibraryLayout>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+      <Platforms>x64</Platforms>
+      <TargetFrameworks>net9.0-windows10.0.26100</TargetFrameworks>
 
     <!--
       UnoFeatures let's you quickly add and manage implicit package references based on the features you want to use.
@@ -18,8 +20,6 @@
         Navigation;
         Toolkit;
     </UnoFeatures>
-
-    <Platforms>AnyCPU;x64</Platforms>
 
   </PropertyGroup>
 

@@ -18,4 +18,6 @@ public sealed partial class SearchProviderPage : Page
             vm.Initialize();
         }
     }
+
+    public SearchProviderViewModel? ViewModel => DataContext as SearchProviderViewModel;
 }

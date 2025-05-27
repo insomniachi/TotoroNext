@@ -22,7 +22,7 @@ public partial class App : Application
         [
             new Anime.AnimeModule(),
             new AnimeHeaven.Module(),
-            //new MediaEngine.Vlc.Module(),
+            new MediaEngine.Vlc.Module(),
 #if WINDOWS10_0_26100_0_OR_GREATER
             new MediaEngine.Flyleaf.FlyleafModule(),
 #endif

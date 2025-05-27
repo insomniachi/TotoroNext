@@ -5,11 +5,13 @@ using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.MediaEngine.Abstractions;
+using TotoroNext.Module;
 
 namespace TotoroNext.Anime.ViewModels;
 
 [UsedImplicitly]
-public partial class WatchViewModel(SearchResult result) : ReactiveObject
+public partial class WatchViewModel(SearchResult result,
+                                    IEventAggregator eventAggregator) : ReactiveObject
 {
     public IMediaPlayer? MediaPlayer { get; set; }
 
@@ -53,7 +55,7 @@ public partial class WatchViewModel(SearchResult result) : ReactiveObject
         Anime = result;
 
         this.WhenAnyValue(x => x.Servers)
-            .Where(x => x is { Count: > 0})
+            .Where(x => x is { Count: > 0 })
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(x => SelectedServer = x.First());
 
@@ -65,6 +67,29 @@ public partial class WatchViewModel(SearchResult result) : ReactiveObject
         this.WhenAnyValue(x => x.SelectedSource)
             .WhereNotNull()
             .Subscribe(Play);
+
+        InitializePublishers();
+    }
+
+    private void InitializePublishers()
+    {
+        this.WhenAnyValue(x => x.Anime)
+            .WhereNotNull()
+            .Subscribe(anime => eventAggregator.GetObserver<AnimeSelectedEvent>().OnNext(new(anime)));
+
+        this.WhenAnyValue(x => x.SelectedEpisode)
+            .WhereNotNull()
+            .Subscribe(ep => eventAggregator.GetObserver<EpisodeSelectedEvent>().OnNext(new(ep)));
+
+        this.WhenAnyValue(x => x.MediaPlayer)
+            .WhereNotNull()
+            .SelectMany(x => x.DurationChanged)
+            .Subscribe(duration => eventAggregator.GetObserver<PlaybackDurationChangedEvent>().OnNext(new(duration)));
+
+        this.WhenAnyValue(x => x.MediaPlayer)
+            .WhereNotNull()
+            .SelectMany(x => x.PositionChanged)
+            .Subscribe(position => eventAggregator.GetObserver<PlaybackPositionChangedEvent>().OnNext(new(position)));
     }
 
     private void Play(VideoSource source)
@@ -74,6 +99,9 @@ public partial class WatchViewModel(SearchResult result) : ReactiveObject
             return;
         }
 
-        MediaPlayer.Play(source.Url, source.Headers);
+        IEnumerable<string?> parts = [Anime.Title, $"Episode {SelectedEpisode.Number}", source.Title];
+        var title = string.Join(" - ", parts.Where(x => !string.IsNullOrEmpty(x)));
+
+        MediaPlayer.Play(new Media(title, source.Url, source.Headers));
     }
 }

@@ -14,7 +14,9 @@
     <ApplicationPublisher>athul</ApplicationPublisher>
     <!-- Package Description -->
     <Description>TotoroNext powered by Uno Platform.</Description>
-      <LangVersion>preview</LangVersion>
+    <LangVersion>preview</LangVersion>
+    <Platforms>x64</Platforms>
+    <TargetFrameworks>net9.0-windows10.0.26100</TargetFrameworks>
     <!--
       If you encounter this error message:
 
@@ -48,8 +50,8 @@
       SkiaRenderer;
       Material;
     </UnoFeatures>
-    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.WinUI.Animations" />
     <PackageReference Include="CommunityToolkit.WinUI.Extensions" />
@@ -58,22 +60,25 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+    
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows10.0.26100'">
+    <PackageReference Include="ReactiveUI.WinUI" />
+  </ItemGroup>
+
   <ItemGroup>
     <Folder Include="Styles\" />
   </ItemGroup>
+
+  <!-- Modules -->
   <ItemGroup>
     <ProjectReference Include="..\TotoroNext.AnimePahe\TotoroNext.AnimeHeaven.csproj" />
     <ProjectReference Include="..\TotoroNext.Anime\TotoroNext.Anime.csproj" />
-
+    <ProjectReference Include="..\TotoroNext.MediaEngine.Vlc\TotoroNext.MediaEngine.Vlc.csproj" />
+    <!--<ProjectReference Include="..\TotoroNext.MediaEngine.Mpv\TotoroNext.MediaEngine.Mpv.csproj" />-->
   </ItemGroup>
 
+  <!-- Windows Only Modules -->
   <ItemGroup Condition="'$(TargetFramework)'=='net9.0-windows10.0.26100'">
     <ProjectReference Include="..\TotoroNext.MediaEngine.Flyleaf\TotoroNext.MediaEngine.Flyleaf.csproj" />
-    <ProjectReference Include="..\TotoroNext.MediaEngine.Vlc\TotoroNext.MediaEngine.Vlc.csproj" />
   </ItemGroup>
-
-   <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows10.0.26100'">
-       <PackageReference Include="ReactiveUI.WinUI" />
-   </ItemGroup>
-
 </Project>

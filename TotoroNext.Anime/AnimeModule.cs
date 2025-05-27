@@ -16,6 +16,10 @@ public class AnimeModule : IModule
 
     public void ConfigureServices(IServiceCollection services)
     {
-        services.AddNavigationViewItem<SearchProviderViewModel>("Search", new SymbolIcon(Symbol.Find));
+        services.AddNavigationViewItem<SearchProviderViewModel>("Search", new SymbolIcon(Symbol.Find))
+                .RegisterEvent<AnimeSelectedEvent>()
+                .RegisterEvent<EpisodeSelectedEvent>()
+                .RegisterEvent<PlaybackDurationChangedEvent>()
+                .RegisterEvent<PlaybackPositionChangedEvent>();
     }
 }

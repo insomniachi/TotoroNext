@@ -1,21 +1,53 @@
-using LibVLCSharp.Shared;
+using System.Diagnostics;
+using System.IO.Pipes;
+using System.Reactive.Subjects;
+using System.Diagnostics.CodeAnalysis;
 using TotoroNext.MediaEngine.Abstractions;
 
 namespace TotoroNext.MediaEngine.Vlc;
 
-internal class VlcMediaPlayer(LibVLC libVLC) : IMediaPlayer
+internal class VlcMediaPlayer : IMediaPlayer
 {
-    private readonly MediaPlayer _mediaPlayer = new(libVLC);
+    private Process? _process;
+    private readonly Subject<TimeSpan> _durationSubject = new();
+    private readonly Subject<TimeSpan> _positionSubject = new();
 
-    public void Play(Uri uri, IDictionary<string, string> headers)
+    public IObservable<TimeSpan> DurationChanged => _durationSubject;
+    public IObservable<TimeSpan> PositionChanged => _positionSubject;
+
+    public void Play(Media media)
     {
-        var media = new Media(libVLC, uri);
-        foreach (var header in headers)
-        {
-            media.AddOption($":http-header={header.Key}:{header.Value}");
-        }
-        _mediaPlayer.Play();
-    }
+        _process?.Kill();
 
-    internal MediaPlayer GetPlayer() => _mediaPlayer;
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = @"C:\Program Files\VideoLAN\VLC\vlc.exe",
+            ArgumentList =
+            {
+                media.Uri.ToString(),
+                "--http-host=127.0.0.1",
+                "--http-port=8080",
+                "--fullscreen",
+                $"--meta-title={media.Title}",
+                $"--http-password={HttpInterface.Password}",
+            }
+        };
+
+        if(media.Headers.TryGetValue("user-agent", out string? userAgent))
+        {
+            startInfo.ArgumentList.Add($":http-user-agent={userAgent}");
+        }
+
+        if(media.Headers.TryGetValue("referer", out string? referer))
+        {
+            startInfo.ArgumentList.Add($":http-referer={referer}");
+        }
+
+        _process = new Process() { StartInfo = startInfo };
+        _process.Start();
+
+        var webInterface = new HttpInterface(_process);
+        webInterface.DurationChanged.Subscribe(_positionSubject.OnNext);
+        webInterface.PositionChanged.Subscribe(_durationSubject.OnNext);    
+    }
 }

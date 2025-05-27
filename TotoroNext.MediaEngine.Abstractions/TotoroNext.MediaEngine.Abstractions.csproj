@@ -6,7 +6,8 @@
     <GenerateLibraryLayout>true</GenerateLibraryLayout>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Platforms>x64</Platforms>
+      <Platforms>x64</Platforms>
+      <TargetFrameworks>net9.0-windows10.0.26100</TargetFrameworks>
 
     <!--
       UnoFeatures let's you quickly add and manage implicit package references based on the features you want to use.
@@ -31,4 +32,5 @@
     <!-- <FrameworkReference Update="Microsoft.Windows.SDK.NET.Ref" RuntimeFrameworkVersion="10.0.22621.28" />
     <FrameworkReference Update="Microsoft.Windows.SDK.NET.Ref" TargetingPackVersion="10.0.22621.28" /> -->
   </ItemGroup>
+
 </Project>

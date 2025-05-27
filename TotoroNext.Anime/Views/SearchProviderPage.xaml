@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:TotoroNext.Anime.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:root="using:TotoroNext.Anime"
     xmlns:taa="using:TotoroNext.Anime.Abstractions"
     xmlns:uen="using:Uno.Extensions.Navigation.UI"
     xmlns:utu="using:Uno.Toolkit.UI"
@@ -19,15 +20,12 @@
         <AutoSuggestBox
             PlaceholderText="Search"
             QueryIcon="Find"
-            Text="{Binding Query, Mode=TwoWay}" />
+            Text="{x:Bind ViewModel.Query, Mode=TwoWay}" />
 
-        <ItemsView
-            Grid.Row="1"
-            uen:Navigation.Request="WatchViewModel"
-            ItemsSource="{Binding Items, Mode=OneWay}">
+        <ItemsView Grid.Row="1" ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}">
             <ItemsView.ItemTemplate>
                 <DataTemplate x:DataType="taa:SearchResult">
-                    <ItemContainer>
+                    <ItemContainer uen:Navigation.Data="{x:Bind}" uen:Navigation.Request="WatchViewModel">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*" />
@@ -35,7 +33,7 @@
                             </Grid.RowDefinitions>
                             <Image
                                 Grid.Row="0"
-                                Source="{Binding Image}"
+                                Source="{x:Bind root:Converters.UriToImage(Image)}"
                                 Stretch="UniformToFill" />
                             <Border
                                 Grid.Row="1"
@@ -49,11 +47,11 @@
                                         Padding="3"
                                         VerticalAlignment="Center"
                                         FontSize="15"
-                                        Text="{Binding Title}"
+                                        Text="{x:Bind Title}"
                                         TextAlignment="Center"
                                         TextTrimming="WordEllipsis"
                                         TextWrapping="NoWrap"
-                                        ToolTipService.ToolTip="{Binding Title}" />
+                                        ToolTipService.ToolTip="{x:Bind Title}" />
                                 </StackPanel>
                             </Border>
                         </Grid>
