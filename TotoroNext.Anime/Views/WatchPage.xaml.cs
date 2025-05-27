@@ -4,9 +4,9 @@ using TotoroNext.Anime.ViewModels;
 
 namespace TotoroNext.Anime.Views;
 
-public sealed partial class FindEpisodesPage : Page
+public sealed partial class WatchPage : Page
 {
-    public FindEpisodesPage()
+    public WatchPage()
     {
         InitializeComponent();
 
@@ -14,7 +14,7 @@ public sealed partial class FindEpisodesPage : Page
     }
     private void PageDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
     {
-        if(args.NewValue is FindEpisodesViewModel vm)
+        if(args.NewValue is WatchViewModel vm)
         {
             vm.Initialize();
 
@@ -24,6 +24,6 @@ public sealed partial class FindEpisodesPage : Page
         }
     }
 
-    public FindEpisodesViewModel? ViewModel => DataContext as FindEpisodesViewModel;
+    public WatchViewModel? ViewModel => DataContext as WatchViewModel;
 }
 

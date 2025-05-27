@@ -8,21 +8,23 @@ internal static partial class VideoServers
 {
     internal static async Task<VideoServer?> FromMp4Upload(string name, string url)
     {
-        var response = await url.GetStringAsync();
-        var match = Mp4JuicyServerRegex().Match(response.Replace(" ", "").Replace("\n", ""));
+        try
+        {
+            var response = await url.GetStringAsync();
+            var match = Mp4JuicyServerRegex().Match(response.Replace(" ", "").Replace("\n", ""));
 
-        if (!match.Success)
+            return new VideoServer(name, new Uri(match.Groups[1].Value))
+            {
+                Headers =
+                {
+                    [HeaderNames.Referer] = "https://www.mp4upload.com/",
+                }
+            };
+        }
+        catch
         {
             return null;
         }
-
-        return new VideoServer(name, new Uri(match.Groups[1].Value))
-        {
-            Headers =
-            {
-                [HeaderNames.Referer] = "https://www.mp4upload.com/",
-            }
-        };
     }
 
     internal static VideoServer WithReferer(string name, string url, string referer)

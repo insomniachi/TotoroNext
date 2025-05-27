@@ -11,7 +11,7 @@ public class AnimeModule : IModule
     public void ConfigureNavigation(NavigationViewContext context)
     {
         context.RegisterForNavigation<SearchProviderPage, SearchProviderViewModel>();
-        context.RegisterForNavigation<FindEpisodesPage, FindEpisodesViewModel, SearchResult>();
+        context.RegisterForNavigation<WatchPage, WatchViewModel, SearchResult>();
     }
 
     public void ConfigureServices(IServiceCollection services)

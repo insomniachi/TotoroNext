@@ -21,6 +21,7 @@
     <PackageVersion Include="ReactiveUI.SourceGenerators" Version="2.1.27" />
     <PackageVersion Include="ReactiveUI.WinUI" Version="20.2.45" />
     <PackageVersion Include="System.Linq.Async" Version="6.0.1" />
+    <PackageVersion Include="System.Reactive" Version="6.0.1" />
     <PackageVersion Include="Uno.Extensions.Hosting" Version="5.3.8" />
     <PackageVersion Include="HtmlAgilityPack.CssSelectors.NetCore" Version="1.2.1" />
     <PackageVersion Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />

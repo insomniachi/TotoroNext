@@ -9,7 +9,7 @@ using TotoroNext.MediaEngine.Abstractions;
 namespace TotoroNext.Anime.ViewModels;
 
 [UsedImplicitly]
-public partial class FindEpisodesViewModel(SearchResult result) : ReactiveObject
+public partial class WatchViewModel(SearchResult result) : ReactiveObject
 {
     public IMediaPlayer? MediaPlayer { get; set; }
 

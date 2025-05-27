@@ -3,7 +3,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <TargetFramework>net9.0-windows10.0.26100</TargetFramework>
+    <TargetFrameworks>net9.0-desktop;net9.0-windows10.0.26100</TargetFrameworks>
 
     <!--
       Adding NoWarn to remove build warnings

@@ -21,10 +21,13 @@
             QueryIcon="Find"
             Text="{Binding Query, Mode=TwoWay}" />
 
-        <ScrollView Grid.Row="1">
-            <ItemsRepeater uen:Navigation.Request="FindEpisodesViewModel" ItemsSource="{Binding Items, Mode=OneWay}">
-                <ItemsRepeater.ItemTemplate>
-                    <DataTemplate x:DataType="taa:SearchResult">
+        <ItemsView
+            Grid.Row="1"
+            uen:Navigation.Request="WatchViewModel"
+            ItemsSource="{Binding Items, Mode=OneWay}">
+            <ItemsView.ItemTemplate>
+                <DataTemplate x:DataType="taa:SearchResult">
+                    <ItemContainer>
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*" />
@@ -54,18 +57,18 @@
                                 </StackPanel>
                             </Border>
                         </Grid>
-                    </DataTemplate>
-                </ItemsRepeater.ItemTemplate>
-                <ItemsRepeater.Layout>
-                    <UniformGridLayout
-                        ItemsJustification="Start"
-                        ItemsStretch="Fill"
-                        MinColumnSpacing="16"
-                        MinItemHeight="400"
-                        MinItemWidth="250"
-                        MinRowSpacing="16" />
-                </ItemsRepeater.Layout>
-            </ItemsRepeater>
-        </ScrollView>
+                    </ItemContainer>
+                </DataTemplate>
+            </ItemsView.ItemTemplate>
+            <ItemsView.Layout>
+                <UniformGridLayout
+                    ItemsJustification="Start"
+                    ItemsStretch="Fill"
+                    MinColumnSpacing="16"
+                    MinItemHeight="400"
+                    MinItemWidth="250"
+                    MinRowSpacing="16" />
+            </ItemsView.Layout>
+        </ItemsView>
     </Grid>
 </Page>

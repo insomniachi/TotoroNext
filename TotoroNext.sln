@@ -26,7 +26,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.MediaEngine.Abst
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.MediaEngine.Flyleaf", "TotoroNext.MediaEngine.Flyleaf\TotoroNext.MediaEngine.Flyleaf.csproj", "{3EECEB27-A1D8-4D04-B911-F6AE08BB008E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.MediaEngine.Vlc", "TotoroNext.MediaEngine.Vlc\TotoroNext.MediaEngine.Vlc.csproj", "{89DF6F07-1B49-4101-88A0-36BD747DEE5D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.MediaEngine.Vlc", "TotoroNext.MediaEngine.Vlc\TotoroNext.MediaEngine.Vlc.csproj", "{C704ECB1-FA53-D0E0-FD5D-F7B7CC9F3F92}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -62,10 +62,10 @@ Global
 		{3EECEB27-A1D8-4D04-B911-F6AE08BB008E}.Debug|x64.Build.0 = Debug|x64
 		{3EECEB27-A1D8-4D04-B911-F6AE08BB008E}.Release|x64.ActiveCfg = Release|x64
 		{3EECEB27-A1D8-4D04-B911-F6AE08BB008E}.Release|x64.Build.0 = Release|x64
-		{89DF6F07-1B49-4101-88A0-36BD747DEE5D}.Debug|x64.ActiveCfg = Debug|x64
-		{89DF6F07-1B49-4101-88A0-36BD747DEE5D}.Debug|x64.Build.0 = Debug|x64
-		{89DF6F07-1B49-4101-88A0-36BD747DEE5D}.Release|x64.ActiveCfg = Release|x64
-		{89DF6F07-1B49-4101-88A0-36BD747DEE5D}.Release|x64.Build.0 = Release|x64
+		{C704ECB1-FA53-D0E0-FD5D-F7B7CC9F3F92}.Debug|x64.ActiveCfg = Debug|x64
+		{C704ECB1-FA53-D0E0-FD5D-F7B7CC9F3F92}.Debug|x64.Build.0 = Debug|x64
+		{C704ECB1-FA53-D0E0-FD5D-F7B7CC9F3F92}.Release|x64.ActiveCfg = Release|x64
+		{C704ECB1-FA53-D0E0-FD5D-F7B7CC9F3F92}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

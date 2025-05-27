@@ -41,9 +41,6 @@
   <ItemGroup>
     <PackageReference Include="Flurl.Http" />
     <PackageReference Include="System.Linq.Async" />
+    <PackageReference Include="System.Reactive" />
   </ItemGroup>
-
-   <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows10.0.26100'">
-       <PackageReference Include="ReactiveUI.WinUI" />
-   </ItemGroup>
 </Project>

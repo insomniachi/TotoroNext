@@ -1,5 +1,5 @@
 ﻿<Page
-    x:Class="TotoroNext.Anime.Views.FindEpisodesPage"
+    x:Class="TotoroNext.Anime.Views.WatchPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ab="using:TotoroNext.Anime.Abstractions"

@@ -1,4 +1,3 @@
-using CommunityToolkit.Mvvm.DependencyInjection;
 using TotoroNext.Module;
 using Uno.Resizetizer;
 
@@ -80,6 +79,7 @@ public partial class App : Application
                 })
                 .ConfigureServices((context, services) =>
                 {
+                    services.AddEventAggregator();
                     foreach (var module in modules)
                     {
                         module.ConfigureServices(services);

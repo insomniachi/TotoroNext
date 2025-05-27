@@ -21,7 +21,7 @@ public sealed partial class MediaPlayerElementHost : UserControl
             {
                 return (IMediaPlayer)GetValue(PlayerProperty);
             }
-            catch(Exception ex)
+            catch
             {
                 return null;
             }
