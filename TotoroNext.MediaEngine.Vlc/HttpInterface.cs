@@ -40,9 +40,20 @@ internal class HttpInterface
 
     public async Task<VlcStatus?> GetStatus()
     {
-        var result = await _api
-            .AppendPathSegment("/requests/status.json")
-            .WithBasicAuth("", Password).GetAsync();
+        IFlurlResponse? result = null;
+        
+        try
+        {
+            result = await _api
+                .AppendPathSegment("/requests/status.json")
+                .WithBasicAuth("", Password).GetAsync();
+        }
+        catch { }
+
+        if(result is null)
+        {
+            return null;
+        }
 
         if (result.StatusCode >= 300)
         {

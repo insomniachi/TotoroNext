@@ -60,9 +60,11 @@ public sealed partial class MediaPlayerElementHost : UserControl
             return;
         }
         var player = factory.CreatePlayer();
-        var element = factory.CreateElement(player);
-        host.RootGrid.Children.Insert(0, element);
-        
+        if(factory.CreateElement(player) is { } element)
+        {
+            host.RootGrid.Children.Insert(0, element);
+        }
+
         host.DispatcherQueue.TryEnqueue(() =>
         {
             host.Player = player;

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using TotoroNext.Module;
 using Uno.Resizetizer;
 
@@ -18,11 +19,17 @@ public partial class App : Application
 
     protected async override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        //Process.Start(new ProcessStartInfo
+        //{
+        //    FileName = @"C:\Users\athul\Downloads\mpv-x86_64-20250527-git-1d1535f\mpv.exe"
+        //});
+
         IModule[] modules =
         [
             new Anime.AnimeModule(),
             new AnimeHeaven.Module(),
             new MediaEngine.Vlc.Module(),
+            new MediaEngine.Mpv.Module(),
 #if WINDOWS10_0_26100_0_OR_GREATER
             new MediaEngine.Flyleaf.FlyleafModule(),
 #endif
