@@ -34,7 +34,8 @@ internal class MpvMediaPlayer : IMediaPlayer
 				media.Uri.ToString(),
 				"--fullscreen",
 				$"--title={media.Title}",
-				$"--input-ipc-server={pipePath}"
+                $"--force-media-title={media.Title}",
+                $"--input-ipc-server={pipePath}"
 			},
 		};
 
@@ -56,8 +57,8 @@ internal class MpvMediaPlayer : IMediaPlayer
         await pipe.ConnectAsync();
 
         // Observe properties
-        SendIpcCommand(pipe, new { command = new object[] { "observe_property", 1, "duration" } });
-        SendIpcCommand(pipe, new { command = new object[] { "observe_property", 2, "time-pos" } });
+        await SendIpcCommand(pipe, new { command = new object[] { "observe_property", 1, "duration" } });
+        await SendIpcCommand(pipe, new { command = new object[] { "observe_property", 2, "time-pos" } });
 
         using var reader = new StreamReader(pipe, Encoding.UTF8);
 
@@ -75,12 +76,12 @@ internal class MpvMediaPlayer : IMediaPlayer
         }
     }
 
-    private static void SendIpcCommand(NamedPipeClientStream pipe, object command)
+    private static async Task SendIpcCommand(NamedPipeClientStream pipe, object command)
     {
         var json = JsonSerializer.Serialize(command) + "\n";
         var bytes = Encoding.UTF8.GetBytes(json);
-        pipe.Write(bytes, 0, bytes.Length);
-        pipe.Flush();
+        await pipe.WriteAsync(bytes);
+        await pipe.FlushAsync();
     }
 
     private void HandleIpcMessage(string json)

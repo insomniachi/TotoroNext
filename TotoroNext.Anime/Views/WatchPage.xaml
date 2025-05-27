@@ -24,7 +24,7 @@
             x:Name="Host"
             Grid.Row="0"
             Grid.Column="0"
-            EngineType="MPV" />
+            EngineType="VLC" />
 
         <Grid Grid.Row="1" Padding="16">
             <utu:TabBar

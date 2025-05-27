@@ -35,12 +35,12 @@ internal class VlcMediaPlayer : IMediaPlayer
 
         if(media.Headers.TryGetValue("user-agent", out string? userAgent))
         {
-            startInfo.ArgumentList.Add($":http-user-agent={userAgent}");
+            startInfo.ArgumentList.Add($"--http-user-agent={userAgent}");
         }
 
         if(media.Headers.TryGetValue("referer", out string? referer))
         {
-            startInfo.ArgumentList.Add($":http-referer={referer}");
+            startInfo.ArgumentList.Add($"--http-referrer={referer}");
         }
 
         _process = new Process() { StartInfo = startInfo };
