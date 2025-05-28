@@ -27,14 +27,14 @@ public partial class App : Application
 
         List<IModule> modules =
         [
-            new Anime.AnimeModule(),
-            new AnimeHeaven.Module(),
+            new Anime.Module(),
+            new Anime.AllAnime.Module(),
             new MediaEngine.Vlc.Module(),
             new MediaEngine.Mpv.Module()
         ];
 
 #if WINDOWS10_0_26100_0_OR_GREATER
-        modules.Add(new MediaEngine.Flyleaf.FlyleafModule());
+        modules.Add(new MediaEngine.Flyleaf.Module());
 #endif
 
         var builder = this.CreateBuilder(args)

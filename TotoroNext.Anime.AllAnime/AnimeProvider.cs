@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -6,11 +5,12 @@ using System.Text.Json.Serialization;
 using Flurl.Http;
 using FlurlGraphQL;
 using TotoroNext.Anime.Abstractions;
+using TotoroNext.AnimeHeaven;
 using Uno.Logging;
 
-namespace TotoroNext.AnimeHeaven;
+namespace TotoroNext.Anime.AllAnime;
 
-internal partial class AllAnimeProvider : IAnimeProvider
+internal partial class AnimeProvider : IAnimeProvider
 {
     public const string Api = "https://api.allanime.day/api";
     public const string BaseUrl = "https://allanime.to/";
@@ -23,7 +23,7 @@ internal partial class AllAnimeProvider : IAnimeProvider
             .PostGraphQLQueryAsync()
             .ReceiveGraphQLRawSystemTextJsonResponse();
 
-        var episodeDetails = jObject?["show"]?["availableEpisodesDetail"] as System.Text.Json.Nodes.JsonObject;
+        var episodeDetails = jObject?["show"]?["availableEpisodesDetail"] as JsonObject;
 
         if (episodeDetails is null)
         {
@@ -33,7 +33,7 @@ internal partial class AllAnimeProvider : IAnimeProvider
 
         var details = episodeDetails.Deserialize<EpisodeDetails>();
 
-        foreach (var episode in Enumerable.Reverse((details?.sub ?? [])))
+        foreach (var episode in Enumerable.Reverse(details?.Sub ?? []))
         {
             yield return new Episode(this, animeId, episode, float.Parse(episode));
         }
@@ -59,25 +59,25 @@ internal partial class AllAnimeProvider : IAnimeProvider
 
         var sourceArray = jsonNode?["episode"]?["sourceUrls"];
         var sourceObjs = sourceArray?.Deserialize<List<SourceUrlObj>>() ?? [];
-        sourceObjs.Sort((x, y) => y.priority.CompareTo(x.priority));
+        sourceObjs.Sort((x, y) => y.Priority.CompareTo(x.Priority));
 
         foreach (var item in sourceObjs)
         {
-            if(item.sourceUrl.StartsWith("--"))
+            if(item.SourceUrl.StartsWith("--"))
             {
-                item.sourceUrl = DecryptSourceUrl(item.sourceUrl);
+                item.SourceUrl = DecryptSourceUrl(item.SourceUrl);
             }
 
-            switch (item.sourceName)
+            switch (item.SourceName)
             {
                 case "Mp4":
-                    if(await VideoServers.FromMp4Upload(item.sourceName, item.sourceUrl) is { } server)
+                    if(await VideoServers.FromMp4Upload(item.SourceName, item.SourceUrl) is { } server)
                     {
                         yield return server;
                     }
                     continue;
                 case "Yt-mp4":
-                    yield return VideoServers.WithReferer(item.sourceName, item.sourceUrl, "https://allanime.day/");
+                    yield return VideoServers.WithReferer(item.SourceName, item.SourceUrl, "https://allanime.day/");
                     continue;
                 case "Vg":
                     continue;
@@ -99,7 +99,7 @@ internal partial class AllAnimeProvider : IAnimeProvider
             List<ApiV2Reponse> links = [];
             try
             {
-                response = await $"https://allanime.day{item.sourceUrl.Replace("clock", "clock.json")}".GetStringAsync();
+                response = await $"https://allanime.day{item.SourceName.Replace("clock", "clock.json")}".GetStringAsync();
                 var jObject = JsonNode.Parse(response)!.AsObject()!;
                 links = jObject["links"].Deserialize<List<ApiV2Reponse>>() ?? [];
             }
@@ -108,10 +108,10 @@ internal partial class AllAnimeProvider : IAnimeProvider
                 continue;
             }
 
-            switch (item.sourceName)
+            switch (item.SourceName)
             {
                 case "Luf-Mp4" or "S-mp4":
-                    yield return VideoServers.WithReferer(item.sourceName, links[0].Url, "https://allanime.day/");
+                    yield return VideoServers.WithReferer(item.SourceName, links[0].Url, "https://allanime.day/");
                     continue;
                 default:
                     break;
@@ -227,19 +227,31 @@ internal partial class AllAnimeProvider : IAnimeProvider
 
 class EpisodeDetails
 {
-    public List<string> sub { get; set; } = [];
-    public List<string> dub { get; set; } = [];
-    public List<string> raw { get; set; } = [];
+    [JsonPropertyName("sub")]
+    public List<string> Sub { get; set; } = [];
+
+    [JsonPropertyName("dub")]
+    public List<string> Dub { get; set; } = [];
+
+    [JsonPropertyName("raw")]
+    public List<string> Raw { get; set; } = [];
 }
 
 [DebuggerDisplay("{priority} - {sourceUrl} - {type}")]
 class SourceUrlObj
 {
 
-    public string sourceName { get; set; }
-    public string sourceUrl { get; set; }
-    public double priority { get; set; }
-    public string type { get; set; }
+    [JsonPropertyName("sourceName")]
+    public string SourceName { get; set; } = "";
+
+    [JsonPropertyName("sourceUrl")]
+    public string SourceUrl { get; set; } = "";
+
+    [JsonPropertyName("priority")]
+    public double Priority { get; set; }
+
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "";
 }
 
 public class ApiV2Reponse

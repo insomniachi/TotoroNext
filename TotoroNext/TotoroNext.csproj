@@ -44,7 +44,7 @@
 
   <!-- Modules -->
   <ItemGroup>
-    <ProjectReference Include="..\TotoroNext.AnimePahe\TotoroNext.AnimeHeaven.csproj" />
+    <ProjectReference Include="..\TotoroNext.Anime.AllAnime\TotoroNext.Anime.AllAnime.csproj" />
     <ProjectReference Include="..\TotoroNext.Anime\TotoroNext.Anime.csproj" />
     <ProjectReference Include="..\TotoroNext.MediaEngine.Vlc\TotoroNext.MediaEngine.Vlc.csproj" />
     <ProjectReference Include="..\TotoroNext.MediaEngine.Mpv\TotoroNext.MediaEngine.Mpv.csproj" />

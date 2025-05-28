@@ -6,7 +6,7 @@ using TotoroNext.Module;
 
 namespace TotoroNext.Anime;
 
-public class AnimeModule : IModule
+public class Module : IModule
 {
     public void ConfigureNavigation(NavigationViewContext context)
     {

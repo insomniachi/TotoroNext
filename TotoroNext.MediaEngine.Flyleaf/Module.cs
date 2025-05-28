@@ -5,7 +5,7 @@ using FLogLevel = Flyleaf.FFmpeg.LogLevel;
 
 namespace TotoroNext.MediaEngine.Flyleaf;
 
-public class FlyleafModule : IModule
+public class Module : IModule
 {
     public void ConfigureNavigation(NavigationViewContext context) { }
 

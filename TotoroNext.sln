@@ -20,7 +20,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.Anime", "TotoroN
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.Anime.Abstractions", "TotoroNext.Anime.Abstractions\TotoroNext.Anime.Abstractions.csproj", "{93A3B5DD-C640-4167-98E6-3DD220D7471E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.AnimeHeaven", "TotoroNext.AnimePahe\TotoroNext.AnimeHeaven.csproj", "{DB9F2549-48F8-4227-90C2-282D0C78D584}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.Anime.AllAnime", "TotoroNext.Anime.AllAnime\TotoroNext.Anime.AllAnime.csproj", "{DB9F2549-48F8-4227-90C2-282D0C78D584}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.MediaEngine.Abstractions", "TotoroNext.MediaEngine.Abstractions\TotoroNext.MediaEngine.Abstractions.csproj", "{964E1B1E-8DC4-4BBA-8461-876B09EEF327}"
 EndProject
@@ -29,6 +29,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.MediaEngine.Vlc", "TotoroNext.MediaEngine.Vlc\TotoroNext.MediaEngine.Vlc.csproj", "{C704ECB1-FA53-D0E0-FD5D-F7B7CC9F3F92}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.MediaEngine.Mpv", "TotoroNext.MediaEngine.Mpv\TotoroNext.MediaEngine.Mpv.csproj", "{5C4E6F97-ED4B-4907-BBBD-C4FA7B2E9C80}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Anime", "Anime", "{6994BA35-F447-D63A-138F-C94385013AFC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Providers", "Providers", "{19A7823A-C34F-A853-1DEC-E551CC4B3B45}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Media Engine", "Media Engine", "{DF4077F3-9943-4E56-D1F4-B8A32B67DBE0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Media Players", "Media Players", "{40D3E142-7407-D381-0017-AB0EE535E432}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -75,6 +83,17 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FECE801F-0D1D-445C-B5BB-6840536B85F8} = {6994BA35-F447-D63A-138F-C94385013AFC}
+		{93A3B5DD-C640-4167-98E6-3DD220D7471E} = {6994BA35-F447-D63A-138F-C94385013AFC}
+		{DB9F2549-48F8-4227-90C2-282D0C78D584} = {19A7823A-C34F-A853-1DEC-E551CC4B3B45}
+		{964E1B1E-8DC4-4BBA-8461-876B09EEF327} = {DF4077F3-9943-4E56-D1F4-B8A32B67DBE0}
+		{3EECEB27-A1D8-4D04-B911-F6AE08BB008E} = {40D3E142-7407-D381-0017-AB0EE535E432}
+		{C704ECB1-FA53-D0E0-FD5D-F7B7CC9F3F92} = {40D3E142-7407-D381-0017-AB0EE535E432}
+		{5C4E6F97-ED4B-4907-BBBD-C4FA7B2E9C80} = {40D3E142-7407-D381-0017-AB0EE535E432}
+		{19A7823A-C34F-A853-1DEC-E551CC4B3B45} = {6994BA35-F447-D63A-138F-C94385013AFC}
+		{40D3E142-7407-D381-0017-AB0EE535E432} = {DF4077F3-9943-4E56-D1F4-B8A32B67DBE0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A7A67BC2-32EB-4DC4-830C-53BECA19D6AD}
