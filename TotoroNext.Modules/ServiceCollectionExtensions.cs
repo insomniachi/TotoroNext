@@ -32,4 +32,10 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+
+    public static IServiceCollection AddModuleSettings<TData>(this IServiceCollection services, IModule<TData> module)
+        where TData : class, new()
+    {
+        return services.AddSingleton<IModuleSettings<TData>>(_ => new ModuleSettings<TData>(module.Id));
+    }
 }

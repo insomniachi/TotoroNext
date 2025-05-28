@@ -1,0 +1,33 @@
+﻿<Page
+    x:Class="TotoroNext.MediaEngine.Mpv.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctk="using:CommunityToolkit.WinUI.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:TotoroNext.MediaEngine.Mpv.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Margin="36">
+        <StackPanel MaxWidth="1000" HorizontalAlignment="Stretch">
+            <ctk:SettingsCard Description="Command used to launch mpv from Terminal" Header="Command">
+                <ctk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE756;" />
+                </ctk:SettingsCard.HeaderIcon>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        Style="{ThemeResource CaptionTextBlockStyle}"
+                        Text="{x:Bind ViewModel.Command, Mode=OneWay}" />
+                    <Button Command="{x:Bind ViewModel.PickFileCommand}" Content="Browse" />
+                </StackPanel>
+            </ctk:SettingsCard>
+            <ctk:SettingsCard Description="Start in fullscreen mode" Header="Start Fullscreen">
+                <ctk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE740;" />
+                </ctk:SettingsCard.HeaderIcon>
+                <ToggleSwitch />
+            </ctk:SettingsCard>
+        </StackPanel>
+    </Grid>
+</Page>

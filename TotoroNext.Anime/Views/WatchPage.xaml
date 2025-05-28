@@ -13,7 +13,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="100" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -26,17 +26,38 @@
             Grid.Column="0"
             EngineType="MPV" />
 
-        <Grid Grid.Row="1" Padding="16">
-            <utu:TabBar
+        <Grid
+            Grid.Row="1"
+            Padding="16"
+            VerticalAlignment="Stretch"
+            Background="{ThemeResource LayerFillColorDefaultBrush}"
+            ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock
+                VerticalAlignment="Center"
+                Style="{ThemeResource BodyStrongTextBlockStyle}"
+                Text="Servers" />
+
+            <utu:ChipGroup
+                Grid.Column="1"
                 ItemsSource="{x:Bind ViewModel.Servers, Mode=OneWay}"
-                SelectedIndex="0"
-                SelectedItem="{x:Bind ViewModel.SelectedServer, Mode=TwoWay}">
-                <utu:TabBar.ItemTemplate>
+                SelectedItem="{x:Bind ViewModel.SelectedServer, Mode=TwoWay}"
+                SelectionMode="Single">
+                <utu:ChipGroup.ItemTemplate>
                     <DataTemplate x:DataType="ab:VideoServer">
-                        <utu:TabBarItem Content="{x:Bind Name}" />
+                        <TextBlock Text="{x:Bind Name}" />
                     </DataTemplate>
-                </utu:TabBar.ItemTemplate>
-            </utu:TabBar>
+                </utu:ChipGroup.ItemTemplate>
+                <utu:ChipGroup.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </utu:ChipGroup.ItemsPanel>
+            </utu:ChipGroup>
         </Grid>
 
         <StackPanel
