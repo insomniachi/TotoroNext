@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using TotoroNext.Module;
 using Uno.Resizetizer;
+using Windows.Storage.Pickers;
 
 namespace TotoroNext;
 public partial class App : Application
@@ -24,16 +25,17 @@ public partial class App : Application
         //    FileName = @"C:\Users\athul\Downloads\mpv-x86_64-20250527-git-1d1535f\mpv.exe"
         //});
 
-        IModule[] modules =
+        List<IModule> modules =
         [
             new Anime.AnimeModule(),
             new AnimeHeaven.Module(),
             new MediaEngine.Vlc.Module(),
-            new MediaEngine.Mpv.Module(),
-#if WINDOWS10_0_26100_0_OR_GREATER
-            new MediaEngine.Flyleaf.FlyleafModule(),
-#endif
+            new MediaEngine.Mpv.Module()
         ];
+
+#if WINDOWS10_0_26100_0_OR_GREATER
+        modules.Add(new MediaEngine.Flyleaf.FlyleafModule());
+#endif
 
         var builder = this.CreateBuilder(args)
             // Add navigation support for toolkit controls such as TabBar and NavigationView
@@ -87,6 +89,18 @@ public partial class App : Application
                 .ConfigureServices((context, services) =>
                 {
                     services.AddEventAggregator();
+                    services.AddTransient(sp =>
+                    {
+                        var openPicker = new FileOpenPicker();
+
+#if WINDOWS10_0_26100_0_OR_GREATER
+                        var window = MainWindow;
+                        var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+                        WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
+#endif
+                        return openPicker;
+                    });
+
                     foreach (var module in modules)
                     {
                         module.ConfigureServices(services);

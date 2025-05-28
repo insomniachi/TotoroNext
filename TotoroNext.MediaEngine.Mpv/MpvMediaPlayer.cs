@@ -4,10 +4,11 @@ using System.Reactive.Subjects;
 using System.Text.Json;
 using System.Text;
 using TotoroNext.MediaEngine.Abstractions;
+using TotoroNext.Module;
 
 namespace TotoroNext.MediaEngine.Mpv;
 
-internal class MpvMediaPlayer : IMediaPlayer
+internal class MpvMediaPlayer(ModuleSettings settings) : IMediaPlayer
 {
     private Process? _process;
     private NamedPipeClientStream? _ipcStream;
@@ -28,18 +29,22 @@ internal class MpvMediaPlayer : IMediaPlayer
 
 		var startInfo = new ProcessStartInfo
 		{
-			FileName = @"C:\Users\athul\Downloads\mpv-x86_64-20250527-git-1d1535f\mpv.exe",
+			FileName = settings.FileName,
 			ArgumentList =
 			{
 				media.Uri.ToString(),
-				"--fullscreen",
 				$"--title={media.Title}",
                 $"--force-media-title={media.Title}",
                 $"--input-ipc-server={pipePath}"
 			},
 		};
 
-		if (media.Headers is not null && media.Headers.Count > 0)
+        if(settings.LaunchFullScreen)
+        {
+            startInfo.ArgumentList.Add("--fullscreen");
+        }
+
+		if (media.Headers.Count > 0)
 		{
 			var headerFields = string.Join(" ", media.Headers.Select(kvp => $"{kvp.Key}:{kvp.Value}"));
 			startInfo.ArgumentList.Add($"--http-header-fields={headerFields}");
