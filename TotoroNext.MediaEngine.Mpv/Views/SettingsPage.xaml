@@ -8,7 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid Margin="36">
+    <ScrollView Margin="36">
         <StackPanel MaxWidth="1000" HorizontalAlignment="Stretch">
             <ctk:SettingsCard Description="Command used to launch mpv from Terminal" Header="Command">
                 <ctk:SettingsCard.HeaderIcon>
@@ -26,8 +26,8 @@
                 <ctk:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE740;" />
                 </ctk:SettingsCard.HeaderIcon>
-                <ToggleSwitch />
+                <ToggleSwitch IsOn="{x:Bind ViewModel.LaunchFullScreen, Mode=TwoWay}" />
             </ctk:SettingsCard>
         </StackPanel>
-    </Grid>
+    </ScrollView>
 </Page>
