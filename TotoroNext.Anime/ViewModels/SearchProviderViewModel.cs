@@ -1,15 +1,17 @@
 using System.Reactive.Linq;
 using JetBrains.Annotations;
-using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using TotoroNext.Anime.Abstractions;
+using TotoroNext.Anime.Contracts;
 
 namespace TotoroNext.Anime.ViewModels;
 
 [UsedImplicitly]
-public partial class SearchProviderViewModel([FromKeyedServices("AllAnime")]IAnimeProvider provider) : ReactiveObject
+public partial class SearchProviderViewModel(IAnimeProviderFactory factory) : ReactiveObject
 {
+    private readonly IAnimeProvider _provider = factory.GetProvider(new Guid("489576c5-2879-493b-874a-7eb14e081280"));
+
     [Reactive]
     public partial string Query { get; set; }
 
@@ -18,7 +20,7 @@ public partial class SearchProviderViewModel([FromKeyedServices("AllAnime")]IAni
         this.WhenAnyValue(x => x.Query)
             .Where(query => query is { Length: > 3 })
             .Throttle(TimeSpan.FromMilliseconds(500))
-            .SelectMany(query => provider.SearchAsync(query).ToListAsync().AsTask())
+            .SelectMany(query => _provider.SearchAsync(query).ToListAsync().AsTask())
             .ObserveOn(RxApp.MainThreadScheduler);
 
 

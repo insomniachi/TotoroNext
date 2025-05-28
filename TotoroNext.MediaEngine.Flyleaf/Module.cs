@@ -7,8 +7,6 @@ namespace TotoroNext.MediaEngine.Flyleaf;
 
 public class Module : IModule
 {
-    public void ConfigureNavigation(NavigationViewContext context) { }
-
     public void ConfigureServices(IServiceCollection services)
     {
         StartFlyleaf();

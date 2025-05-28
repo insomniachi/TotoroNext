@@ -34,11 +34,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Assets\hero.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FlurlGraphQL" />
+
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\TotoroNext.Anime.Abstractions\TotoroNext.Anime.Abstractions.csproj" />
     <ProjectReference Include="..\TotoroNext.Modules\TotoroNext.Module.csproj" />
   </ItemGroup>
+
 </Project>

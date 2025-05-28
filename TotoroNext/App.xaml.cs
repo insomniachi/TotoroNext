@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using TotoroNext.Anime;
 using TotoroNext.Module;
 using Uno.Resizetizer;
 using Windows.Storage.Pickers;
@@ -53,26 +53,7 @@ public partial class App : Application
                             context.HostingEnvironment.IsDevelopment() ?
                                 LogLevel.Information :
                                 LogLevel.Warning)
-
-                        // Default filters for core Uno Platform namespaces
-                        .CoreLogLevel(LogLevel.Information);
-
-                    // Uno Platform namespace filter groups
-                    // Uncomment individual methods to see more detailed logging
-                    //// Generic Xaml events
-                    //logBuilder.XamlLogLevel(LogLevel.Debug);
-                    //// Layout specific messages
-                    //logBuilder.XamlLayoutLogLevel(LogLevel.Debug);
-                    //// Storage messages
-                    //logBuilder.StorageLogLevel(LogLevel.Debug);
-                    //// Binding related messages
-                    //logBuilder.XamlBindingLogLevel(LogLevel.Debug);
-                    //// Binder memory references tracking
-                    //logBuilder.BinderMemoryReferenceLogLevel(LogLevel.Debug);
-                    //// DevServer and HotReload related
-                    //logBuilder.HotReloadCoreLogLevel(LogLevel.Information);
-                    //// Debug JS interop
-                    //logBuilder.WebAssemblyLogLevel(LogLevel.Debug);
+                        .CoreLogLevel(LogLevel.Warning);
 
                 }, enableUnoLogging: true)
                 .UseSerilog(consoleLoggingEnabled: true, fileLoggingEnabled: true)
@@ -88,7 +69,8 @@ public partial class App : Application
                 })
                 .ConfigureServices((context, services) =>
                 {
-                    services.AddEventAggregator();
+                    services.AddCoreServices();
+                    services.AddAnimeServices();
                     services.AddTransient(sp =>
                     {
                         var openPicker = new FileOpenPicker();
@@ -105,6 +87,8 @@ public partial class App : Application
                     {
                         module.ConfigureServices(services);
                     }
+
+                    services.AddNavigationViewItem<ModulesViewModel>("Modules", new FontIcon { Glyph = "\uED35" });
                 })
                 .UseNavigation((views, routes) => RegisterRoutes(views, routes, modules))
             );
@@ -117,6 +101,12 @@ public partial class App : Application
         MainWindow.SetWindowIcon();
 
         Host = await builder.NavigateAsync<Shell>();
+
+        foreach (var module in modules)
+        {
+            module.RegisterComponents(Host.Services.GetRequiredService<IComponentRegistry>());
+        }
+
         Container.ConfigureServices(Host.Services);
     }
 
@@ -124,9 +114,11 @@ public partial class App : Application
     {
         views.Register(
             new ViewMap(ViewModel: typeof(ShellViewModel)),
-            new ViewMap<MainPage, MainViewModel>());
+            new ViewMap<MainPage, MainViewModel>(),
+            new ViewMap<ModulesPage, ModulesViewModel>());
 
         var context = new NavigationViewContext(views);
+        
         foreach (var module in modules)
         {
             module.ConfigureNavigation(context);
@@ -138,6 +130,7 @@ public partial class App : Application
             [
                 new ("Main", View: views.FindByViewModel<MainViewModel>(), IsDefault:true, Nested:
                 [
+                    new(nameof(ModulesViewModel), View: views.FindByViewModel<ModulesViewModel>()),
                     ..context.Routes
                 ]),
             ])

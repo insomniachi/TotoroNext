@@ -27,6 +27,7 @@
       SkiaRenderer;
       Material;
     </UnoFeatures>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -53,6 +54,11 @@
   <!-- Windows Only Modules -->
   <ItemGroup Condition="'$(TargetFramework)'=='net9.0-windows10.0.26100'">
     <ProjectReference Include="..\TotoroNext.MediaEngine.Flyleaf\TotoroNext.MediaEngine.Flyleaf.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Presentation\ModulesPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
     
 </Project>

@@ -6,8 +6,6 @@ namespace TotoroNext.MediaEngine.Vlc;
 
 public class Module : IModule
 {
-    public void ConfigureNavigation(NavigationViewContext context) { }
-
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddKeyedTransient<IMediaPlayerElementFactory, VlcMediaPlayerElementFactory>("VLC");

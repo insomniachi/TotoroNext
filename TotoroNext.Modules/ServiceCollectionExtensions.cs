@@ -5,9 +5,12 @@ namespace TotoroNext.Module;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddEventAggregator(this IServiceCollection services)
+
+    public static IServiceCollection AddCoreServices(this IServiceCollection services)
     {
         services.AddSingleton<IEventAggregator, EventAggregator>();
+        services.AddSingleton<IComponentRegistry, ComponentRegistry>();
+
         return services;
     }
 

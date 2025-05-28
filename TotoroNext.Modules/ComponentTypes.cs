@@ -1,0 +1,35 @@
+namespace TotoroNext.Module;
+
+public class ComponentTypes
+{
+    public const string AnimeProvider = "AnimeProvider";
+    public const string MediaEngine = "MediaEngine";
+}
+
+public interface IComponentRegistry
+{
+    void RegisterComponent(string componentType, Descriptor descriptor);
+    IEnumerable<Descriptor> GetComponents(string componentType);
+}
+
+
+public class ComponentRegistry : IComponentRegistry
+{
+    private readonly Dictionary<string, List<Descriptor>> _components = new();
+    public void RegisterComponent(string componentType, Descriptor descriptor)
+    {
+        if (_components.TryGetValue(componentType, out var list))
+        {
+            list.Add(descriptor);
+        }
+        else
+        {
+            _components[componentType] = [descriptor];
+        }
+    }
+
+    public IEnumerable<Descriptor> GetComponents(string componentType)
+    {
+        return _components.TryGetValue(componentType, out var descriptors) ? descriptors : Enumerable.Empty<Descriptor>();
+    }
+}
