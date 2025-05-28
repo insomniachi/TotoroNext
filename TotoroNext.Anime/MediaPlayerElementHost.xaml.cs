@@ -65,10 +65,7 @@ public sealed partial class MediaPlayerElementHost : UserControl
             host.RootGrid.Children.Insert(0, element);
         }
 
-        host.DispatcherQueue.TryEnqueue(() =>
-        {
-            host.Player = player;
-        });
+        host.Player = player;
     }
 
     private void RootGrid_PointerMoved(object sender, PointerRoutedEventArgs e)

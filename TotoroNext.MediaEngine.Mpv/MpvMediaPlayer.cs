@@ -28,7 +28,7 @@ internal class MpvMediaPlayer : IMediaPlayer
 
 		var startInfo = new ProcessStartInfo
 		{
-			FileName = @"C:\Users\athul\Downloads\mpv-x86_64-20250527-git-1d1535f\mpv.exe",
+			FileName = @"mpv",
 			ArgumentList =
 			{
 				media.Uri.ToString(),
