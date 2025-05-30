@@ -15,7 +15,7 @@ public class Module : IModule<ModuleSettings>
         Name = "MPV Media Player",
         Version = new Version(1, 0, 0),
         Description = "A module for integrating MPV media player into TotoroNext.",
-        HeroImage = "ms-appx:///TotoroNext.MediaEngine.Mpv/Assets/hero.jpeg",
+        HeroImage = "ms-appx:///TotoroNext.MediaEngine.Mpv/Assets/mpv.jpeg",
         Components = [ ComponentTypes.MediaEngine ],
         SettingViewModel = typeof(SettingsPageViewModel)
     };
@@ -25,9 +25,9 @@ public class Module : IModule<ModuleSettings>
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddViewMap<SettingsPage, SettingsPageViewModel>();
-        services.AddSingleton(Descriptor);
+        services.AddTransient(_ => Descriptor);
         services.AddModuleSettings(this);
-        services.AddKeyedTransient<IMediaPlayerElementFactory, MpvMediaPlayerElementFactory>("MPV");
+        services.AddKeyedTransient<IMediaPlayerElementFactory, MpvMediaPlayerElementFactory>(Descriptor.Id);
     }
 }
 

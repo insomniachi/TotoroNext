@@ -3,10 +3,38 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:TotoroNext.Presentation"
+    xmlns:win="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Required">
 
-    <NavigationView MenuItemsSource="{Binding Items}">
-        <Frame x:Name="NavFrame" />
-    </NavigationView>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TitleBar
+            x:Name="TitleBarControl"
+            Title="Totoro"
+            win:BackRequested="TitleBar_BackRequested"
+            win:PaneToggleRequested="TitleBar_PaneToggleRequested"
+            IsBackButtonVisible="False"
+            IsPaneToggleButtonVisible="True">
+            <TitleBar.Content>
+                <AutoSuggestBox
+                    Width="250"
+                    Margin="0,8,0,8"
+                    QueryIcon="Find" />
+            </TitleBar.Content>
+        </TitleBar>
+        <NavigationView
+            x:Name="NavView"
+            Grid.Row="1"
+            win:IsBackButtonVisible="Collapsed"
+            win:IsPaneToggleButtonVisible="False"
+            FooterMenuItemsSource="{Binding FooterItems}"
+            MenuItemsSource="{Binding MenuItems}">
+            <Frame x:Name="NavFrame" />
+        </NavigationView>
+    </Grid>
+
 </Page>

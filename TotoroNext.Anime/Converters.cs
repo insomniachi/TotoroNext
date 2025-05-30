@@ -25,4 +25,6 @@ public static class Converters
         bitmapImage.SetSource(stream.AsRandomAccessStream());
         return bitmapImage;
     }
+
+    public static Guid ToGuid(string guid) => Guid.Parse(guid);
 }

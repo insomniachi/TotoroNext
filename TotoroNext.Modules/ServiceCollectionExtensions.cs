@@ -11,22 +11,23 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<IEventAggregator, EventAggregator>();
         services.AddSingleton<IComponentRegistry, ComponentRegistry>();
-        services.AddTransient<IViewRegistry, ViewRegistry>();
+        services.AddSingleton<IViewRegistry, ViewRegistry>();
 
         return services;
     }
 
-    public static IServiceCollection AddNavigationViewItem<TView, TViewModel>(this IServiceCollection services, string navigationViewName, string title, IconElement icon)
+    public static IServiceCollection AddNavigationViewItem<TView, TViewModel>(this IServiceCollection services, string navigationViewName, string title, IconElement icon, object? tag = null)
         where TView : class, new()
         where TViewModel : class
     {
         services.AddKeyedViewMap<TView, TViewModel>(title);
-        services.AddSingleton(sp =>
+        services.AddTransient(sp =>
         {
             var facade = sp.GetRequiredKeyedService<IFrameNavigator>(navigationViewName);
 
             var item = new NavigationViewItem
             {
+                Tag = tag,
                 Content = title,
                 Icon = icon,
             };
@@ -50,11 +51,11 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddMainNavigationViewItem<TView,TViewModel>(this IServiceCollection services, string title, IconElement icon)
+    public static IServiceCollection AddMainNavigationViewItem<TView,TViewModel>(this IServiceCollection services, string title, IconElement icon, bool isFooterItem = false)
         where TView : class, new()
         where TViewModel : class
     {
-        return services.AddNavigationViewItem<TView, TViewModel>("Main", title, icon);
+        return services.AddNavigationViewItem<TView, TViewModel>("Main", title, icon, isFooterItem);
     }
 
     public static IServiceCollection RegisterEvent<TEvent>(this IServiceCollection services)
@@ -89,7 +90,7 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddViewMap(this IServiceCollection services, ViewMap map)
     {
-        services.AddSingleton(map);
+        services.AddTransient(_ => map);
         services.AddTransient(map.ViewModel);
 
         return services;

@@ -1,12 +1,10 @@
 using System.Diagnostics;
-using System.IO.Pipes;
 using System.Reactive.Subjects;
-using System.Diagnostics.CodeAnalysis;
 using TotoroNext.MediaEngine.Abstractions;
 
 namespace TotoroNext.MediaEngine.Vlc;
 
-internal class VlcMediaPlayer : IMediaPlayer
+internal class VlcMediaPlayer(Settings settings) : IMediaPlayer
 {
     private Process? _process;
     private readonly Subject<TimeSpan> _durationSubject = new();
@@ -21,17 +19,21 @@ internal class VlcMediaPlayer : IMediaPlayer
 
         var startInfo = new ProcessStartInfo
         {
-            FileName = @"C:\Program Files\VideoLAN\VLC\vlc.exe",
+            FileName = settings.FileName,
             ArgumentList =
             {
                 media.Uri.ToString(),
                 "--http-host=127.0.0.1",
                 "--http-port=8080",
-                "--fullscreen",
                 $"--meta-title={media.Title}",
                 $"--http-password={HttpInterface.Password}",
             }
         };
+
+        if(settings.LaunchFullScreen)
+        {
+            startInfo.ArgumentList.Add("--fullscreen");
+        }
 
         if(media.Headers.TryGetValue("user-agent", out string? userAgent))
         {

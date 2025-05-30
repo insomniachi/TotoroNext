@@ -24,7 +24,7 @@ public class Module : IModule
 
     public void ConfigureServices(IServiceCollection services)
     {
-        services.AddSingleton(Descriptor);
+        services.AddTransient(_ => Descriptor);
         services.AddKeyedTransient<IAnimeProvider, AnimeProvider>(Descriptor.Id);
     }
 }

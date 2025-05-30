@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ab="using:TotoroNext.Anime.Abstractions"
+    xmlns:c="using:TotoroNext.Anime"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:TotoroNext.Anime.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -24,7 +25,7 @@
             x:Name="Host"
             Grid.Row="0"
             Grid.Column="0"
-            EngineType="MPV" />
+            EngineType="{x:Bind c:Converters.ToGuid('d1f8c3b2-4e5f-4a6b-9c7d-8e1f2c3b4d5e')}" />
 
         <Grid
             Grid.Row="1"

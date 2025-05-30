@@ -10,7 +10,8 @@ public partial class MainViewModel : ReactiveObject
     [Reactive]
     public partial string? Name { get; set; }
 
-    public IList<NavigationViewItem> Items { get; }
+    public IList<NavigationViewItem> MenuItems { get; }
+    public IList<NavigationViewItem> FooterItems { get; }
 
     public IFrameNavigator NavigationFacade { get; }
 
@@ -22,7 +23,8 @@ public partial class MainViewModel : ReactiveObject
     {
         NavigationFacade = navigationFacade;
 
-        Items = [.. navigationViewItems];
+        MenuItems = [.. navigationViewItems.Where(x => x.Tag is false)];
+        FooterItems = [.. navigationViewItems.Where(x => x.Tag is true)];
         Title = "Main";
         Title += $" - {localizer["ApplicationName"]}";
         Title += $" - {appInfo?.Value?.Environment}";

@@ -38,4 +38,11 @@
     <ProjectReference Include="..\TotoroNext.MediaEngine.Abstractions\TotoroNext.MediaEngine.Abstractions.csproj" />
     <ProjectReference Include="..\TotoroNext.Modules\TotoroNext.Module.csproj" />
   </ItemGroup>
+    
+  <ItemGroup>
+    <Page Update="Views\SettingsPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
 </Project>

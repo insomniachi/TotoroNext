@@ -83,7 +83,7 @@ public partial class App : Application
                         module.ConfigureServices(services);
                     }
 
-                    services.AddMainNavigationViewItem<ModulesPage, ModulesViewModel>("Modules", new FontIcon { Glyph = "\uED35" });
+                    services.AddMainNavigationViewItem<ModulesPage, ModulesViewModel>("My Modules", new FontIcon { Glyph = "\uED35" }, true);
                 })
             );
 
@@ -112,32 +112,7 @@ public partial class App : Application
         };
 
         MainWindow.Activate();
+
+        MainWindow.ExtendsContentIntoTitleBar = true;
     }
-
-    //private static void RegisterRoutes(IViewRegistry views, IRouteRegistry routes, IEnumerable<IModule> modules)
-    //{
-    //    views.Register(
-    //        new ViewMap(ViewModel: typeof(ShellViewModel)),
-    //        new ViewMap<MainPage, MainViewModel>(),
-    //        new ViewMap<ModulesPage, ModulesViewModel>());
-
-    //    var context = new NavigationViewContext(views);
-        
-    //    foreach (var module in modules)
-    //    {
-    //        module.ConfigureNavigation(context);
-    //    }
-
-    //    routes.Register(
-    //        new RouteMap("", View: views.FindByViewModel<ShellViewModel>(),
-    //        Nested:
-    //        [
-    //            new ("Main", View: views.FindByViewModel<MainViewModel>(), IsDefault:true, Nested:
-    //            [
-    //                new(nameof(ModulesViewModel), View: views.FindByViewModel<ModulesViewModel>()),
-    //                ..context.Routes
-    //            ]),
-    //        ])
-    //    );
-    //}
 }

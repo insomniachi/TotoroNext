@@ -11,10 +11,10 @@ public class Module : IModule
 {
     public void ConfigureServices(IServiceCollection services)
     {
-        services.AddDataViewMap<WatchPage, WatchViewModel, SearchResult>();
-
         services.AddMainNavigationViewItem<SearchProviderPage, SearchProviderViewModel>("Search", new SymbolIcon(Symbol.Find))
-                .RegisterEvent<AnimeSelectedEvent>()
+                .AddDataViewMap<WatchPage, WatchViewModel, SearchResult>();
+
+        services.RegisterEvent<AnimeSelectedEvent>()
                 .RegisterEvent<EpisodeSelectedEvent>()
                 .RegisterEvent<PlaybackDurationChangedEvent>()
                 .RegisterEvent<PlaybackPositionChangedEvent>();

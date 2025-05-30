@@ -29,26 +29,21 @@ public sealed partial class MediaPlayerElementHost : UserControl
         set { SetValue(PlayerProperty, value); }
     }
 
-    public string EngineType
+    public Guid EngineType
     {
-        get { return (string)GetValue(EngineTypeProperty); }
+        get { return (Guid)GetValue(EngineTypeProperty); }
         set { SetValue(EngineTypeProperty, value); }
     }
 
     public static readonly DependencyProperty EngineTypeProperty =
-        DependencyProperty.Register("EngineType", typeof(string), typeof(MediaPlayerElementHost), new PropertyMetadata("", OnEngineTypeChanged));
+        DependencyProperty.Register("EngineType", typeof(Guid), typeof(MediaPlayerElementHost), new PropertyMetadata("", OnEngineTypeChanged));
 
     public static readonly DependencyProperty PlayerProperty =
         DependencyProperty.Register("Player", typeof(IMediaPlayer), typeof(MediaPlayerElementHost), new PropertyMetadata(null));
 
     private static void OnEngineTypeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (e.NewValue is not string s)
-        {
-            return;
-        }
-
-        if(string.IsNullOrEmpty(s))
+        if (e.NewValue is not Guid s)
         {
             return;
         }
