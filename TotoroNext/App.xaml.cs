@@ -1,5 +1,6 @@
 using TotoroNext.Anime;
 using TotoroNext.Module;
+using TotoroNext.Module.Abstractions;
 using Uno.Resizetizer;
 using Windows.Storage.Pickers;
 
@@ -18,13 +19,8 @@ public partial class App : Application
     protected Window? MainWindow { get; private set; }
     protected IHost? Host { get; private set; }
 
-    protected async override void OnLaunched(LaunchActivatedEventArgs args)
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        //Process.Start(new ProcessStartInfo
-        //{
-        //    FileName = @"C:\Users\athul\Downloads\mpv-x86_64-20250527-git-1d1535f\mpv.exe"
-        //});
-
         List<IModule> modules =
         [
             new Anime.Module(),
@@ -38,8 +34,6 @@ public partial class App : Application
 #endif
 
         var builder = this.CreateBuilder(args)
-            // Add navigation support for toolkit controls such as TabBar and NavigationView
-            .UseToolkitNavigation()
             .Configure(host => host
 #if DEBUG
                 // Switch to Development environment when running in DEBUG
@@ -71,6 +65,7 @@ public partial class App : Application
                 {
                     services.AddCoreServices();
                     services.AddAnimeServices();
+                    services.AddNavigationView("Main");
                     services.AddTransient(sp =>
                     {
                         var openPicker = new FileOpenPicker();
@@ -88,9 +83,8 @@ public partial class App : Application
                         module.ConfigureServices(services);
                     }
 
-                    services.AddNavigationViewItem<ModulesViewModel>("Modules", new FontIcon { Glyph = "\uED35" });
+                    services.AddMainNavigationViewItem<ModulesPage, ModulesViewModel>("Modules", new FontIcon { Glyph = "\uED35" });
                 })
-                .UseNavigation((views, routes) => RegisterRoutes(views, routes, modules))
             );
 
         MainWindow = builder.Window;
@@ -100,7 +94,7 @@ public partial class App : Application
 #endif
         MainWindow.SetWindowIcon();
 
-        Host = await builder.NavigateAsync<Shell>();
+        Host = builder.Build();
 
         foreach (var module in modules)
         {
@@ -108,32 +102,42 @@ public partial class App : Application
         }
 
         Container.ConfigureServices(Host.Services);
-    }
 
-    private static void RegisterRoutes(IViewRegistry views, IRouteRegistry routes, IEnumerable<IModule> modules)
-    {
-        views.Register(
-            new ViewMap(ViewModel: typeof(ShellViewModel)),
-            new ViewMap<MainPage, MainViewModel>(),
-            new ViewMap<ModulesPage, ModulesViewModel>());
-
-        var context = new NavigationViewContext(views);
-        
-        foreach (var module in modules)
+        MainWindow = new Window
         {
-            module.ConfigureNavigation(context);
-        }
+            Content = new MainPage
+            {
+                DataContext = ActivatorUtilities.CreateInstance<MainViewModel>(Host.Services)
+            }
+        };
 
-        routes.Register(
-            new RouteMap("", View: views.FindByViewModel<ShellViewModel>(),
-            Nested:
-            [
-                new ("Main", View: views.FindByViewModel<MainViewModel>(), IsDefault:true, Nested:
-                [
-                    new(nameof(ModulesViewModel), View: views.FindByViewModel<ModulesViewModel>()),
-                    ..context.Routes
-                ]),
-            ])
-        );
+        MainWindow.Activate();
     }
+
+    //private static void RegisterRoutes(IViewRegistry views, IRouteRegistry routes, IEnumerable<IModule> modules)
+    //{
+    //    views.Register(
+    //        new ViewMap(ViewModel: typeof(ShellViewModel)),
+    //        new ViewMap<MainPage, MainViewModel>(),
+    //        new ViewMap<ModulesPage, ModulesViewModel>());
+
+    //    var context = new NavigationViewContext(views);
+        
+    //    foreach (var module in modules)
+    //    {
+    //        module.ConfigureNavigation(context);
+    //    }
+
+    //    routes.Register(
+    //        new RouteMap("", View: views.FindByViewModel<ShellViewModel>(),
+    //        Nested:
+    //        [
+    //            new ("Main", View: views.FindByViewModel<MainViewModel>(), IsDefault:true, Nested:
+    //            [
+    //                new(nameof(ModulesViewModel), View: views.FindByViewModel<ModulesViewModel>()),
+    //                ..context.Routes
+    //            ]),
+    //        ])
+    //    );
+    //}
 }

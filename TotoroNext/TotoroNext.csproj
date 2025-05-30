@@ -22,7 +22,6 @@
       HttpKiota;
       Serialization;
       Localization;
-      Navigation;
       ThemeService;
       SkiaRenderer;
       Material;

@@ -1,5 +1,6 @@
 using System.Reactive.Subjects;
 using Microsoft.Extensions.DependencyInjection;
+using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Module;
 
@@ -10,20 +11,50 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<IEventAggregator, EventAggregator>();
         services.AddSingleton<IComponentRegistry, ComponentRegistry>();
+        services.AddTransient<IViewRegistry, ViewRegistry>();
 
         return services;
     }
 
-    public static IServiceCollection AddNavigationViewItem<TViewModel>(this IServiceCollection services, string title, IconElement icon)
+    public static IServiceCollection AddNavigationViewItem<TView, TViewModel>(this IServiceCollection services, string navigationViewName, string title, IconElement icon)
+        where TView : class, new()
+        where TViewModel : class
     {
-        var item = new NavigationViewItem
+        services.AddKeyedViewMap<TView, TViewModel>(title);
+        services.AddSingleton(sp =>
         {
-            Content = title,
-            Icon = icon,
-        };
-        Navigation.SetRequest(item, $"./{typeof(TViewModel).Name}");
+            var facade = sp.GetRequiredKeyedService<IFrameNavigator>(navigationViewName);
 
-        return services.AddSingleton(item);
+            var item = new NavigationViewItem
+            {
+                Content = title,
+                Icon = icon,
+            };
+
+            item.Tapped += (_, _) =>
+            {
+                facade.NavigateViewModel(typeof(TViewModel));
+            };
+
+            facade.Initialized += (_, e) =>
+            {
+                e.Navigated += (_, args) =>
+                {
+                    item.IsSelected = args.Content is Page page && page.GetType() == typeof(TView);
+                };
+            };
+
+            return item;
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddMainNavigationViewItem<TView,TViewModel>(this IServiceCollection services, string title, IconElement icon)
+        where TView : class, new()
+        where TViewModel : class
+    {
+        return services.AddNavigationViewItem<TView, TViewModel>("Main", title, icon);
     }
 
     public static IServiceCollection RegisterEvent<TEvent>(this IServiceCollection services)
@@ -39,6 +70,43 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddModuleSettings<TData>(this IServiceCollection services, IModule<TData> module)
         where TData : class, new()
     {
-        return services.AddSingleton<IModuleSettings<TData>>(_ => new ModuleSettings<TData>(module.Id));
+        return services.AddSingleton<IModuleSettings<TData>>(_ => new ModuleSettings<TData>(module.Descriptor.Id));
+    }
+
+    public static IServiceCollection AddNavigationView(this IServiceCollection services, string key)
+    {
+        services.AddKeyedSingleton<IFrameNavigator, FrameNavigator>(key);
+        services.AddKeyedSingleton<INavigator>(key, (sp, k) => sp.GetRequiredKeyedService<IFrameNavigator>(k));
+        return services;
+    }
+
+    public static IServiceCollection AddViewMap<TView,TViewModel>(this IServiceCollection services)
+        where TView : class, new ()
+        where TViewModel : class
+    {
+        return services.AddViewMap(new ViewMap<TView, TViewModel>());
+    }
+
+    public static IServiceCollection AddViewMap(this IServiceCollection services, ViewMap map)
+    {
+        services.AddSingleton(map);
+        services.AddTransient(map.ViewModel);
+
+        return services;
+    }
+
+    public static IServiceCollection AddDataViewMap<TView, TViewModel, TData>(this IServiceCollection services)
+        where TView : class, new()
+        where TViewModel : class
+        where TData : class
+    {
+        return services.AddViewMap(new DataViewMap<TView, TViewModel, TData>());
+    }
+
+    public static IServiceCollection AddKeyedViewMap<TView, TViewModel>(this IServiceCollection services, string key)
+        where TView : class, new()
+        where TViewModel : class
+    {
+        return services.AddViewMap(new KeyedViewMap<TView, TViewModel>(key));
     }
 }

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using TotoroNext.MediaEngine.Abstractions;
-using TotoroNext.Module;
+using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.MediaEngine.Vlc;
 

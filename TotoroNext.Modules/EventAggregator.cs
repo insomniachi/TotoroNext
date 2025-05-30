@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Module;
 

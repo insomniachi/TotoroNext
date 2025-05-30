@@ -7,7 +7,6 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:root="using:TotoroNext.Anime"
     xmlns:taa="using:TotoroNext.Anime.Abstractions"
-    xmlns:uen="using:Uno.Extensions.Navigation.UI"
     xmlns:utu="using:Uno.Toolkit.UI"
     mc:Ignorable="d">
 
@@ -22,10 +21,15 @@
             QueryIcon="Find"
             Text="{x:Bind ViewModel.Query, Mode=TwoWay}" />
 
-        <ItemsView Grid.Row="1" ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}">
+        <ItemsView
+            Grid.Row="1"
+            IsItemInvokedEnabled="True"
+            ItemInvoked="ItemsView_ItemInvoked"
+            ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}"
+            SelectionMode="None">
             <ItemsView.ItemTemplate>
                 <DataTemplate x:DataType="taa:SearchResult">
-                    <ItemContainer uen:Navigation.Data="{x:Bind}" uen:Navigation.Request="WatchViewModel">
+                    <ItemContainer>
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*" />

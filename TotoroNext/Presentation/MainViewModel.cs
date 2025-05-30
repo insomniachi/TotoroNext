@@ -1,45 +1,36 @@
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Presentation;
 
 public partial class MainViewModel : ReactiveObject
 {
-    private INavigator _navigator;
 
     [Reactive]
     public partial string? Name { get; set; }
 
     public IList<NavigationViewItem> Items { get; }
 
+    public IFrameNavigator NavigationFacade { get; }
+
     public MainViewModel(
         IStringLocalizer localizer,
         IOptions<AppConfig> appInfo,
-        INavigator navigator,
-        IRouteNotifier routeNotifier,
+        [FromKeyedServices("Main")]IFrameNavigator navigationFacade,
         IEnumerable<NavigationViewItem> navigationViewItems)
     {
-        _navigator = navigator;
-        Items = navigationViewItems.ToList();
+        NavigationFacade = navigationFacade;
+
+        Items = [.. navigationViewItems];
         Title = "Main";
         Title += $" - {localizer["ApplicationName"]}";
         Title += $" - {appInfo?.Value?.Environment}";
-
-        routeNotifier.RouteChanged += RouteNotifier_RouteChanged;
     }
 
-    private void RouteNotifier_RouteChanged(object? sender, RouteChangedEventArgs e)
+    public void NavigateToDefault()
     {
-        var path = e.Navigator?.Route?.Base ?? "";
-        if(Items.FirstOrDefault(x => Navigation.GetRequest(x).Replace("./", "") == path) is { } selectedItem)
-        {
-            selectedItem.IsSelected = true;
-        }
-    }
-
-    public async Task NavigateToDefault()
-    {
-        await _navigator.NavigateRouteAsync(this, "./SearchProviderViewModel");
+        NavigationFacade.NavigateToRoute("Search");
     }
 
     public string? Title { get; }

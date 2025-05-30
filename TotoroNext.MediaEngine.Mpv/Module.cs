@@ -3,22 +3,30 @@ using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.MediaEngine.Mpv.ViewModels;
 using TotoroNext.MediaEngine.Mpv.Views;
 using TotoroNext.Module;
+using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.MediaEngine.Mpv;
 
 public class Module : IModule<ModuleSettings>
 {
-    public Guid Id { get; } = new("b8c3f0d2-1c5e-4f6a-9b7d-3f8e1c5f0d2a");
-
-    public void ConfigureNavigation(NavigationViewContext context) 
+    public Descriptor Descriptor { get; } = new()
     {
-        context.RegisterForNavigation<SettingsPage, SettingsPageViewModel>();
-    }
+        Id = new Guid("b8c3f0d2-1c5e-4f6a-9b7d-3f8e1c5f0d2a"),
+        Name = "MPV Media Player",
+        Version = new Version(1, 0, 0),
+        Description = "A module for integrating MPV media player into TotoroNext.",
+        HeroImage = "ms-appx:///TotoroNext.MediaEngine.Mpv/Assets/hero.jpeg",
+        Components = [ ComponentTypes.MediaEngine ],
+        SettingViewModel = typeof(SettingsPageViewModel)
+    };
+
+    public Guid Id { get; } = new("b8c3f0d2-1c5e-4f6a-9b7d-3f8e1c5f0d2a");
 
     public void ConfigureServices(IServiceCollection services)
     {
+        services.AddViewMap<SettingsPage, SettingsPageViewModel>();
+        services.AddSingleton(Descriptor);
         services.AddModuleSettings(this);
-        services.AddNavigationViewItem<SettingsPageViewModel>("Mpv", new SymbolIcon { Symbol = Symbol.Play });
         services.AddKeyedTransient<IMediaPlayerElementFactory, MpvMediaPlayerElementFactory>("MPV");
     }
 }

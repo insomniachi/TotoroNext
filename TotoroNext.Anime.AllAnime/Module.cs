@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Module;
+using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Anime.AllAnime;
 
@@ -12,7 +13,8 @@ public class Module : IModule
         Name = "AllAnime",
         Version = new Version(1, 0, 0),
         Description = "AllAnime's goal is to provide you with the highest possible amount of daily anime episodes/manga chapters for free and without any kind of limitation.",
-        HeroImage = typeof(Module).Assembly.GetManifestResourceStream("TotoroNext.Anime.AllAnime.Assets.hero.png"),
+        HeroImage = "ms-appx:///TotoroNext.Anime.AllAnime/Assets/hero.png",
+        Components = [ ComponentTypes.AnimeProvider ]
     };
 
     public void RegisterComponents(IComponentRegistry components) 

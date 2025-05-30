@@ -1,4 +1,4 @@
-namespace TotoroNext.Module;
+namespace TotoroNext.Module.Abstractions;
 public interface IEventAggregator
 {
     IObservable<TEvent> GetObservable<TEvent>() where TEvent : IEvent;

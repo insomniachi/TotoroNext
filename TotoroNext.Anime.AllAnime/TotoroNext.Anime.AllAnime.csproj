@@ -34,12 +34,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Assets\hero.png" />
+    <Content Include="Assets\hero.png" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FlurlGraphQL" />
-
   </ItemGroup>
 
   <ItemGroup>

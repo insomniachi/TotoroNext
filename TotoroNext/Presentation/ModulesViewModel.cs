@@ -1,11 +1,21 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using ReactiveUI;
+using TotoroNext.Module;
+using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Presentation;
 
-public class ModulesViewModel
+public partial class ModulesViewModel(IEnumerable<Descriptor> modules,
+                                      [FromKeyedServices("Main")]IFrameNavigator navigator) : ReactiveObject
 {
+    public List<Descriptor> Descriptors { get; } = [.. modules];
+
+    public void NavigateToSettings(Descriptor descriptor)
+    {
+        if (descriptor.SettingViewModel is not { } vmType)
+        {
+            return;
+        }
+
+        navigator.NavigateViewModel(vmType);
+    }
 }

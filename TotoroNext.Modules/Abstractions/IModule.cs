@@ -1,11 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace TotoroNext.Module;
+namespace TotoroNext.Module.Abstractions;
 
 public interface IModule
 {
     void ConfigureServices(IServiceCollection services);
-    void ConfigureNavigation(NavigationViewContext context) { }
     void RegisterComponents(IComponentRegistry components) { }
 }
 
@@ -13,6 +12,6 @@ public interface IModule
 public interface IModule<T> : IModule
     where T : new()
 {
-    Guid Id { get; }
+    Descriptor Descriptor { get; }
 }
 

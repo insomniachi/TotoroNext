@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using TotoroNext.MediaEngine.Abstractions;
-using TotoroNext.Module;
+using TotoroNext.Module.Abstractions;
 using FLogLevel = Flyleaf.FFmpeg.LogLevel;
 
 namespace TotoroNext.MediaEngine.Flyleaf;

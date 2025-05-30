@@ -3,12 +3,10 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:TotoroNext.Presentation"
-    xmlns:uen="using:Uno.Extensions.Navigation.UI"
-    xmlns:utu="using:Uno.Toolkit.UI"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Required">
 
-    <NavigationView uen:Region.Attached="True" MenuItemsSource="{Binding Items}">
-        <Grid uen:Region.Attached="True" uen:Region.Navigator="Visibility" />
+    <NavigationView MenuItemsSource="{Binding Items}">
+        <Frame x:Name="NavFrame" />
     </NavigationView>
 </Page>

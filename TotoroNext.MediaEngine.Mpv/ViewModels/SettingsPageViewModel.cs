@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using TotoroNext.Module;
+using TotoroNext.Module.Abstractions;
 using Windows.Storage.Pickers;
 
 namespace TotoroNext.MediaEngine.Mpv.ViewModels;

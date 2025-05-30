@@ -13,4 +13,16 @@ public static class Converters
 
         return new BitmapImage(uri);
     }
+
+    public static ImageSource? StreamToImage(Stream? stream)
+    {
+        if(stream is null)
+        {
+            return null;
+        }
+
+        var bitmapImage = new BitmapImage();
+        bitmapImage.SetSource(stream.AsRandomAccessStream());
+        return bitmapImage;
+    }
 }

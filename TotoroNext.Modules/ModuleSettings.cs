@@ -1,13 +1,7 @@
 using System.Text.Json;
+using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Module;
-
-public interface IModuleSettings<TData>
-    where TData : class, new()
-{
-    TData Value { get; }
-    void Save();
-}
 
 
 internal class ModuleSettings<TDtata> : IModuleSettings<TDtata>
