@@ -4,6 +4,7 @@ public class ModuleManifest
 {
     public required string Id { get; set; }
     public required string Name { get; set; }
+    public required string EntryPoint { get; set; }
     public string? Description { get; set; }
     public string? ImageUrl { get; set; }
     public string? Owner { get; set; }

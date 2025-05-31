@@ -8,14 +8,7 @@
     <Nullable>enable</Nullable>
       <Platforms>x64</Platforms>
       <TargetFrameworks>net9.0-desktop;net9.0-windows10.0.26100</TargetFrameworks>
-
-    <!--
-      UnoFeatures let's you quickly add and manage implicit package references based on the features you want to use.
-      https://aka.platform.uno/singleproject-features
-    -->
-    <!--
-    <UnoFeatures></UnoFeatures>
-    -->
+      <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
 
   <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
@@ -38,12 +31,21 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FlurlGraphQL" />
+      <PackageReference Include="FlurlGraphQL">
+          <Private>false</Private>
+          <ExcludeAssets>runtime</ExcludeAssets>
+      </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TotoroNext.Anime.Abstractions\TotoroNext.Anime.Abstractions.csproj" />
-    <ProjectReference Include="..\TotoroNext.Modules\TotoroNext.Module.csproj" />
+      <ProjectReference Include="..\TotoroNext.Anime.Abstractions\TotoroNext.Anime.Abstractions.csproj">
+          <Private>false</Private>
+          <ExcludeAssets>runtime</ExcludeAssets>
+      </ProjectReference>
+      <ProjectReference Include="..\TotoroNext.Modules\TotoroNext.Module.csproj">
+          <Private>false</Private>
+          <ExcludeAssets>runtime</ExcludeAssets>
+      </ProjectReference>
   </ItemGroup>
 
 </Project>

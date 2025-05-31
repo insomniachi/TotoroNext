@@ -6,6 +6,7 @@
     "Owner": "Totoro",
     "Categories": [ "Anime Provider" ],
     "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.Anime.AllAnime/Assets/hero.png",
+    "EntryPoint": "TotoroNext.Anime.AllAnime.dll",
     "Versions": [
       {
         "Version": "1.0.0",
@@ -22,6 +23,7 @@
     "Owner": "Totoro",
     "Categories": [ "Media Engine" ],
     "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.MediaEngine.Mpv/Assets/mpv.jpeg",
+    "EntryPoint": "TotoroNext.MediaEngine.Mpv.dll",
     "Versions": [
       {
         "Version": "1.0.0",

@@ -9,6 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
       <Platforms>x64</Platforms>
       <TargetFrameworks>net9.0-windows10.0.26100</TargetFrameworks>
+  <EnableDynamicLoading>true</EnableDynamicLoading>
     <!--
       UnoFeatures let's you quickly add and manage implicit package references based on the features you want to use.
       https://aka.platform.uno/singleproject-features
@@ -38,12 +39,22 @@
   </ItemGroup>  
 
   <ItemGroup>
-    <PackageReference Include="ReactiveMarbles.ObservableEvents.SourceGenerator" />
-    <PackageReference Include="ReactiveUI" />
+      <PackageReference Include="ReactiveMarbles.ObservableEvents.SourceGenerator">
+          <ExcludeAssets>runtime</ExcludeAssets>
+      </PackageReference>
+      <PackageReference Include="ReactiveUI">
+          <ExcludeAssets>runtime</ExcludeAssets>
+      </PackageReference>
   </ItemGroup>  
 
   <ItemGroup>
-    <ProjectReference Include="..\TotoroNext.MediaEngine.Abstractions\TotoroNext.MediaEngine.Abstractions.csproj" />
-    <ProjectReference Include="..\TotoroNext.Modules\TotoroNext.Module.csproj" />
+      <ProjectReference Include="..\TotoroNext.MediaEngine.Abstractions\TotoroNext.MediaEngine.Abstractions.csproj">
+          <Private>false</Private>
+          <ExcludeAssets>runtime</ExcludeAssets>
+      </ProjectReference>
+      <ProjectReference Include="..\TotoroNext.Modules\TotoroNext.Module.csproj">
+          <Private>false</Private>
+          <ExcludeAssets>runtime</ExcludeAssets>
+      </ProjectReference>
   </ItemGroup>
 </Project>
