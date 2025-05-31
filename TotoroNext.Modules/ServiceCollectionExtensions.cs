@@ -13,7 +13,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IEventAggregator, EventAggregator>();
         services.AddSingleton<IComponentRegistry, ComponentRegistry>();
         services.AddSingleton<IViewRegistry, ViewRegistry>();
-        services.AddSingleton<IModuleStore, ModuleStore>();
 
         return services;
     }

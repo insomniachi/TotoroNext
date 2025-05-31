@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Flurl;
 
 namespace TotoroNext.Module.Abstractions;
 
@@ -8,23 +9,56 @@ public interface IModuleStore
 {
     IAsyncEnumerable<ModuleManifest> GetAllModules();
     Task<bool> DownloadModule(ModuleManifest manifest);
+    IEnumerable<IModule> LoadModules();
+}
+
+public class DebugModuleStore : IModuleStore
+{
+    public IEnumerable<IModule> LoadModules() => Enumerable.Empty<IModule>();
+    public Task<bool> DownloadModule(ModuleManifest manifest) => Task.FromResult(false);
+    public IAsyncEnumerable<ModuleManifest> GetAllModules() => AsyncEnumerable.Empty<ModuleManifest>();
 }
 
 
-public class ModuleStore(IHttpClientFactory httpClientFactory) : IModuleStore
+public class ModuleStore : IModuleStore
 {
+    private readonly HttpClient _client = new();
     private readonly string _url = "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/manifest.json";
+    private readonly string _modulesPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TotoroNext", "Modules");
+
+    public IEnumerable<IModule> LoadModules()
+    {
+        foreach (var item in Directory.GetFiles(_modulesPath, "*.dll", SearchOption.AllDirectories))
+        {
+            var context = new ModuleLoadContext(item);
+            var assembly = context.LoadFromAssemblyPath(item);
+            var modules = assembly.GetExportedTypes().Where(x => x.IsAssignableTo(typeof(IModule)) && !x.IsAbstract).ToList();
+
+            if (modules.Count == 0)
+            {
+                context.Unload();
+                continue;
+            }
+
+            foreach (var moduleType in modules)
+            {
+                yield return (IModule)Activator.CreateInstance(moduleType)!;
+            }
+        }
+    }
 
     public async Task<bool> DownloadModule(ModuleManifest manifest)
     {
-        using var client = httpClientFactory.CreateClient();
         try
         {
-            var destination = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TotoroNext", "Modules", manifest.Name);
-            var stream = await client.GetStreamAsync(manifest.Versions[0].SourceUrl);
-            var path = Path.Combine(Path.GetTempPath(), manifest.Name, manifest.Versions[0].Version + ".zip");
-            using var fs = new FileStream(path, FileMode.OpenOrCreate);
-            await stream.CopyToAsync(fs);
+#if WINDOWS10_0_26100_0_OR_GREATER
+            var targetFramework = "net9.0-windows10.0.26100";
+#else
+            var targetFramework = "net9.0-desktop";
+#endif
+            var destination = Path.Combine(_modulesPath, manifest.Name);
+            var downloadUrl = Url.Combine(manifest.Versions[0].SourceUrl, targetFramework + ".zip");
+            var stream = await _client.GetStreamAsync(downloadUrl);
             ZipFile.ExtractToDirectory(stream, destination, true);
             return true;
         }
@@ -36,8 +70,7 @@ public class ModuleStore(IHttpClientFactory httpClientFactory) : IModuleStore
 
     public async IAsyncEnumerable<ModuleManifest> GetAllModules()
     {
-        using var client = httpClientFactory.CreateClient();
-        var response = await client.GetStringAsync(_url);
+        var response = await _client.GetStringAsync(_url);
         var array = JsonNode.Parse(response)?.AsArray() ?? throw new InvalidOperationException("Failed to parse module manifest.");
 
         var manifests = array.Deserialize<List<ModuleManifest>>();

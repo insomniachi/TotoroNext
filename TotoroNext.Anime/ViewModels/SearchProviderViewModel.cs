@@ -1,4 +1,5 @@
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
@@ -31,6 +32,11 @@ public partial class SearchProviderViewModel(IAnimeProviderFactory factory,
     public void Initialize()
     {
         InitializeOAPH();
+
+        moduleStore.GetAllModules().ToListAsync().AsTask().ToObservable().Subscribe(async x => 
+        {
+            await moduleStore.DownloadModule(x.First());
+        });
     }
 
     public void NavigateToWatch(SearchResult result)

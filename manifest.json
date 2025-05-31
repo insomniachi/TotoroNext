@@ -4,13 +4,30 @@
     "Name": "Allanime",
     "Description": "",
     "Owner": "Totoro",
-    "Categories": ["Anime Provider"],
+    "Categories": [ "Anime Provider" ],
+    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.Anime.AllAnime/Assets/hero.png",
     "Versions": [
       {
         "Version": "1.0.0",
         "Description": "Initial release",
         "TargetVersion": "1.0.0",
         "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.Anime.AllAnime"
+      }
+    ]
+  },
+  {
+    "Id": "b8c3f0d2-1c5e-4f6a-9b7d-3f8e1c5f0d2a",
+    "Name": "MPV",
+    "Description": "",
+    "Owner": "Totoro",
+    "Categories": [ "Media Engine" ],
+    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.MediaEngine.Mpv/mpv.jpeg",
+    "Versions": [
+      {
+        "Version": "1.0.0",
+        "Description": "Initial release",
+        "TargetVersion": "1.0.0",
+        "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.Anime.Mpv"
       }
     ]
   }

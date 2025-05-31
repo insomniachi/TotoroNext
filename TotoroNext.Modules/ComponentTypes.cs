@@ -2,8 +2,8 @@ namespace TotoroNext.Module;
 
 public class ComponentTypes
 {
-    public const string AnimeProvider = "AnimeProvider";
-    public const string MediaEngine = "MediaEngine";
+    public const string AnimeProvider = "Anime Provider";
+    public const string MediaEngine = "Media Engine";
 }
 
 public interface IComponentRegistry

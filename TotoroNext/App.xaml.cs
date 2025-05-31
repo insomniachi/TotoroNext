@@ -24,10 +24,21 @@ public partial class App : Application
         List<IModule> modules =
         [
             new Anime.Module(),
-            new Anime.AllAnime.Module(),
             new MediaEngine.Vlc.Module(),
             new MediaEngine.Mpv.Module()
         ];
+
+#if DEBUG
+        var store = new DebugModuleStore();
+        modules.AddRange(
+            [
+                new Anime.AllAnime.Module()
+            ]);
+#else
+        var store = new ModuleStore();
+#endif
+
+        modules.AddRange(store.LoadModules());
 
 #if WINDOWS10_0_26100_0_OR_GREATER
         modules.Add(new MediaEngine.Flyleaf.Module());
@@ -63,6 +74,7 @@ public partial class App : Application
                 })
                 .ConfigureServices((context, services) =>
                 {
+                    services.AddSingleton<IModuleStore>(store);
                     services.AddCoreServices();
                     services.AddAnimeServices();
                     services.AddNavigationView("Main");

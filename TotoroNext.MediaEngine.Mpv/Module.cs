@@ -20,8 +20,6 @@ public class Module : IModule<ModuleSettings>
         SettingViewModel = typeof(SettingsPageViewModel)
     };
 
-    public Guid Id { get; } = new("b8c3f0d2-1c5e-4f6a-9b7d-3f8e1c5f0d2a");
-
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddViewMap<SettingsPage, SettingsPageViewModel>();
