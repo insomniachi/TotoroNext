@@ -21,7 +21,7 @@
     "Description": "",
     "Owner": "Totoro",
     "Categories": [ "Media Engine" ],
-    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.MediaEngine.Mpv/mpv.jpeg",
+    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.MediaEngine.Mpv/Assets/mpv.jpeg",
     "Versions": [
       {
         "Version": "1.0.0",

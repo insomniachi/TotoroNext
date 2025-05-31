@@ -26,5 +26,15 @@ public static class Converters
         return bitmapImage;
     }
 
+    public static ImageSource? StringToImage(string? uri)
+    {
+        if (uri is null)
+        {
+            return null;
+        }
+
+        return new BitmapImage(new Uri(uri));
+    }
+
     public static Guid ToGuid(string guid) => Guid.Parse(guid);
 }

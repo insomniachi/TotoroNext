@@ -28,7 +28,7 @@ public partial class App : Application
             new MediaEngine.Mpv.Module()
         ];
 
-#if DEBUG
+#if !DEBUG
         var store = new DebugModuleStore();
         modules.AddRange(
             [
@@ -96,6 +96,7 @@ public partial class App : Application
                     }
 
                     services.AddMainNavigationViewItem<ModulesPage, ModulesViewModel>("My Modules", new FontIcon { Glyph = "\uED35" }, true);
+                    services.AddMainNavigationViewItem<ModulesStorePage, ModulesStoreViewModel>("Store", new FontIcon { Glyph = "\uEA40" });
                 })
             );
 

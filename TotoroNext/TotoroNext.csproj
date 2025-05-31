@@ -27,6 +27,7 @@
         Material;
     </UnoFeatures>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+      <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -56,6 +57,11 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="Presentation\ModulesPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Presentation\ModulesStorePage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
