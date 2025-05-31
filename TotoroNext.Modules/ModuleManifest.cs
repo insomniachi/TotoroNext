@@ -5,7 +5,7 @@ public class ModuleManifest
     public required string Id { get; set; }
     public required string Name { get; set; }
     public required string Description { get; set; }
-    public required string Owner { get; set; }
+    public string? Owner { get; set; }
     public required string[] Categories { get; set; } = [];
     public required VersionInfo[] Versions { get; set; }
 }
