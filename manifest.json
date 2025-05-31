@@ -1,16 +1,16 @@
 [
   {
-    "Id": "",
-    "Name": "",
+    "Id": "489576c5-2879-493b-874a-7eb14e081280",
+    "Name": "Allanime",
     "Description": "",
     "Owner": "Totoro",
-    "Categories": [],
+    "Categories": ["Anime Provider"],
     "Versions": [
       {
         "Version": "1.0.0",
         "Description": "Initial release",
         "TargetVersion": "1.0.0",
-        "SourceUrl": ""
+        "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.Anime.AllAnime"
       }
     ]
   }
