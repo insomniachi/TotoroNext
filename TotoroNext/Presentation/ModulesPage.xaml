@@ -24,7 +24,7 @@
             SelectionMode="None">
             <ItemsView.ItemTemplate>
                 <DataTemplate x:DataType="mod:Descriptor">
-                    <ItemContainer>
+                    <ItemContainer Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
                         <Grid Padding="8">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
@@ -48,7 +48,9 @@
                 <UniformGridLayout
                     ItemsJustification="Start"
                     ItemsStretch="Fill"
-                    MinItemWidth="300" />
+                    MinColumnSpacing="16"
+                    MinItemWidth="300"
+                    MinRowSpacing="16" />
             </ItemsView.Layout>
         </ItemsView>
 

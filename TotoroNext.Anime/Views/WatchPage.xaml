@@ -25,7 +25,7 @@
             x:Name="Host"
             Grid.Row="0"
             Grid.Column="0"
-            EngineType="{x:Bind c:Converters.ToGuid('d1f8c3b2-4e5f-4a6b-9c7d-8e1f2c3b4d5e')}" />
+            EngineType="{x:Bind c:Converters.ToGuid('b8c3f0d2-1c5e-4f6a-9b7d-3f8e1c5f0d2a')}" />
 
         <Grid
             Grid.Row="1"

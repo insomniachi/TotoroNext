@@ -12,6 +12,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Build.targets = Directory.Build.targets
 		Directory.Packages.props = Directory.Packages.props
 		global.json = global.json
+		manifest.json = manifest.json
+	EndProjectSection
+	ProjectSection(FolderGlobals) = preProject
+		G_5_4source_4TotoroNext_4manifest_1json__JsonSchema = https://raw.githubusercontent.com/netascode/schema/main/schema.json
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.Module", "TotoroNext.Modules\TotoroNext.Module.csproj", "{F44C02C9-771D-4843-AC91-0B225FB4BA40}"
