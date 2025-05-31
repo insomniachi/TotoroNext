@@ -29,7 +29,24 @@
         "Version": "1.0.0",
         "Description": "Initial release",
         "TargetVersion": "1.0.0",
-        "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.Anime.Mpv"
+        "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.MediaEngine.Mpv"
+      }
+    ]
+  },
+  {
+    "Id": "d1f8c3b2-4e5f-4a6b-9c7d-8e1f2c3b4d5e",
+    "Name": "Flyleaf",
+    "Description": "",
+    "Owner": "Totoro",
+    "Categories": [ "Media Engine" ],
+    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.MediaEngine.Flyleaf/Assets/wmp.jpg",
+    "EntryPoint": "TotoroNext.MediaEngine.Flyleaf.dll",
+    "Versions": [
+      {
+        "Version": "1.0.0",
+        "Description": "Initial release",
+        "TargetVersion": "1.0.0",
+        "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.MediaEngine.Flyleaf"
       }
     ]
   }

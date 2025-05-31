@@ -14,4 +14,9 @@ public partial class ModulesStoreViewModel(IModuleStore store) : ReactiveObject
     {
         Modules = await store.GetAllModules().ToListAsync();
     }
+
+    public async Task Download(ModuleManifest manifest)
+    {
+        await store.DownloadModule(manifest);
+    }
 }
