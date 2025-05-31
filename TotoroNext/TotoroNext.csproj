@@ -11,20 +11,20 @@
     <Platforms>x64</Platforms>
     <TargetFrameworks>net9.0-desktop;net9.0-windows10.0.26100</TargetFrameworks>
     <UnoFeatures>
-      Lottie;
-      MediaElement;
-      Hosting;
-      Toolkit;
-      Logging;
-      LoggingSerilog;
-      Mvvm;
-      Configuration;
-      HttpKiota;
-      Serialization;
-      Localization;
-      ThemeService;
-      SkiaRenderer;
-      Material;
+        Lottie;
+        MediaElement;
+        Hosting;
+        Toolkit;
+        Logging;
+        LoggingSerilog;
+        Mvvm;
+        Configuration;
+        HttpKiota;
+        Serialization;
+        Localization;
+        ThemeService;
+        SkiaRenderer;
+        Material;
     </UnoFeatures>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>

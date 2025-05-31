@@ -1,4 +1,5 @@
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
@@ -11,7 +12,8 @@ namespace TotoroNext.Anime.ViewModels;
 
 [UsedImplicitly]
 public partial class SearchProviderViewModel(IAnimeProviderFactory factory,
-                                             [FromKeyedServices("Main")]INavigator navigator) : ReactiveObject
+                                             [FromKeyedServices("Main")]INavigator navigator,
+                                             IModuleStore moduleStore) : ReactiveObject
 {
     private readonly IAnimeProvider _provider = factory.GetProvider(new Guid("489576c5-2879-493b-874a-7eb14e081280"));
 
@@ -30,6 +32,11 @@ public partial class SearchProviderViewModel(IAnimeProviderFactory factory,
     public void Initialize()
     {
         InitializeOAPH();
+
+        moduleStore.GetAllModules().ToListAsync().AsTask().ToObservable().Subscribe(x => 
+        {
+            // Handle module loading if necessary
+        });
     }
 
     public void NavigateToWatch(SearchResult result)

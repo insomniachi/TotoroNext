@@ -9,9 +9,11 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddCoreServices(this IServiceCollection services)
     {
+        services.AddHttpClient();
         services.AddSingleton<IEventAggregator, EventAggregator>();
         services.AddSingleton<IComponentRegistry, ComponentRegistry>();
         services.AddSingleton<IViewRegistry, ViewRegistry>();
+        services.AddSingleton<IModuleStore, ModuleStore>();
 
         return services;
     }
