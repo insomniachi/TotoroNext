@@ -77,7 +77,7 @@ public class ModuleStore : IModuleStore
 #else
             var targetFramework = "net9.0-desktop";
 #endif
-            var destination = Path.Combine(_modulesPath, manifest.Name);
+            var destination = Path.Combine(_modulesPath, manifest.EntryPoint.Replace(".dll", ""), targetFramework);
             var downloadUrl = Url.Combine(manifest.Versions[0].SourceUrl, targetFramework + ".zip");
             var stream = await _client.GetStreamAsync(downloadUrl);
             ZipFile.ExtractToDirectory(stream, destination, true);

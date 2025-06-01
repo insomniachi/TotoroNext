@@ -5,7 +5,8 @@ using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Presentation;
 
-public partial class ModulesStoreViewModel(IModuleStore store) : ReactiveObject
+public partial class ModulesStoreViewModel(IModuleStore store,
+                                           IEnumerable<Descriptor> descriptors) : ReactiveObject
 {
     [Reactive]
     public partial List<ModuleManifest> Modules { get; set; }
@@ -17,6 +18,21 @@ public partial class ModulesStoreViewModel(IModuleStore store) : ReactiveObject
 
     public async Task Download(ModuleManifest manifest)
     {
+        if(!CanDownload(manifest))
+        {
+            return;
+        }
+
         await store.DownloadModule(manifest);
+    }
+
+    private bool CanDownload(ModuleManifest manifest)
+    {
+        if(descriptors.FirstOrDefault(x => x.Id == Guid.Parse(manifest.Id)) is not { } installedModule)
+        {
+            return true;
+        }
+
+        return Version.Parse(manifest.Versions[0].Version) > installedModule.Version;
     }
 }

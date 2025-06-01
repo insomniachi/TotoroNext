@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Reflection;
 
 namespace TotoroNext.Module;
 
+[DebuggerDisplay("{Name} - {Version}")]
 public class Descriptor
 {
     public required Guid Id { get; init; }
