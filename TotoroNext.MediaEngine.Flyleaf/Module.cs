@@ -13,7 +13,7 @@ public class Module : IModule
         Id = new Guid("d1f8c3b2-4e5f-4a6b-9c7d-8e1f2c3b4d5e"),
         Name = "Flyleaf Media Engine",
         Description = "A module for integrating Flyleaf media player into TotoroNext.",
-        HeroImage = "ms-appx:///TotoroNext.MediaEngine.Flyleaf/Assets/wmp.jpg",
+        HeroImage = ResourceHelper.GetResource("wmp.jpg"),
         Components = [ ComponentTypes.MediaEngine ]
     };
 

@@ -33,7 +33,7 @@
 
                             <Image
                                 Height="200"
-                                Source="{x:Bind HeroImage}"
+                                Source="{x:Bind c:Converters.StringToImage(HeroImage)}"
                                 Stretch="Uniform" />
 
                             <StackPanel Grid.Row="1">

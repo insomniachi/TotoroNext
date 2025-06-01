@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -14,16 +15,19 @@ internal class ModuleSettings<TDtata> : IModuleSettings<TDtata>
 
     internal ModuleSettings(Descriptor descriptor)
     {
-        _filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TotoroNext", "Modules", descriptor.EntryPoint, $"{descriptor.Id}.json");
+        _filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TotoroNext", "Modules", descriptor.EntryPoint, $"settings.json");
 
-        if(File.Exists(_filePath) && JsonSerializer.Deserialize<TDtata>(File.ReadAllText(_filePath)) is { } data)
+        Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
+        Value = new TDtata();
+
+        if (File.Exists(_filePath))
         {
-            Value = data;
-        }
-        else
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
-            Value = new TDtata();
+            var text = File.ReadAllText(_filePath);
+            this.Log().LogDebugMessage(text);
+            if(JsonSerializer.Deserialize<TDtata>(text) is { } data)
+            {
+                Value = data;
+            }
         }
     }
 
@@ -31,7 +35,6 @@ internal class ModuleSettings<TDtata> : IModuleSettings<TDtata>
 
     public void Save()
     {
-
         File.WriteAllText(_filePath, JsonSerializer.Serialize(Value));
     }
 }
@@ -42,11 +45,33 @@ public abstract class ModuleSettingsViewModel<TSettings>(IModuleSettings<TSettin
 {
     protected TSettings Settings => data.Value;
 
-    protected void SetAndSaveProperty<TProperty>(ref TProperty field, TProperty value, [CallerMemberName]string propertyName = "")
+    protected void SetAndSaveProperty<TProperty>(ref TProperty field, TProperty value, Action<TSettings> settingUpdate, [CallerMemberName]string propertyName = "")
     {
         if(SetProperty(ref field, value, propertyName))
         {
+            settingUpdate(data.Value);
             data.Save();
         }
+    }
+}
+
+public class ResourceHelper
+{
+    public static string GetResource(string name)
+    {
+
+#if WINDOWS10_0_26100_0_OR_GREATER
+        var targetFramework = "net9.0-windows10.0.26100";
+#else
+        var targetFramework = "net9.0-desktop";
+#endif
+
+        return new Uri($"{Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                       "TotoroNext", 
+                       "Modules", 
+                       Assembly.GetCallingAssembly().GetName().Name ?? "", 
+                       targetFramework,
+                       "Assets",
+                       name)}").AbsoluteUri;
     }
 }

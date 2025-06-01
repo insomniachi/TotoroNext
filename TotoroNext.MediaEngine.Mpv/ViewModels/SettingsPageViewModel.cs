@@ -23,13 +23,13 @@ public partial class SettingsPageViewModel: ModuleSettingsViewModel<ModuleSettin
     public string? Command
     {
         get;
-        set => SetAndSaveProperty(ref field, value);
+        set => SetAndSaveProperty(ref field, value, x => x.FileName = value ?? "");
     }
 
     public bool LaunchFullScreen
     {
         get;
-        set => SetAndSaveProperty(ref field, value);
+        set => SetAndSaveProperty(ref field, value, x => x.LaunchFullScreen = value);
     }
 
     [RelayCommand]
@@ -43,5 +43,6 @@ public partial class SettingsPageViewModel: ModuleSettingsViewModel<ModuleSettin
         }
 
         Command = file.Path;
+        this.Log().LogDebugMessage(Command);
     }
 }

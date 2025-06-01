@@ -12,7 +12,7 @@ public class Module : IModule
         Id = new Guid("489576c5-2879-493b-874a-7eb14e081280"),
         Name = "AllAnime",
         Description = "AllAnime's goal is to provide you with the highest possible amount of daily anime episodes/manga chapters for free and without any kind of limitation.",
-        HeroImage = "ms-appx:///TotoroNext.Anime.AllAnime/Assets/hero.png",
+        HeroImage = ResourceHelper.GetResource("hero.png"),
         Components = [ ComponentTypes.AnimeProvider ]
     };
 

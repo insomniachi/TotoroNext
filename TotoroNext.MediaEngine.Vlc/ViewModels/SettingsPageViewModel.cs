@@ -22,13 +22,13 @@ public partial class SettingsPageViewModel: ModuleSettingsViewModel<Settings>
     public string? Command
     {
         get;
-        set => SetAndSaveProperty(ref field, value);
+        set => SetAndSaveProperty(ref field, value, x => x.FileName = value ?? "");
     }
 
     public bool LaunchFullScreen
     {
         get;
-        set => SetAndSaveProperty(ref field, value);
+        set => SetAndSaveProperty(ref field, value, x => x.LaunchFullScreen = value);
     }
 
     [RelayCommand]
