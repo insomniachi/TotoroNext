@@ -53,7 +53,10 @@
 
   <!-- Windows Only Modules -->
   <ItemGroup Condition="'$(TargetFramework)'=='net9.0-windows10.0.26100'">
-    <ProjectReference Include="..\TotoroNext.MediaEngine.Flyleaf\TotoroNext.MediaEngine.Flyleaf.csproj" />
+      <ProjectReference Include="..\TotoroNext.MediaEngine.Flyleaf\TotoroNext.MediaEngine.Flyleaf.csproj" >
+          <Private>false</Private>
+          <ExcludeAssets>runtime</ExcludeAssets>
+      </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Presentation\ModulesPage.xaml">

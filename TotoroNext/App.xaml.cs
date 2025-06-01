@@ -19,29 +19,30 @@ public partial class App : Application
     protected Window? MainWindow { get; private set; }
     protected IHost? Host { get; private set; }
 
-    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
         List<IModule> modules =
         [
             new Anime.Module(),
             new MediaEngine.Vlc.Module(),
-            new MediaEngine.Mpv.Module()
+
         ];
 
 #if !DEBUG
         var store = new DebugModuleStore();
         modules.AddRange(
             [
-                new Anime.AllAnime.Module()
+                new Anime.AllAnime.Module(),
+                new MediaEngine.Mpv.Module()
             ]);
 #else
         var store = new ModuleStore();
 #endif
 
-        modules.AddRange(store.LoadModules());
+        modules.AddRange(await store.LoadModules().ToListAsync());
 
 #if WINDOWS10_0_26100_0_OR_GREATER
-        modules.Add(new MediaEngine.Flyleaf.Module());
+        //modules.Add(new MediaEngine.Flyleaf.Module());
 #endif
 
         var builder = this.CreateBuilder(args)

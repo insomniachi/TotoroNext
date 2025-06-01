@@ -35,8 +35,14 @@
   </ItemGroup>
     
   <ItemGroup>
-    <ProjectReference Include="..\TotoroNext.MediaEngine.Abstractions\TotoroNext.MediaEngine.Abstractions.csproj" />
-    <ProjectReference Include="..\TotoroNext.Modules\TotoroNext.Module.csproj" />
+      <ProjectReference Include="..\TotoroNext.MediaEngine.Abstractions\TotoroNext.MediaEngine.Abstractions.csproj">
+          <Private>false</Private>
+          <ExcludeAssets>runtime</ExcludeAssets>
+      </ProjectReference>
+      <ProjectReference Include="..\TotoroNext.Modules\TotoroNext.Module.csproj">
+          <Private>false</Private>
+          <ExcludeAssets>runtime</ExcludeAssets>
+      </ProjectReference>
   </ItemGroup>
     
   <ItemGroup>

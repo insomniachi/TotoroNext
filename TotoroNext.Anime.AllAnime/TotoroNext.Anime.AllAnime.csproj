@@ -31,10 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-      <PackageReference Include="FlurlGraphQL">
-          <Private>false</Private>
-          <ExcludeAssets>runtime</ExcludeAssets>
-      </PackageReference>
+      <PackageReference Include="FlurlGraphQL"/>
   </ItemGroup>
 
   <ItemGroup>

@@ -1,4 +1,4 @@
-<Project Sdk="Uno.Sdk">
+﻿<Project Sdk="Uno.Sdk">
   <PropertyGroup>
     <UnoSingleProject>true</UnoSingleProject>
     <OutputType>Library</OutputType>
@@ -20,7 +20,9 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)'=='net9.0-windows10.0.26100'">
-    <PackageReference Include="FlyleafLib.Controls.WinUI" />
+      <PackageReference Include="FlyleafLib.Controls.WinUI">
+          <Private>false</Private>
+      </PackageReference>
   </ItemGroup>  
 
   <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
@@ -41,9 +43,11 @@
   <ItemGroup>
       <PackageReference Include="ReactiveMarbles.ObservableEvents.SourceGenerator">
           <ExcludeAssets>runtime</ExcludeAssets>
+          <Private>false</Private>
       </PackageReference>
       <PackageReference Include="ReactiveUI">
           <ExcludeAssets>runtime</ExcludeAssets>
+          <Private>false</Private>
       </PackageReference>
   </ItemGroup>  
 

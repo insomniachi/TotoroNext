@@ -9,12 +9,12 @@ public interface IModuleStore
 {
     IAsyncEnumerable<ModuleManifest> GetAllModules();
     Task<bool> DownloadModule(ModuleManifest manifest);
-    IEnumerable<IModule> LoadModules();
+    IAsyncEnumerable<IModule> LoadModules();
 }
 
 public class DebugModuleStore : IModuleStore
 {
-    public IEnumerable<IModule> LoadModules() => Enumerable.Empty<IModule>();
+    public IAsyncEnumerable<IModule> LoadModules() => AsyncEnumerable.Empty<IModule>();
     public Task<bool> DownloadModule(ModuleManifest manifest) => Task.FromResult(false);
     public IAsyncEnumerable<ModuleManifest> GetAllModules() => AsyncEnumerable.Empty<ModuleManifest>();
 }
@@ -26,13 +26,22 @@ public class ModuleStore : IModuleStore
     private readonly string _url = "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/manifest.json";
     private readonly string _modulesPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TotoroNext", "Modules");
 
-    public IEnumerable<IModule> LoadModules()
+    public async IAsyncEnumerable<IModule> LoadModules()
     {
+        var manifests = await GetAllModules().ToListAsync();
+
         foreach (var item in Directory.GetFiles(_modulesPath, "*.dll", SearchOption.AllDirectories))
         {
+            var fileName = Path.GetFileName(item);
+
+            if(!manifests.Any(x => x.EntryPoint == fileName))
+            {
+                continue;
+            }
+
             var context = new ModuleLoadContext(item);
             var assembly = context.LoadFromAssemblyPath(item);
-            var modules = assembly.GetExportedTypes().Where(x => x.IsAssignableTo(typeof(IModule)) && !x.IsAbstract).ToList();
+            var modules = assembly.GetTypes().Where(x => x.IsAssignableTo(typeof(IModule)) && !x.IsAbstract).ToList();
 
             if (modules.Count == 0)
             {
