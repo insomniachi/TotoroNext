@@ -13,12 +13,12 @@ public partial class MainViewModel : ReactiveObject
     public IList<NavigationViewItem> MenuItems { get; }
     public IList<NavigationViewItem> FooterItems { get; }
 
-    public IFrameNavigator NavigationFacade { get; }
+    public IContentControlNavigator NavigationFacade { get; }
 
     public MainViewModel(
         IStringLocalizer localizer,
         IOptions<AppConfig> appInfo,
-        [FromKeyedServices("Main")]IFrameNavigator navigationFacade,
+        [FromKeyedServices("Main")]IContentControlNavigator navigationFacade,
         IEnumerable<NavigationViewItem> navigationViewItems)
     {
         NavigationFacade = navigationFacade;

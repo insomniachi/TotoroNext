@@ -1,7 +1,9 @@
 using System.IO.Compression;
+using System.Runtime.Loader;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Flurl;
+using Path = System.IO.Path;
 
 namespace TotoroNext.Module.Abstractions;
 
@@ -25,6 +27,7 @@ public class ModuleStore : IModuleStore
     private readonly HttpClient _client = new();
     private readonly string _url = "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/manifest.json";
     private readonly string _modulesPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TotoroNext", "Modules");
+    private readonly List<AssemblyLoadContext> _contexts = new();
 
     public async IAsyncEnumerable<IModule> LoadModules()
     {
@@ -48,6 +51,7 @@ public class ModuleStore : IModuleStore
             }
 
             var context = new ModuleLoadContext(item);
+            _contexts.Add(context);
             var assembly = context.LoadFromAssemblyPath(item);
             var modules = assembly.GetTypes().Where(x => x.IsAssignableTo(typeof(IModule)) && !x.IsAbstract).ToList();
 

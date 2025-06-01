@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+using ReactiveUI;
 using TotoroNext.Anime;
 using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
@@ -21,11 +23,10 @@ public partial class App : Application
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
+
         List<IModule> modules =
         [
             new Anime.Module(),
-            new MediaEngine.Vlc.Module(),
-
         ];
 
 #if !DEBUG
@@ -33,7 +34,8 @@ public partial class App : Application
         modules.AddRange(
             [
                 new Anime.AllAnime.Module(),
-                new MediaEngine.Mpv.Module()
+                new MediaEngine.Mpv.Module(),
+                new MediaEngine.Vlc.Module()
             ]);
 #else
         var store = new ModuleStore();
@@ -83,11 +85,13 @@ public partial class App : Application
                     {
                         var openPicker = new FileOpenPicker();
 
-#if WINDOWS10_0_26100_0_OR_GREATER
-                        var window = MainWindow;
-                        var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
-                        WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
-#endif
+                        if(OperatingSystem.IsWindows())
+                        {
+                            var window = MainWindow;
+                            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+                            WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
+                        }
+
                         return openPicker;
                     });
 
@@ -127,6 +131,7 @@ public partial class App : Application
 
         MainWindow.Activate();
 
+        RxApp.MainThreadScheduler = new DispatcherQueueScheduler(MainWindow.DispatcherQueue);
         MainWindow.ExtendsContentIntoTitleBar = true;
     }
 }

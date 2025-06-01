@@ -24,7 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddKeyedViewMap<TView, TViewModel>(title);
         services.AddTransient(sp =>
         {
-            var facade = sp.GetRequiredKeyedService<IFrameNavigator>(navigationViewName);
+            var facade = sp.GetRequiredKeyedService<IContentControlNavigator>(navigationViewName);
 
             var item = new NavigationViewItem
             {
@@ -40,10 +40,10 @@ public static class ServiceCollectionExtensions
 
             facade.Initialized += (_, e) =>
             {
-                e.Navigated += (_, args) =>
-                {
-                    item.IsSelected = args.Content is Page page && page.GetType() == typeof(TView);
-                };
+                //e.Navigated += (_, args) =>
+                //{
+                //    item.IsSelected = args.Content is Page page && page.GetType() == typeof(TView);
+                //};
             };
 
             return item;
@@ -72,13 +72,13 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddModuleSettings<TData>(this IServiceCollection services, IModule<TData> module)
         where TData : class, new()
     {
-        return services.AddSingleton<IModuleSettings<TData>>(_ => new ModuleSettings<TData>(module.Descriptor.Id));
+        return services.AddSingleton<IModuleSettings<TData>>(_ => new ModuleSettings<TData>(module.Descriptor));
     }
 
     public static IServiceCollection AddNavigationView(this IServiceCollection services, string key)
     {
-        services.AddKeyedSingleton<IFrameNavigator, FrameNavigator>(key);
-        services.AddKeyedSingleton<INavigator>(key, (sp, k) => sp.GetRequiredKeyedService<IFrameNavigator>(k));
+        services.AddKeyedSingleton<IContentControlNavigator, FrameNavigator>(key);
+        services.AddKeyedSingleton<INavigator>(key, (sp, k) => sp.GetRequiredKeyedService<IContentControlNavigator>(k));
         return services;
     }
 

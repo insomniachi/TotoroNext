@@ -4,11 +4,11 @@ using TotoroNext.Module.Abstractions;
 namespace TotoroNext.Module;
 
 public class FrameNavigator(IViewRegistry locator,
-                            IServiceScopeFactory serviceScopeFactory) : IFrameNavigator
+                            IServiceScopeFactory serviceScopeFactory) : IContentControlNavigator
 {
-    public event EventHandler<Frame>? Initialized;
+    public event EventHandler<ContentControl>? Initialized;
 
-    public Frame Frame
+    public ContentControl Frame
     {
         get => field;
         set
@@ -30,13 +30,10 @@ public class FrameNavigator(IViewRegistry locator,
             return;
         }
 
-        var navigated = Frame.Navigate(view);
-
-        if(navigated && Frame.Content is Page page)
-        {
-            using var scope = serviceScopeFactory.CreateScope();
-            page.DataContext = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType);
-        }
+        var type = (Page)Activator.CreateInstance(view)!;
+        using var scope = serviceScopeFactory.CreateScope();
+        type.DataContext = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType);
+        Frame.Content = type;
     }
 
     public void NavigateToData<TData>(TData data)
@@ -53,13 +50,10 @@ public class FrameNavigator(IViewRegistry locator,
             return;
         }
 
-        var navigated = Frame.Navigate(view);
-
-        if (navigated && Frame.Content is Page page)
-        {
-            using var scope = serviceScopeFactory.CreateScope();
-            page.DataContext = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm, data);
-        }
+        var type = (Page)Activator.CreateInstance(view)!;
+        using var scope = serviceScopeFactory.CreateScope();
+        type.DataContext = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm, data);
+        Frame.Content = type;
     }
 
     public void NavigateToRoute(string path)
@@ -71,12 +65,9 @@ public class FrameNavigator(IViewRegistry locator,
             return;
         }
 
-        var navigated = Frame.Navigate(view);
-
-        if (navigated && Frame.Content is Page page)
-        {
-            using var scope = serviceScopeFactory.CreateScope();
-            page.DataContext = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm);
-        }
+        var type = (Page)Activator.CreateInstance(view)!;
+        using var scope = serviceScopeFactory.CreateScope();
+        type.DataContext = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm);
+        Frame.Content = type;
     }
 }

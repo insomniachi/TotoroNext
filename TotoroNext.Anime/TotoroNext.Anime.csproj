@@ -37,10 +37,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="MediaPlayerElementHost.xaml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" />
     <PackageReference Include="ReactiveUI" />
     <PackageReference Include="ReactiveUI.SourceGenerators">

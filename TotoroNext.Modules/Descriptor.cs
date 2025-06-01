@@ -1,10 +1,13 @@
+using System.Reflection;
+
 namespace TotoroNext.Module;
 
 public class Descriptor
 {
     public required Guid Id { get; init; }
     public required string Name { get; init; }
-    public required Version Version { get; init; }
+    public Version Version { get; } = Assembly.GetCallingAssembly().GetName().Version ?? new Version(1, 0, 0);
+    public string EntryPoint { get; } = Assembly.GetCallingAssembly().GetName().Name ?? "";
     public List<string> Components { get; init; } = [];
     public string? Description { get; init; }
     public string? HeroImage { get; init; }

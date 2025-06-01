@@ -8,5 +8,4 @@ global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Options;
 global using TotoroNext.Models;
 global using TotoroNext.Presentation;
-global using Uno.Extensions.Http.Kiota;
 global using ApplicationExecutionState = Windows.ApplicationModel.Activation.ApplicationExecutionState;

@@ -1,50 +1,35 @@
-using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
 using Windows.Storage.Pickers;
 
 namespace TotoroNext.MediaEngine.Mpv.ViewModels;
 
-public partial class SettingsPageViewModel: ObservableObject
+public partial class SettingsPageViewModel: ModuleSettingsViewModel<ModuleSettings>
 {
-    private readonly IModuleSettings<ModuleSettings> _settings;
     private readonly FileOpenPicker _picker;
 
     public SettingsPageViewModel(IModuleSettings<ModuleSettings> settings,
-                                 FileOpenPicker picker)
+                                 FileOpenPicker picker): base(settings)
     {
-        _settings = settings;
         _picker = picker;
 
         picker.FileTypeFilter.Add("*");
+
+        Command = Settings.FileName;
+        LaunchFullScreen = Settings.LaunchFullScreen;
     }
 
-    public string Command
+    public string? Command
     {
-        get => _settings.Value.FileName;
-        set
-        {
-            if (_settings.Value.FileName != value)
-            {
-                _settings.Value.FileName = value;
-                OnPropertyChanged();
-                _settings.Save();
-            }
-        }
+        get;
+        set => SetAndSaveProperty(ref field, value);
     }
 
     public bool LaunchFullScreen
     {
-        get => _settings.Value.LaunchFullScreen;
-        set
-        {
-            if (_settings.Value.LaunchFullScreen != value)
-            {
-                _settings.Value.LaunchFullScreen = value;
-                OnPropertyChanged();
-                _settings.Save();
-            }
-        }
+        get;
+        set => SetAndSaveProperty(ref field, value);
     }
 
     [RelayCommand]

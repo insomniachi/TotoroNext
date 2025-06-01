@@ -5,7 +5,7 @@ using TotoroNext.Module.Abstractions;
 namespace TotoroNext.Presentation;
 
 public partial class ModulesViewModel(IEnumerable<Descriptor> modules,
-                                      [FromKeyedServices("Main")]IFrameNavigator navigator) : ReactiveObject
+                                      [FromKeyedServices("Main")]IContentControlNavigator navigator) : ReactiveObject
 {
     public List<Descriptor> Descriptors { get; } = [.. modules];
 

@@ -43,5 +43,6 @@
     <PackageReference Include="Flurl.Http" />
     <PackageReference Include="System.Linq.Async" />
     <PackageReference Include="System.Reactive" />
+    <PackageReference Include="Uno.WinUI.Markup" />
   </ItemGroup>
 </Project>

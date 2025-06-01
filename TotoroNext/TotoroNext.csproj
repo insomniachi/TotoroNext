@@ -11,20 +11,15 @@
     <Platforms>x64</Platforms>
     <TargetFrameworks>net9.0-desktop;net9.0-windows10.0.26100</TargetFrameworks>
     <UnoFeatures>
-        Lottie;
-        MediaElement;
         Hosting;
         Toolkit;
         Logging;
         LoggingSerilog;
         Mvvm;
         Configuration;
-        HttpKiota;
-        Serialization;
         Localization;
         ThemeService;
         SkiaRenderer;
-        Material;
     </UnoFeatures>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
       <LangVersion>preview</LangVersion>
@@ -37,27 +32,28 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+      <!--<PackageReference Include="ReactiveUI.Uno"/>-->
   </ItemGroup>
-    
+
   <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows10.0.26100'">
-    <PackageReference Include="ReactiveUI.WinUI" />
+      <PackageReference Include="ReactiveUI.WinUI" />
   </ItemGroup>
 
   <!-- Modules -->
   <ItemGroup>
-    <ProjectReference Include="..\TotoroNext.Anime.AllAnime\TotoroNext.Anime.AllAnime.csproj" />
+    <!--<ProjectReference Include="..\TotoroNext.Anime.AllAnime\TotoroNext.Anime.AllAnime.csproj" />-->
     <ProjectReference Include="..\TotoroNext.Anime\TotoroNext.Anime.csproj" />
-    <ProjectReference Include="..\TotoroNext.MediaEngine.Vlc\TotoroNext.MediaEngine.Vlc.csproj" />
-    <ProjectReference Include="..\TotoroNext.MediaEngine.Mpv\TotoroNext.MediaEngine.Mpv.csproj" />
+    <!--<ProjectReference Include="..\TotoroNext.MediaEngine.Vlc\TotoroNext.MediaEngine.Vlc.csproj" />
+    <ProjectReference Include="..\TotoroNext.MediaEngine.Mpv\TotoroNext.MediaEngine.Mpv.csproj" />-->
   </ItemGroup>
 
   <!-- Windows Only Modules -->
-  <ItemGroup Condition="'$(TargetFramework)'=='net9.0-windows10.0.26100'">
-      <ProjectReference Include="..\TotoroNext.MediaEngine.Flyleaf\TotoroNext.MediaEngine.Flyleaf.csproj" >
+  <!--<ItemGroup Condition="'$(TargetFramework)'=='net9.0-windows10.0.26100'">
+      <ProjectReference Include="..\TotoroNext.MediaEngine.Flyleaf\TotoroNext.MediaEngine.Flyleaf.csproj">
           <Private>false</Private>
           <ExcludeAssets>runtime</ExcludeAssets>
       </ProjectReference>
-  </ItemGroup>
+  </ItemGroup>-->
   <ItemGroup>
     <Page Update="Presentation\ModulesPage.xaml">
       <Generator>MSBuild:Compile</Generator>

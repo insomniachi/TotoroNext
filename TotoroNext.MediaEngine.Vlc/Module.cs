@@ -13,7 +13,6 @@ public class Module : IModule<Settings>
     {
         Id = new Guid("a5c4c1d1-4669-4423-bb77-d5285776b5c9"),
         Name = "VLC Media Player",
-        Version = new Version(1, 0, 0),
         Description = "A module for integrating VLC media player into TotoroNext.",
         HeroImage = "ms-appx:///TotoroNext.MediaEngine.Vlc/Assets/vlc.jpeg",
         Components = [ ComponentTypes.MediaEngine ],

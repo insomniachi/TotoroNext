@@ -13,7 +13,6 @@ public class Module : IModule<ModuleSettings>
     {
         Id = new Guid("b8c3f0d2-1c5e-4f6a-9b7d-3f8e1c5f0d2a"),
         Name = "MPV Media Player",
-        Version = new Version(1, 0, 0),
         Description = "A module for integrating MPV media player into TotoroNext.",
         HeroImage = "ms-appx:///TotoroNext.MediaEngine.Mpv/Assets/mpv.jpeg",
         Components = [ ComponentTypes.MediaEngine ],

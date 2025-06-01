@@ -33,7 +33,12 @@
             win:IsPaneToggleButtonVisible="False"
             FooterMenuItemsSource="{Binding FooterItems}"
             MenuItemsSource="{Binding MenuItems}">
-            <Frame x:Name="NavFrame" />
+            <ContentControl
+                x:Name="NavFrame"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                VerticalContentAlignment="Stretch" />
         </NavigationView>
     </Grid>
 

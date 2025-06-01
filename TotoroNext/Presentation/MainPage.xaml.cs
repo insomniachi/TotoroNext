@@ -9,10 +9,10 @@ public sealed partial class MainPage : Page
         DataContextChanged += MainPage_DataContextChanged;
 
 #if WINDOWS10_0_26100_0_OR_GREATER
-        NavFrame.Navigated += (s, e) =>
-        {
-            TitleBarControl.IsBackButtonVisible = NavFrame.CanGoBack;
-        };
+        //NavFrame.Navigated += (s, e) =>
+        //{
+        //    TitleBarControl.IsBackButtonVisible = NavFrame.CanGoBack;
+        //};
 #endif
     }
 
@@ -33,12 +33,12 @@ public sealed partial class MainPage : Page
 
     private void TitleBar_BackRequested(TitleBar sender, object args)
     {
-        if(!NavFrame.CanGoBack)
-        {
-            return;
-        }
+        //if(!NavFrame.CanGoBack)
+        //{
+        //    return;
+        //}
 
-        NavFrame.GoBack(); 
+        //NavFrame.GoBack(); 
     }
 #endif
 
