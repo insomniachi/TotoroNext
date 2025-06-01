@@ -49,5 +49,22 @@
         "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.MediaEngine.Flyleaf"
       }
     ]
+  },
+  {
+    "Id": "a5c4c1d1-4669-4423-bb77-d5285776b5c9",
+    "Name": "Vlc",
+    "Description": "",
+    "Owner": "Totoro",
+    "Categories": [ "Media Engine" ],
+    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.MediaEngine.Vlc/Assets/vlc.jpeg",
+    "EntryPoint": "TotoroNext.MediaEngine.Vlc.dll",
+    "Versions": [
+      {
+        "Version": "1.0.0",
+        "Description": "Initial release",
+        "TargetVersion": "1.0.0",
+        "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.MediaEngine.Vlc"
+      }
+    ]
   }
 ]

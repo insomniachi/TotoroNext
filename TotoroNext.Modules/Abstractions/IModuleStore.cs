@@ -30,7 +30,15 @@ public class ModuleStore : IModuleStore
     {
         var manifests = await GetAllModules().ToListAsync();
 
-        foreach (var item in Directory.GetFiles(_modulesPath, "*.dll", SearchOption.AllDirectories))
+#if WINDOWS10_0_26100_0_OR_GREATER
+        var targetFrameworkPattern = "*net9.0-windows10.0.26100";
+#else
+        var targetFrameworkPattern = "*net9.0-desktop";
+#endif
+
+        var directories = Directory.GetDirectories(_modulesPath, targetFrameworkPattern, SearchOption.AllDirectories);
+
+        foreach (var item in directories.SelectMany(x => Directory.GetFiles(x, "*.dll", SearchOption.AllDirectories)))
         {
             var fileName = Path.GetFileName(item);
 
