@@ -96,12 +96,11 @@ internal partial class AnimeProvider : IAnimeProvider
             }
 
             string? response = "";
-            List<ApiV2Reponse> links = [];
+            JsonObject? jObject = null;
             try
             {
-                response = await $"https://allanime.day{item.SourceName.Replace("clock", "clock.json")}".GetStringAsync();
-                var jObject = JsonNode.Parse(response)!.AsObject()!;
-                links = jObject["links"].Deserialize<List<ApiV2Reponse>>() ?? [];
+                response = await $"https://allanime.day{item.SourceUrl.Replace("clock", "clock.json")}".GetStringAsync();
+                jObject = JsonNode.Parse(response)!.AsObject()!;
             }
             catch
             {
@@ -111,11 +110,17 @@ internal partial class AnimeProvider : IAnimeProvider
             switch (item.SourceName)
             {
                 case "Luf-Mp4" or "S-mp4":
+                    var links = jObject["links"].Deserialize<List<ApiV2Reponse>>() ?? [];
                     yield return VideoServers.WithReferer(item.SourceName, links[0].Url, "https://allanime.day/");
+                    continue;
+                case "Default":
+                    var hls = jObject["links"].Deserialize<List<DefaultResponse>>() ?? [];
+                    yield return new VideoServer(item.SourceName, new Uri(hls[0].link));
                     continue;
                 default:
                     break;
             }
+
         }
 
         yield break;
@@ -261,4 +266,13 @@ public class ApiV2Reponse
 
     [JsonPropertyName("headers")]
     public Dictionary<string, string> Headers { get; set; } = [];
+}
+
+public class DefaultResponse
+{
+    public string link { get; set; } = string.Empty;
+    public bool hls { get; set; }
+    public string resolutionStr { get; set; } = string.Empty;
+    public int resolution { get; set; } = 0;
+    public string src { get; set; } = string.Empty;
 }

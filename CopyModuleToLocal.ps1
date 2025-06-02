@@ -30,3 +30,5 @@ if (-Not (Test-Path "$modulePath")) {
 }
 
 Move-Item -Path $baseOutput -Destination "$modulePath" -Force
+
+Remove-Item -Path "Temp" -Recurse -Force

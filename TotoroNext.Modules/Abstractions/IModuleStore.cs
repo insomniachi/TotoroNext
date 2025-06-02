@@ -33,7 +33,7 @@ public class ModuleStore : IModuleStore
     {
         var manifests = await GetAllModules().ToListAsync();
 
-#if WINDOWS10_0_26100_0_OR_GREATER
+#if WINDOWS
         var targetFrameworkPattern = "*net9.0-windows10.0.26100";
 #else
         var targetFrameworkPattern = "*net9.0-desktop";
@@ -72,7 +72,7 @@ public class ModuleStore : IModuleStore
     {
         try
         {
-#if WINDOWS10_0_26100_0_OR_GREATER
+#if WINDOWS
             var targetFramework = "net9.0-windows10.0.26100";
 #else
             var targetFramework = "net9.0-desktop";

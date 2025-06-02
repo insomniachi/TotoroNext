@@ -1,3 +1,4 @@
+using System.Reactive.Linq;
 using ReactiveUI;
 using TotoroNext.Anime.ViewModels;
 
@@ -17,10 +18,6 @@ public sealed partial class WatchPage : Page
         if(args.NewValue is WatchViewModel vm)
         {
             vm.Initialize();
-
-            Host.WhenAnyValue(x => x.Player)
-                .WhereNotNull()
-                .Subscribe(x => vm.MediaPlayer = x);
         }
     }
 

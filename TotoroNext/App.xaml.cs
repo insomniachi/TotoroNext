@@ -1,3 +1,4 @@
+using System.Reactive.Concurrency;
 using System.Runtime.InteropServices;
 using ReactiveUI;
 using TotoroNext.Anime;
@@ -43,7 +44,7 @@ public partial class App : Application
 
         modules.AddRange(await store.LoadModules().ToListAsync());
 
-#if WINDOWS10_0_26100_0_OR_GREATER
+#if WINDOWS
         //modules.Add(new MediaEngine.Flyleaf.Module());
 #endif
 
@@ -131,7 +132,11 @@ public partial class App : Application
 
         MainWindow.Activate();
 
+#if WINDOWS
         RxApp.MainThreadScheduler = new DispatcherQueueScheduler(MainWindow.DispatcherQueue);
+#else
+        RxApp.MainThreadScheduler = new WaitForDispatcherScheduler(() => CoreDispatcherScheduler.Current);
+#endif
         MainWindow.ExtendsContentIntoTitleBar = true;
     }
 }

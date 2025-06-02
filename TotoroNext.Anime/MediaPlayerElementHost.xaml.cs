@@ -1,5 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.UI.Xaml.Input;
+using TotoroNext.Anime.ViewModels;
 using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.Module;
 
@@ -64,6 +64,11 @@ public sealed partial class MediaPlayerElementHost : UserControl
         {
             host.Player = player;
         });
+
+        if (host.DataContext is WatchViewModel vm)
+        {
+            vm.MediaPlayer = player;
+        }
     }
 
     private void RootGrid_PointerMoved(object sender, PointerRoutedEventArgs e)

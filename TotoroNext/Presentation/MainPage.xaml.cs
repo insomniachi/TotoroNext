@@ -8,7 +8,7 @@ public sealed partial class MainPage : Page
 
         DataContextChanged += MainPage_DataContextChanged;
 
-#if WINDOWS10_0_26100_0_OR_GREATER
+#if WINDOWS
         //NavFrame.Navigated += (s, e) =>
         //{
         //    TitleBarControl.IsBackButtonVisible = NavFrame.CanGoBack;
@@ -25,7 +25,7 @@ public sealed partial class MainPage : Page
         }
     }
 
-#if WINDOWS10_0_26100_0_OR_GREATER
+#if WINDOWS
     private void TitleBar_PaneToggleRequested(TitleBar sender, object args)
     {
         NavView.IsPaneOpen ^= true;
