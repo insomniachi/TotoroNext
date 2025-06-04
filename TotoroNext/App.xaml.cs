@@ -35,6 +35,7 @@ public partial class App : Application
         modules.AddRange(
             [
                 new Anime.AllAnime.Module(),
+                new Anime.Anilist.Module(),
                 new MediaEngine.Mpv.Module(),
                 new MediaEngine.Vlc.Module()
             ]);

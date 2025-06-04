@@ -56,6 +56,7 @@
           <Private>false</Private>
           <ExcludeAssets>runtime</ExcludeAssets>
       </ProjectReference>
+      <ProjectReference Include="..\TotoroNext.MediaEngine.Mpv\TotoroNext.MediaEngine.Mpv.csproj" />
       <ProjectReference Include="..\TotoroNext.Modules\TotoroNext.Module.csproj">
           <Private>false</Private>
           <ExcludeAssets>runtime</ExcludeAssets>

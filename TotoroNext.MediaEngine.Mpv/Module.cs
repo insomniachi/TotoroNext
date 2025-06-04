@@ -1,11 +1,9 @@
-using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.MediaEngine.Mpv.ViewModels;
 using TotoroNext.MediaEngine.Mpv.Views;
 using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
-using Path = System.IO.Path;
 
 namespace TotoroNext.MediaEngine.Mpv;
 

@@ -8,6 +8,8 @@
     <Nullable>enable</Nullable>
       <Platforms>x64</Platforms>
       <TargetFrameworks>net9.0-desktop;net9.0-windows10.0.26100</TargetFrameworks>
+      <EnableDynamicLoading>true</EnableDynamicLoading>
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
       <LangVersion>preview</LangVersion>
     <!--
       UnoFeatures let's you quickly add and manage implicit package references based on the features you want to use.
@@ -34,11 +36,25 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" />
-    <PackageReference Include="HtmlAgilityPack.CssSelectors.NetCore" />
+    <PackageReference Include="GraphQL.Client" />
+    <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="Uno.Extensions.Markup.Generators">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\TotoroNext.Modules\TotoroNext.Module.csproj" />
-  </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\TotoroNext.Anime.Abstractions\TotoroNext.Anime.Abstractions.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
+        <ProjectReference Include="..\TotoroNext.Modules\TotoroNext.Module.csproj">
+            <Private>false</Private>
+            <ExcludeAssets>runtime</ExcludeAssets>
+        </ProjectReference>
+    </ItemGroup>
+    
 </Project>

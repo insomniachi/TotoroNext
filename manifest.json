@@ -66,5 +66,22 @@
         "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.MediaEngine.Vlc"
       }
     ]
+  },
+  {
+    "Id": "b5d31e9b-b988-44e8-8e28-348f58cf1d04",
+    "Name": "Anilist",
+    "Description": "",
+    "Owner": "Totoro",
+    "Categories": [ "Metadata" ],
+    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.Anime.Anilist/Assets/vlc.jpeg",
+    "EntryPoint": "TotoroNext.Anime.Anilist.dll",
+    "Versions": [
+      {
+        "Version": "1.0.0",
+        "Description": "Initial release",
+        "TargetVersion": "1.0.0",
+        "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.Anime.Anilist"
+      }
+    ]
   }
 ]

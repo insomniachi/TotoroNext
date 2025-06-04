@@ -4,6 +4,7 @@ public class ComponentTypes
 {
     public const string AnimeProvider = "Anime Provider";
     public const string MediaEngine = "Media Engine";
+    public const string Metadata = "Metadata";
 }
 
 public interface IComponentRegistry

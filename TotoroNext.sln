@@ -42,6 +42,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Media Engine", "Media Engin
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Media Players", "Media Players", "{40D3E142-7407-D381-0017-AB0EE535E432}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.Anime.Anilist", "TotoroNext.Anime.Anilist\TotoroNext.Anime.Anilist.csproj", "{79808D5D-1A08-46D6-BA28-EA2BB97FC54A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -84,6 +86,10 @@ Global
 		{5C4E6F97-ED4B-4907-BBBD-C4FA7B2E9C80}.Debug|x64.Build.0 = Debug|x64
 		{5C4E6F97-ED4B-4907-BBBD-C4FA7B2E9C80}.Release|x64.ActiveCfg = Release|x64
 		{5C4E6F97-ED4B-4907-BBBD-C4FA7B2E9C80}.Release|x64.Build.0 = Release|x64
+		{79808D5D-1A08-46D6-BA28-EA2BB97FC54A}.Debug|x64.ActiveCfg = Debug|x64
+		{79808D5D-1A08-46D6-BA28-EA2BB97FC54A}.Debug|x64.Build.0 = Debug|x64
+		{79808D5D-1A08-46D6-BA28-EA2BB97FC54A}.Release|x64.ActiveCfg = Release|x64
+		{79808D5D-1A08-46D6-BA28-EA2BB97FC54A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -98,6 +104,7 @@ Global
 		{5C4E6F97-ED4B-4907-BBBD-C4FA7B2E9C80} = {40D3E142-7407-D381-0017-AB0EE535E432}
 		{19A7823A-C34F-A853-1DEC-E551CC4B3B45} = {6994BA35-F447-D63A-138F-C94385013AFC}
 		{40D3E142-7407-D381-0017-AB0EE535E432} = {DF4077F3-9943-4E56-D1F4-B8A32B67DBE0}
+		{79808D5D-1A08-46D6-BA28-EA2BB97FC54A} = {6994BA35-F447-D63A-138F-C94385013AFC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A7A67BC2-32EB-4DC4-830C-53BECA19D6AD}
