@@ -12,9 +12,11 @@ namespace TotoroNext.Anime.Anilist;
 
 public class Module : IModule<Settings>
 {
+    public static Guid Id { get; } = new Guid("b5d31e9b-b988-44e8-8e28-348f58cf1d04");
+
     public Descriptor Descriptor { get; } = new Descriptor
     {
-        Id = new Guid("b5d31e9b-b988-44e8-8e28-348f58cf1d04"),
+        Id = Id,
         Name = "Anilist",
         Components = [ComponentTypes.Metadata, ComponentTypes.Tracking],
         Description = "AniList: The next-generation anime platform Track, share, and discover your favorite anime and manga with AniList. Discover your obsessions. ",
@@ -44,6 +46,8 @@ public class Module : IModule<Settings>
             var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(AnilistMetadataService));
             return new GraphQLHttpClient("https://graphql.anilist.co/", new NewtonsoftJsonSerializer(), httpClient);
         });
+
+        services.AddHostedService<TrackingUpdater>();
     }
 }
 

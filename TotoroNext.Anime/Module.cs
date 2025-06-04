@@ -19,6 +19,7 @@ public class Module : IModule
         services.RegisterEvent<AnimeSelectedEvent>()
                 .RegisterEvent<EpisodeSelectedEvent>()
                 .RegisterEvent<PlaybackDurationChangedEvent>()
-                .RegisterEvent<PlaybackPositionChangedEvent>();
+                .RegisterEvent<PlaybackPositionChangedEvent>()
+                .RegisterEvent<TrackableAnimeSelectedEvent>();
     }
 }

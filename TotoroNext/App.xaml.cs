@@ -131,6 +131,8 @@ public partial class App : Application
             }
         };
 
+        await Host.StartAsync();
+
         MainWindow.Activate();
 
 #if WINDOWS
