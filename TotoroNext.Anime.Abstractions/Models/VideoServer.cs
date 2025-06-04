@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace TotoroNext.Anime.Abstractions;
+namespace TotoroNext.Anime.Abstractions.Models;
 
 [DebuggerDisplay("{Name} ({Url})")]
 public class VideoServer(string name, Uri url, IVideoExtractor? videoExtractor = null)

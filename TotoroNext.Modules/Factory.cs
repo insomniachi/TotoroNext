@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace TotoroNext.Module;
 
 
-public interface IFactory<TService,TId>
+public interface IFactory<TService, TId>
     where TService : notnull
 {
     TService Create(TId id);

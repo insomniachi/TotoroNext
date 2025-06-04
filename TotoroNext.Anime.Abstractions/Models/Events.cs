@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TotoroNext.Module;
 
-namespace TotoroNext.Anime.Abstractions;
+namespace TotoroNext.Anime.Abstractions.Models;
 
 public record AnimeSelectedEvent(SearchResult Item) : IEvent;
 public record EpisodeSelectedEvent(Episode Item) : IEvent;

@@ -28,13 +28,13 @@ public class FrameNavigator(IViewRegistry locator,
 
     public void NavigateToData<TData>(TData data)
     {
-        if(data is null)
+        if (data is null)
         {
             return;
         }
 
         var map = locator.FindByData(typeof(TData));
-        
+
         if (map is not { View: { } view, ViewModel: { } vm })
         {
             return;
@@ -51,7 +51,7 @@ public class FrameNavigator(IViewRegistry locator,
     {
         var map = locator.FindByKey(path);
 
-        if (map is not { View : { } view, ViewModel : { } vm })
+        if (map is not { View: { } view, ViewModel: { } vm })
         {
             return;
         }

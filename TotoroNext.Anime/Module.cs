@@ -1,5 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using TotoroNext.Anime.Abstractions;
+using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.Anime.ViewModels;
 using TotoroNext.Anime.Views;
 using TotoroNext.Module;
@@ -11,7 +11,8 @@ public class Module : IModule
 {
     public void ConfigureServices(IServiceCollection services)
     {
-        services.AddMainNavigationViewItem<SearchProviderPage, SearchProviderViewModel>("Watch Now", new FontIcon { Glyph = "\uE7C5" })
+        services.AddMainNavigationViewItem<UserListPage,UserListViewModel>("My List", new SymbolIcon(Symbol.Library))
+                .AddMainNavigationViewItem<SearchProviderPage, SearchProviderViewModel>("Watch Now", new FontIcon { Glyph = "\uE7C5" })
                 .AddMainNavigationViewItem<SearchMetadataProviderPage, SearchMetadataProviderViewModel>("Search Metadata", new FontIcon { Glyph = "\uF6FA" })
                 .AddDataViewMap<WatchPage, WatchViewModel, SearchResult>();
 

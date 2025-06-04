@@ -1,9 +1,7 @@
 using System.Net.Http.Headers;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
-using HtmlAgilityPack.CssSelectors.NetCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Anilist.ViewModels;
 using TotoroNext.Anime.Anilist.Views;
@@ -18,7 +16,7 @@ public class Module : IModule<Settings>
     {
         Id = new Guid("b5d31e9b-b988-44e8-8e28-348f58cf1d04"),
         Name = "Anilist",
-        Components = [ComponentTypes.Metadata],
+        Components = [ComponentTypes.Metadata, ComponentTypes.Tracking],
         Description = "AniList: The next-generation anime platform Track, share, and discover your favorite anime and manga with AniList. Discover your obsessions. ",
         SettingViewModel = typeof(SettingsViewModel),
         HeroImage = ResourceHelper.GetResource("anilist.jpg")
@@ -29,7 +27,10 @@ public class Module : IModule<Settings>
         services.AddTransient(_ => Descriptor);
         services.AddModuleSettings(this);
         services.AddViewMap<SettingsPage, SettingsViewModel>();
-        services.TryAddKeyedTransient<IMetadataService, AnilistMetadataService>(Descriptor.Id);
+        
+        services.AddKeyedTransient<IMetadataService, AnilistMetadataService>(Descriptor.Id);
+        services.AddKeyedTransient<ITrackingService, AnilistTrackingService>(Descriptor.Id);
+
         services.AddHttpClient(nameof(AnilistMetadataService), (sp, client) =>
         {
             var settings = sp.GetRequiredService<IModuleSettings<Settings>>();

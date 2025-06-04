@@ -51,7 +51,7 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddMainNavigationViewItem<TView,TViewModel>(this IServiceCollection services, string title, IconElement icon, bool isFooterItem = false)
+    public static IServiceCollection AddMainNavigationViewItem<TView, TViewModel>(this IServiceCollection services, string title, IconElement icon, bool isFooterItem = false)
         where TView : class, new()
         where TViewModel : class
     {
@@ -81,8 +81,8 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddViewMap<TView,TViewModel>(this IServiceCollection services)
-        where TView : class, new ()
+    public static IServiceCollection AddViewMap<TView, TViewModel>(this IServiceCollection services)
+        where TView : class, new()
         where TViewModel : class
     {
         return services.AddViewMap(new ViewMap<TView, TViewModel>());

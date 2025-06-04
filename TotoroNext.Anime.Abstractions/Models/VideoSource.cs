@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace TotoroNext.Anime.Abstractions;
+namespace TotoroNext.Anime.Abstractions.Models;
 
 [DebuggerDisplay("{Url}")]
 public class VideoSource

@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Flurl.Http;
 using FlurlGraphQL;
 using TotoroNext.Anime.Abstractions;
+using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.AnimeHeaven;
 using Uno.Logging;
 

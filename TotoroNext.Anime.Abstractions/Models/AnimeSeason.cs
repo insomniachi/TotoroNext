@@ -1,4 +1,4 @@
-namespace TotoroNext.Anime.Abstractions;
+namespace TotoroNext.Anime.Abstractions.Models;
 
 public enum AnimeSeason
 {

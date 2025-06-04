@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 using Flurl.Http;
-using TotoroNext.Anime.Abstractions;
+using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.Module;
 
 namespace TotoroNext.AnimeHeaven;

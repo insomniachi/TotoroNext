@@ -45,7 +45,7 @@ public class ModuleStore : IModuleStore
         {
             var fileName = Path.GetFileName(item);
 
-            if(!manifests.Any(x => x.EntryPoint == fileName))
+            if (!manifests.Any(x => x.EntryPoint == fileName))
             {
                 continue;
             }
@@ -95,7 +95,7 @@ public class ModuleStore : IModuleStore
         var array = JsonNode.Parse(response)?.AsArray() ?? throw new InvalidOperationException("Failed to parse module manifest.");
 
         var manifests = array.Deserialize<List<ModuleManifest>>();
-        
+
         foreach (var item in manifests ?? [])
         {
             yield return item;

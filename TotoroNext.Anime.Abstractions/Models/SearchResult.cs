@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace TotoroNext.Anime.Abstractions;
+namespace TotoroNext.Anime.Abstractions.Models;
 
 [DebuggerDisplay("{Title}")]
 public class SearchResult(IAnimeProvider provider, string id, string title, Uri? image = null)

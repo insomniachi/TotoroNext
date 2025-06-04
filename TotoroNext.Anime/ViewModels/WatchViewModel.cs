@@ -3,7 +3,7 @@ using System.Reactive.Linq;
 using JetBrains.Annotations;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using TotoroNext.Anime.Abstractions;
+using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.Module.Abstractions;
 

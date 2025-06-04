@@ -1,4 +1,4 @@
-namespace TotoroNext.Anime.Abstractions;
+namespace TotoroNext.Anime.Abstractions.Models;
 
 public class Episode(IAnimeProvider provider, string showId, string id, float number, string name = "", Uri? image = null)
 {

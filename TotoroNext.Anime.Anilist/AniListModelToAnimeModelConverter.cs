@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using TotoroNext.Anime.Abstractions;
+using TotoroNext.Anime.Abstractions.Models;
 
 namespace TotoroNext.Anime.Anilist;
 
@@ -100,6 +101,20 @@ public partial class AniListModelToAnimeModelConverter
             MediaListStatus.Dropped => ListItemStatus.Dropped,
             MediaListStatus.Completed => ListItemStatus.Completed,
             MediaListStatus.Repeating => ListItemStatus.Rewatching,
+            _ => null
+        };
+    }
+
+    public static MediaListStatus? ConvertListStatus(ListItemStatus? status)
+    {
+        return status switch
+        {
+            ListItemStatus.Watching => MediaListStatus.Current,
+            ListItemStatus.PlanToWatch => MediaListStatus.Planning,
+            ListItemStatus.OnHold => MediaListStatus.Paused,
+            ListItemStatus.Completed => MediaListStatus.Completed,
+            ListItemStatus.Dropped => MediaListStatus.Dropped,
+            ListItemStatus.Rewatching => MediaListStatus.Repeating,
             _ => null
         };
     }

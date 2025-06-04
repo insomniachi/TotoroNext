@@ -24,7 +24,7 @@ internal class ModuleSettings<TDtata> : IModuleSettings<TDtata>
         {
             var text = File.ReadAllText(_filePath);
             this.Log().LogDebugMessage(text);
-            if(JsonSerializer.Deserialize<TDtata>(text) is { } data)
+            if (JsonSerializer.Deserialize<TDtata>(text) is { } data)
             {
                 Value = data;
             }
@@ -45,9 +45,9 @@ public abstract class ModuleSettingsViewModel<TSettings>(IModuleSettings<TSettin
 {
     protected TSettings Settings => data.Value;
 
-    protected void SetAndSaveProperty<TProperty>(ref TProperty field, TProperty value, Action<TSettings> settingUpdate, [CallerMemberName]string propertyName = "")
+    protected void SetAndSaveProperty<TProperty>(ref TProperty field, TProperty value, Action<TSettings> settingUpdate, [CallerMemberName] string propertyName = "")
     {
-        if(SetProperty(ref field, value, propertyName))
+        if (SetProperty(ref field, value, propertyName))
         {
             settingUpdate(data.Value);
             data.Save();
@@ -67,9 +67,9 @@ public class ResourceHelper
 #endif
 
         return new Uri($"{Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                       "TotoroNext", 
-                       "Modules", 
-                       Assembly.GetCallingAssembly().GetName().Name ?? "", 
+                       "TotoroNext",
+                       "Modules",
+                       Assembly.GetCallingAssembly().GetName().Name ?? "",
                        targetFramework,
                        "Assets",
                        name)}").AbsoluteUri;

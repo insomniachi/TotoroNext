@@ -1,34 +1,22 @@
 ﻿<Page
-    x:Class="TotoroNext.Anime.Views.SearchProviderPage"
+    x:Class="TotoroNext.Anime.Views.UserListPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:TotoroNext.Anime.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:root="using:TotoroNext.Anime"
-    xmlns:taa="using:TotoroNext.Anime.Abstractions.Models"
-    xmlns:utu="using:Uno.Toolkit.UI"
+    xmlns:taa="using:TotoroNext.Anime.Abstractions"
     mc:Ignorable="d">
 
-    <Grid Margin="36" RowSpacing="8">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <AutoSuggestBox
-            PlaceholderText="Search"
-            QueryIcon="Find"
-            Text="{x:Bind ViewModel.Query, Mode=TwoWay}" />
-
+    <Grid>
         <ItemsView
             Grid.Row="1"
             IsItemInvokedEnabled="True"
-            ItemInvoked="ItemsView_ItemInvoked"
             ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}"
             SelectionMode="None">
             <ItemsView.ItemTemplate>
-                <DataTemplate x:DataType="taa:SearchResult">
+                <DataTemplate x:DataType="taa:AnimeModel">
                     <ItemContainer>
                         <Grid>
                             <Grid.RowDefinitions>
@@ -37,7 +25,7 @@
                             </Grid.RowDefinitions>
                             <Image
                                 Grid.Row="0"
-                                Source="{x:Bind root:Converters.UriToImage(Image)}"
+                                Source="{x:Bind root:Converters.StringToImage(Image)}"
                                 Stretch="UniformToFill" />
                             <Border
                                 Grid.Row="1"

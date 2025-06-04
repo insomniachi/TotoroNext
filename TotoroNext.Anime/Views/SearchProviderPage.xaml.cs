@@ -1,4 +1,4 @@
-using TotoroNext.Anime.Abstractions;
+using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.Anime.ViewModels;
 
 namespace TotoroNext.Anime.Views;

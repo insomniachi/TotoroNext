@@ -1,3 +1,5 @@
+using TotoroNext.Anime.Abstractions.Models;
+
 namespace TotoroNext.Anime.Abstractions;
 
 public interface IAnimeProvider
