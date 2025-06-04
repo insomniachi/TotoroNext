@@ -130,6 +130,18 @@ public partial class AniListModelToAnimeModelConverter
         };
     }
 
+    public static MediaSeason ConvertSeason(AnimeSeason season)
+    {
+        return season switch
+        {
+            AnimeSeason.Spring => MediaSeason.Spring,
+            AnimeSeason.Summer => MediaSeason.Summer,
+            AnimeSeason.Fall => MediaSeason.Fall,
+            AnimeSeason.Winter => MediaSeason.Winter,
+            _ => throw new UnreachableException()
+        };
+    }
+
     private static DayOfWeek? GetBroadcastDay(FuzzyDate date)
     {
         if (date is null || date.Year is null || date.Month is null || date.Day is null)

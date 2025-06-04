@@ -30,17 +30,18 @@ public class Module : IModule<Settings>
         services.AddModuleSettings(this);
         services.AddViewMap<SettingsPage, SettingsViewModel>();
         services.TryAddKeyedTransient<IMetadataService, AnilistMetadataService>(Descriptor.Id);
+        services.AddHttpClient(nameof(AnilistMetadataService), (sp, client) =>
+        {
+            var settings = sp.GetRequiredService<IModuleSettings<Settings>>();
+            if (settings.Value.Auth is { } auth)
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+            }
+        });
         services.AddTransient(sp =>
         {
-            var settings = sp.GetRequiredKeyedService<IModuleSettings<Settings>>(Descriptor.Id);
-            var client = new GraphQLHttpClient("https://graphql.anilist.co/", new NewtonsoftJsonSerializer());
-
-            if(settings.Value.Auth is { } auth)
-            {
-                client.HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
-            }
-
-            return client;
+            var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(AnilistMetadataService));
+            return new GraphQLHttpClient("https://graphql.anilist.co/", new NewtonsoftJsonSerializer(), httpClient);
         });
     }
 }
@@ -50,6 +51,7 @@ public class Settings
 {
     public AniListAuthToken? Auth { get; set; }
     public bool IncludeNsfw { get; set; }
+    public double SearchLimit { get; set; } = 15;
 }
 
 public class AniListAuthToken

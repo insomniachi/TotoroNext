@@ -6,20 +6,9 @@ namespace TotoroNext.Module;
 public class FrameNavigator(IViewRegistry locator,
                             IServiceScopeFactory serviceScopeFactory) : IContentControlNavigator
 {
-    public event EventHandler<ContentControl>? Initialized;
+    public event EventHandler<Type>? Navigated;
 
-    public ContentControl Frame
-    {
-        get => field;
-        set
-        {
-            field = value;
-            if(value is not null)
-            {
-                Initialized?.Invoke(this, value);
-            }
-        }
-    } = null!;
+    public ContentControl Frame { get; set; } = null!;
 
     public void NavigateViewModel(Type vmType)
     {
@@ -34,6 +23,7 @@ public class FrameNavigator(IViewRegistry locator,
         using var scope = serviceScopeFactory.CreateScope();
         type.DataContext = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType);
         Frame.Content = type;
+        Navigated?.Invoke(this, view);
     }
 
     public void NavigateToData<TData>(TData data)
@@ -54,6 +44,7 @@ public class FrameNavigator(IViewRegistry locator,
         using var scope = serviceScopeFactory.CreateScope();
         type.DataContext = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm, data);
         Frame.Content = type;
+        Navigated?.Invoke(this, view);
     }
 
     public void NavigateToRoute(string path)
@@ -69,5 +60,6 @@ public class FrameNavigator(IViewRegistry locator,
         using var scope = serviceScopeFactory.CreateScope();
         type.DataContext = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm);
         Frame.Content = type;
+        Navigated?.Invoke(this, view);
     }
 }

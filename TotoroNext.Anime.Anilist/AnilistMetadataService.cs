@@ -7,9 +7,20 @@ namespace TotoroNext.Anime.Anilist;
 internal class AnilistMetadataService(GraphQLHttpClient client,
                                       IModuleSettings<Settings> settings) : IMetadataService
 {
-    public Task<List<AnimeModel>> GetAiringAnimeAsync()
+    public async Task<List<AnimeModel>> GetAiringAnimeAsync()
     {
-        throw new NotImplementedException();
+        var response = await client.SendQueryAsync<Query>(new GraphQL.GraphQLRequest
+        {
+            Query = new QueryQueryBuilder().WithPage(new PageQueryBuilder()
+                .WithMedia(MediaQueryBuilder(), type: MediaType.Anime, status: MediaStatus.Releasing), page: 1, perPage: 20).Build()
+        });
+
+        if (response.Errors?.Length > 0)
+        {
+            return [];
+        }
+
+        return [.. response.Data.Page.Media.Where(FilterNsfw).Select(AniListModelToAnimeModelConverter.ConvertModel)];
     }
 
     public async Task<AnimeModel> GetAnimeAsync(long id)
@@ -25,25 +36,58 @@ internal class AnilistMetadataService(GraphQLHttpClient client,
         return AniListModelToAnimeModelConverter.ConvertModel(response.Data.Media);
     }
 
-    public Task<List<AnimeModel>> GetSeasonalAnimeAsync()
+    public async Task<List<AnimeModel>> GetSeasonalAnimeAsync()
     {
-        throw new NotImplementedException();
+        var current = AnimeHelpers.CurrentSeason();
+        var prev = AnimeHelpers.PrevSeason();
+        var next = AnimeHelpers.NextSeason();
+
+        List<AnimeModel> result = [];
+
+        foreach (var season in new[] { current, prev, next })
+        {
+            var query = new QueryQueryBuilder().WithPage(new PageQueryBuilder()
+                        .WithMedia(MediaQueryBuilder(), season: AniListModelToAnimeModelConverter.ConvertSeason(season.SeasonName),
+                                                        seasonYear: season.Year,
+                                                        type: MediaType.Anime), 1, 50).Build();
+
+            var response = await client.SendQueryAsync<Query>(new GraphQL.GraphQLRequest
+            {
+                Query = query
+            });
+
+            if (response.Errors?.Length > 0)
+            {
+                return [];
+            }
+
+            result.AddRange(response.Data.Page.Media.Where(FilterNsfw).Select(AniListModelToAnimeModelConverter.ConvertModel));
+        }
+
+        return result; 
     }
 
     public async Task<List<AnimeModel>> SearchAnimeAsync(string term)
     {
-        var response = await client.SendQueryAsync<Query>(new GraphQL.GraphQLRequest
+        try
         {
-            Query = new QueryQueryBuilder().WithPage(new PageQueryBuilder()
-                .WithMedia(MediaQueryBuilder(), search: term, type: MediaType.Anime), page: 1, perPage: 5).Build()
-        });
+            var response = await client.SendQueryAsync<Query>(new GraphQL.GraphQLRequest
+            {
+                Query = new QueryQueryBuilder().WithPage(new PageQueryBuilder()
+            .WithMedia(MediaQueryBuilder(), search: term, type: MediaType.Anime), page: 1, perPage: (int)settings.Value.SearchLimit).Build()
+            });
 
-        if (response.Errors?.Length > 0)
+            if (response.Errors?.Length > 0)
+            {
+                return [];
+            }
+
+            return [.. response.Data.Page.Media.Where(FilterNsfw).Select(AniListModelToAnimeModelConverter.ConvertModel)];
+        }
+        catch (Exception ex)
         {
             return [];
         }
-
-        return [.. response.Data.Page.Media.Where(FilterNsfw).Select(AniListModelToAnimeModelConverter.ConvertModel)];
     }
 
     private bool FilterNsfw(Media m)

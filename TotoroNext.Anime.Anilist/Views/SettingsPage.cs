@@ -31,6 +31,9 @@ public partial class SettingsPage : Microsoft.UI.Xaml.Controls.Page
 
                             SettingsCard("Include nsfw results","Include NSFW", new FontIcon {Glyph = "\uE740"})
                                 .Content(new ToggleSwitch().IsOn(x => x.Binding(() => vm.IncludeNsfw).TwoWay())),
+
+                            SettingsCard("Number of results returned when searching by name", "Search limit", new FontIcon{ Glyph = "\uF6FA"})
+                                .Content(new NumberBox().Value(x => x.Binding(() => vm.SearchLimit).TwoWay()))
                         ])));
         });
     }

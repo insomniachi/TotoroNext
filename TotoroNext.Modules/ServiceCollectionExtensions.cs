@@ -1,5 +1,6 @@
 using System.Reactive.Subjects;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Module;
@@ -13,6 +14,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IEventAggregator, EventAggregator>();
         services.AddSingleton<IComponentRegistry, ComponentRegistry>();
         services.AddSingleton<IViewRegistry, ViewRegistry>();
+        services.AddTransient(typeof(IFactory<,>), typeof(Factory<,>));
 
         return services;
     }
@@ -38,12 +40,9 @@ public static class ServiceCollectionExtensions
                 facade.NavigateViewModel(typeof(TViewModel));
             };
 
-            facade.Initialized += (_, e) =>
+            facade.Navigated += (_, e) =>
             {
-                //e.Navigated += (_, args) =>
-                //{
-                //    item.IsSelected = args.Content is Page page && page.GetType() == typeof(TView);
-                //};
+                item.IsSelected = e == typeof(TView);
             };
 
             return item;
