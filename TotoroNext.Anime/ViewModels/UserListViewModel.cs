@@ -14,7 +14,7 @@ namespace TotoroNext.Anime.ViewModels;
 
 public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
                                        IFactory<IAnimeProvider, Guid> providerFactory,
-                                       [FromKeyedServices("Main")]INavigator navigator) : ReactiveObject
+                                       [FromKeyedServices("Main")]INavigator navigator) : ReactiveObject, IAsyncInitializable
 {
     private readonly ITrackingService _trackingService = factory.Create(new Guid("b5d31e9b-b988-44e8-8e28-348f58cf1d04"));
     private readonly IAnimeProvider _provider = providerFactory.Create(new Guid("489576c5-2879-493b-874a-7eb14e081280"));
@@ -28,7 +28,7 @@ public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
 
     public ReadOnlyObservableCollection<AnimeModel>? Items => _anime;
 
-    public async Task Initialize()
+    public async Task InitializeAsync()
     {
         _animeCache
         .Connect()

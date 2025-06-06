@@ -14,7 +14,7 @@ namespace TotoroNext.Anime.ViewModels;
 [UsedImplicitly]
 public partial class SearchProviderViewModel(IFactory<IAnimeProvider, Guid> factory,
                                              IFactory<IMetadataService, Guid> metaDataFactory,
-                                             [FromKeyedServices("Main")]INavigator navigator) : ReactiveObject
+                                             [FromKeyedServices("Main")]INavigator navigator) : ReactiveObject, IInitializable
 {
     private readonly IAnimeProvider _provider = factory.Create(new Guid("489576c5-2879-493b-874a-7eb14e081280"));
     private readonly IMetadataService _metadataService = metaDataFactory.Create(new Guid("b5d31e9b-b988-44e8-8e28-348f58cf1d04"));

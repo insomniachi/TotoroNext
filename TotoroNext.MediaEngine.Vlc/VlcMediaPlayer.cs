@@ -25,7 +25,7 @@ internal class VlcMediaPlayer(Settings settings) : IMediaPlayer
                 media.Uri.ToString(),
                 "--http-host=127.0.0.1",
                 "--http-port=8080",
-                $"--meta-title={media.Title}",
+                $"--meta-title={media.Metadata.Title}",
                 $"--http-password={HttpInterface.Password}",
             }
         };
@@ -35,12 +35,12 @@ internal class VlcMediaPlayer(Settings settings) : IMediaPlayer
             startInfo.ArgumentList.Add("--fullscreen");
         }
 
-        if(media.Headers.TryGetValue("user-agent", out string? userAgent))
+        if(media.Metadata.Headers?.TryGetValue("user-agent", out string? userAgent) == true)
         {
             startInfo.ArgumentList.Add($"--http-user-agent={userAgent}");
         }
 
-        if(media.Headers.TryGetValue("referer", out string? referer))
+        if(media.Metadata.Headers?.TryGetValue("referer", out string? referer) == true)
         {
             startInfo.ArgumentList.Add($"--http-referrer={referer}");
         }

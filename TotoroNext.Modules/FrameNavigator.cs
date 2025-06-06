@@ -3,6 +3,16 @@ using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Module;
 
+public interface IInitializable
+{
+    void Initialize();
+}
+
+public interface IAsyncInitializable
+{
+    Task InitializeAsync();
+}
+
 public class FrameNavigator(IViewRegistry locator,
                             IServiceScopeFactory serviceScopeFactory) : IContentControlNavigator
 {
@@ -21,9 +31,19 @@ public class FrameNavigator(IViewRegistry locator,
 
         var type = (Page)Activator.CreateInstance(view)!;
         using var scope = serviceScopeFactory.CreateScope();
-        type.DataContext = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType);
+        var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType);
+        type.DataContext = vmObj;
         Frame.Content = type;
         Navigated?.Invoke(this, view);
+
+        if (vmObj is IInitializable { } i)
+        {
+            i.Initialize();
+        }
+        if (vmObj is IAsyncInitializable { } ia)
+        {
+            Task.Run(ia.InitializeAsync);
+        }
     }
 
     public void NavigateToData<TData>(TData data)
@@ -42,9 +62,21 @@ public class FrameNavigator(IViewRegistry locator,
 
         var type = (Page)Activator.CreateInstance(view)!;
         using var scope = serviceScopeFactory.CreateScope();
-        type.DataContext = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm, data);
+        var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm, data);
+        type.DataContext = vmObj;
+
         Frame.Content = type;
         Navigated?.Invoke(this, view);
+
+        if (vmObj is IInitializable { } i)
+        {
+            i.Initialize();
+        }
+        if (vmObj is IAsyncInitializable { } ia)
+        {
+            Task.Run(ia.InitializeAsync);
+        }
+
     }
 
     public void NavigateToRoute(string path)
@@ -58,8 +90,19 @@ public class FrameNavigator(IViewRegistry locator,
 
         var type = (Page)Activator.CreateInstance(view)!;
         using var scope = serviceScopeFactory.CreateScope();
-        type.DataContext = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm);
+        var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm);
+        type.DataContext = vmObj;
+
         Frame.Content = type;
         Navigated?.Invoke(this, view);
+
+        if (vmObj is IInitializable { } i)
+        {
+            i.Initialize();
+        }
+        if (vmObj is IAsyncInitializable { } ia)
+        {
+            Task.Run(ia.InitializeAsync);
+        }
     }
 }

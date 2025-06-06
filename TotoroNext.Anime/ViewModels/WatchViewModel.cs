@@ -1,4 +1,6 @@
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
+using FFMpegCore;
 using JetBrains.Annotations;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -6,13 +8,14 @@ using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.Anime.ViewModels.Parameters;
 using TotoroNext.MediaEngine.Abstractions;
+using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Anime.ViewModels;
 
 [UsedImplicitly]
 public partial class WatchViewModel(WatchViewModelNavigationParameter navigationParameter,
-                                    IEventAggregator eventAggregator) : ReactiveObject
+                                    IEventAggregator eventAggregator) : ReactiveObject, IInitializable
 {
     public IMediaPlayer? MediaPlayer { get; set; }
 
@@ -70,7 +73,7 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
         this.WhenAnyValue(x => x.Servers)
             .Where(x => x is { Count: > 0 })
             .ObserveOn(RxApp.MainThreadScheduler)
-            .Subscribe(x => SelectedServer = x.First());
+            .Subscribe(x => SelectedServer = x.Skip(1).First());
 
         this.WhenAnyValue(x => x.Sources)
             .Where(x => x is { Count: 1 })
@@ -79,7 +82,8 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
 
         this.WhenAnyValue(x => x.SelectedSource)
             .WhereNotNull()
-            .Subscribe(Play);
+            .SelectMany(x => Play(x).ToObservable())
+            .Subscribe();
 
         InitializePublishers();
     }
@@ -109,9 +113,9 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
             .Subscribe(position => eventAggregator.GetObserver<PlaybackPositionChangedEvent>().OnNext(new(position)));
     }
 
-    private void Play(VideoSource source)
+    private async Task Play(VideoSource source)
     {
-        if(MediaPlayer is null)
+        if(MediaPlayer is null || SelectedEpisode is null)
         {
             return;
         }
@@ -119,6 +123,32 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
         IEnumerable<string?> parts = [ProviderResult.Title, $"Episode {SelectedEpisode.Number}", source.Title];
         var title = string.Join(" - ", parts.Where(x => !string.IsNullOrEmpty(x)));
 
-        MediaPlayer.Play(new Media(title, source.Url, source.Headers));
+        var duration = await GetDuration(source);
+
+        IReadOnlyList<MediaSection> sections = [
+            new MediaSection(MediaSectionType.Opening, TimeSpan.FromSeconds(100), TimeSpan.FromSeconds(230)),
+            new MediaSection(MediaSectionType.Content, TimeSpan.FromSeconds(200), TimeSpan.FromSeconds(300))
+            ];
+        var metadata = new MediaMetadata(title, source.Headers, sections);
+
+        MediaPlayer.Play(new Media(source.Url, metadata));
+    }
+
+    private static async Task<TimeSpan> GetDuration(VideoSource source)
+    {
+        var client = new HttpClient();
+        if (source.Headers?.TryGetValue("user-agent", out string? userAgent) == true)
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+        }
+
+        if (source.Headers?.TryGetValue("referer", out string? referer) == true)
+        {
+            client.DefaultRequestHeaders.Referrer = new Uri(referer);
+        }
+
+        var stream = await client.GetStreamAsync(source.Url);
+        var result = await FFProbe.AnalyseAsync(stream);
+        return result.Duration;
     }
 }

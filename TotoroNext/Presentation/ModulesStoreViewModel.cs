@@ -6,12 +6,12 @@ using TotoroNext.Module.Abstractions;
 namespace TotoroNext.Presentation;
 
 public partial class ModulesStoreViewModel(IModuleStore store,
-                                           IEnumerable<Descriptor> descriptors) : ReactiveObject
+                                           IEnumerable<Descriptor> descriptors) : ReactiveObject, IAsyncInitializable
 {
     [Reactive]
     public partial List<ModuleManifest> Modules { get; set; }
 
-    public async Task Initialize()
+    public async Task InitializeAsync()
     {
         Modules = await store.GetAllModules().ToListAsync();
     }

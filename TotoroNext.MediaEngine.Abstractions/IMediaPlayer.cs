@@ -8,4 +8,19 @@ public interface IMediaPlayer
 }
 
 
-public record Media(string Title, Uri Uri, IDictionary<string, string> Headers);
+public record Media(Uri Uri, MediaMetadata Metadata);
+
+
+public enum MediaSectionType
+{
+    Recap,
+    Opening,
+    Content,
+    Ending,
+    Preview,
+}
+
+public record MediaSection(MediaSectionType Type, TimeSpan Start, TimeSpan End);
+
+
+public record MediaMetadata(string Title, IDictionary<string, string>? Headers = null, IReadOnlyList<MediaSection>? MedaSections = null);

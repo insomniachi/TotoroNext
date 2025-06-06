@@ -11,6 +11,7 @@
     <PackageVersion Include="CommunityToolkit.WinUI.Animations" Version="8.2.250402" />
     <PackageVersion Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.250402" />
     <PackageVersion Include="CommunityToolkit.WinUI.Extensions" Version="8.2.250402" />
+    <PackageVersion Include="FFMpegCore" Version="5.2.0" />
     <PackageVersion Include="Flurl" Version="4.0.0" />
     <PackageVersion Include="Flurl.Http" Version="4.0.2" />
     <PackageVersion Include="FlurlGraphQL" Version="2.0.5" />
@@ -19,14 +20,11 @@
     <PackageVersion Include="GraphQL.Client.Serializer.Newtonsoft" Version="6.1.0" />
     <PackageVersion Include="HtmlAgilityPack" Version="1.12.1" />
     <PackageVersion Include="JetBrains.Annotations" Version="2024.3.0" />
-    <PackageVersion Include="LibVLCSharp.Uno" Version="3.9.3" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="ReactiveMarbles.ObservableEvents.SourceGenerator" Version="1.3.1" />
     <PackageVersion Include="ReactiveUI" Version="20.2.45" />
     <PackageVersion Include="ReactiveUI.SourceGenerators" Version="2.1.27" />
-    <PackageVersion Include="ReactiveUI.Uno" Version="20.0.36" />
     <PackageVersion Include="ReactiveUI.Uno.WinUI" Version="20.0.36" />
-    <PackageVersion Include="ReactiveUI.WinUI" Version="20.2.45" />
     <PackageVersion Include="System.Linq.Async" Version="6.0.1" />
     <PackageVersion Include="System.Reactive" Version="6.0.1" />
     <PackageVersion Include="Uno.Extensions.Hosting" Version="5.3.8" />
@@ -34,6 +32,5 @@
     <PackageVersion Include="Uno.Extensions.Markup.Generators" Version="6.0.15" />
     <PackageVersion Include="Uno.Extensions.Markup.WinUI" Version="6.0.15" />
     <PackageVersion Include="Uno.WinUI.Markup" Version="6.0.15" />
-    <PackageVersion Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
   </ItemGroup>
 </Project>

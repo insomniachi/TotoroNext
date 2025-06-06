@@ -33,8 +33,8 @@ internal class MpvMediaPlayer(ModuleSettings settings) : IMediaPlayer
 			ArgumentList =
 			{
 				media.Uri.ToString(),
-				$"--title={media.Title}",
-                $"--force-media-title={media.Title}",
+				$"--title={media.Metadata.Title}",
+                $"--force-media-title={media.Metadata.Title}",
                 $"--input-ipc-server={pipePath}"
 			},
 		};
@@ -44,11 +44,17 @@ internal class MpvMediaPlayer(ModuleSettings settings) : IMediaPlayer
             startInfo.ArgumentList.Add("--fullscreen");
         }
 
-		if (media.Headers.Count > 0)
+		if (media.Metadata.Headers is { Count : > 0 } headers)
 		{
-			var headerFields = string.Join(" ", media.Headers.Select(kvp => $"{kvp.Key}:{kvp.Value}"));
+			var headerFields = string.Join(" ", headers.Select(kvp => $"{kvp.Key}:{kvp.Value}"));
 			startInfo.ArgumentList.Add($"--http-header-fields={headerFields}");
 		}
+
+        if(media.Metadata.MedaSections is { Count : > 0 } sections)
+        {
+            var file = ChapterFileWriter.CreateChapterFile(sections);
+            startInfo.ArgumentList.Add($"--chapters-file={file}");
+        }
 
 		_process = Process.Start(startInfo);
 

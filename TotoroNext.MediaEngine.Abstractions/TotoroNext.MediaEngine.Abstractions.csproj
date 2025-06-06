@@ -1,4 +1,4 @@
-<Project Sdk="Uno.Sdk">
+﻿<Project Sdk="Uno.Sdk">
   <PropertyGroup>
     <UnoSingleProject>true</UnoSingleProject>
     <OutputType>Library</OutputType>
@@ -32,5 +32,10 @@
     <!-- <FrameworkReference Update="Microsoft.Windows.SDK.NET.Ref" RuntimeFrameworkVersion="10.0.22621.28" />
     <FrameworkReference Update="Microsoft.Windows.SDK.NET.Ref" TargetingPackVersion="10.0.22621.28" /> -->
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FFMpegCore" />
+  </ItemGroup>
+
 
 </Project>

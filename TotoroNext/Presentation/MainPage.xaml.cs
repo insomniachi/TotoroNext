@@ -4,11 +4,10 @@ namespace TotoroNext.Presentation;
 
 public sealed partial class MainPage : Page
 {
+
     public MainPage()
     {
         InitializeComponent();
-
-        DataContextChanged += MainPage_DataContextChanged;
 
 #if WINDOWS
         //NavFrame.Navigated += (s, e) =>
@@ -16,11 +15,12 @@ public sealed partial class MainPage : Page
         //    TitleBarControl.IsBackButtonVisible = NavFrame.CanGoBack;
         //};
 #endif
+        Loaded += MainPage_Loaded;
     }
 
-    private void MainPage_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+    private void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
-        if(args.NewValue is MainViewModel vm)
+        if (DataContext is MainViewModel vm)
         {
             vm.NavigationFacade.Frame = NavFrame;
             vm.NavigateToDefault();
