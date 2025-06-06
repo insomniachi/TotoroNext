@@ -1,4 +1,3 @@
-using System.IO;
 using System.Reactive.Linq;
 using JetBrains.Annotations;
 using ReactiveUI;
@@ -57,8 +56,7 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
     {
         InitializeOAPH();
 
-        ProviderResult = navigationParameter.ProviderResult;
-        Anime = navigationParameter.Anime;
+        (ProviderResult, Anime) = navigationParameter;
 
         this.WhenAnyValue(x => x.Episodes)
             .WhereNotNull()
