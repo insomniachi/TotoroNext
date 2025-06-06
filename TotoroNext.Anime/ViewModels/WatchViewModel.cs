@@ -24,7 +24,7 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
     public partial AnimeModel? Anime { get; set; }
 
     [Reactive]
-    public partial Episode SelectedEpisode { get; set; }
+    public partial Episode? SelectedEpisode { get; set; }
 
     [Reactive]
     public partial VideoServer SelectedServer { get; set; }
@@ -59,6 +59,15 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
 
         ProviderResult = navigationParameter.ProviderResult;
         Anime = navigationParameter.Anime;
+
+        this.WhenAnyValue(x => x.Episodes)
+            .WhereNotNull()
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(eps =>
+            {
+                var watched = (Anime?.Tracking?.WatchedEpisodes ?? 0) + 1;
+                SelectedEpisode = eps.FirstOrDefault(x => x.Number == watched);
+            });
 
         this.WhenAnyValue(x => x.Servers)
             .Where(x => x is { Count: > 0 })
