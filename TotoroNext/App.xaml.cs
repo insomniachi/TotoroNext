@@ -50,7 +50,7 @@ public partial class App : Application
 #endif
 
         var builder = this.CreateBuilder(args)
-            .Configure(host => host
+            .Configure((host, window) => host
 #if DEBUG
                 // Switch to Development environment when running in DEBUG
                 .UseEnvironment(Environments.Development)
@@ -79,6 +79,7 @@ public partial class App : Application
                 })
                 .ConfigureServices((context, services) =>
                 {
+                    services.AddTransient(_ => window.Content!.XamlRoot!);
                     services.AddSingleton<IModuleStore>(store);
                     services.AddCoreServices();
                     services.AddAnimeServices();
@@ -89,7 +90,6 @@ public partial class App : Application
 
                         if(OperatingSystem.IsWindows())
                         {
-                            var window = MainWindow;
                             var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
                             WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
                         }
@@ -123,12 +123,9 @@ public partial class App : Application
 
         Container.ConfigureServices(Host.Services);
 
-        MainWindow = new Window
+        MainWindow.Content = new MainPage
         {
-            Content = new MainPage
-            {
-                DataContext = ActivatorUtilities.CreateInstance<MainViewModel>(Host.Services)
-            }
+            DataContext = ActivatorUtilities.CreateInstance<MainViewModel>(Host.Services)
         };
 
         await Host.StartAsync();

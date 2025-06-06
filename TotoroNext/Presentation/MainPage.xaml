@@ -38,7 +38,14 @@
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 HorizontalContentAlignment="Stretch"
-                VerticalContentAlignment="Stretch" />
+                VerticalContentAlignment="Stretch">
+                <ContentControl.ContentTransitions>
+                    <TransitionCollection>
+                        <EntranceThemeTransition />
+                        <ContentThemeTransition />
+                    </TransitionCollection>
+                </ContentControl.ContentTransitions>
+            </ContentControl>
         </NavigationView>
     </Grid>
 

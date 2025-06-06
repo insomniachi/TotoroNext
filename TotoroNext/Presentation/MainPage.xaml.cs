@@ -1,3 +1,5 @@
+using ReactiveUI.Uno;
+
 namespace TotoroNext.Presentation;
 
 public sealed partial class MainPage : Page
@@ -33,12 +35,7 @@ public sealed partial class MainPage : Page
 
     private void TitleBar_BackRequested(TitleBar sender, object args)
     {
-        //if(!NavFrame.CanGoBack)
-        //{
-        //    return;
-        //}
 
-        //NavFrame.GoBack(); 
     }
 #endif
 

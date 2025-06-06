@@ -23,6 +23,7 @@
         <ItemsView
             Grid.Row="1"
             IsItemInvokedEnabled="True"
+            ItemInvoked="ItemsView_ItemInvoked"
             ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}"
             SelectionMode="None">
             <ItemsView.ItemTemplate>

@@ -110,4 +110,10 @@ public static class ServiceCollectionExtensions
     {
         return services.AddViewMap(new KeyedViewMap<TView, TViewModel>(key));
     }
+
+    public static IServiceCollection AddSelectionUserInteraction<TImpl, TType>(this IServiceCollection services)
+        where TImpl : class, IUserInteraction<List<TType>, TType>
+    {
+        return services.AddTransient<IUserInteraction<List<TType>, TType>, TImpl>();
+    }
 }

@@ -24,6 +24,8 @@ public partial class AniListModelToAnimeModelConverter
             MeanScore = media.MeanScore,
             Popularity = media.Popularity ?? 0,
             Tracking = ConvertTracking(media.MediaListEntry),
+            NextEpisodeAt = ConvertToExactTime(media.NextAiringEpisode?.TimeUntilAiring),
+            AiredEpisodes = media.NextAiringEpisode?.Episode - 1 ?? 0,
         };
     }
 

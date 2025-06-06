@@ -1,6 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
+using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Abstractions.Models;
+using TotoroNext.Anime.UserInteractions;
 using TotoroNext.Anime.ViewModels;
+using TotoroNext.Anime.ViewModels.Parameters;
 using TotoroNext.Anime.Views;
 using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
@@ -14,12 +17,15 @@ public class Module : IModule
         services.AddMainNavigationViewItem<UserListPage,UserListViewModel>("My List", new SymbolIcon(Symbol.Library))
                 .AddMainNavigationViewItem<SearchProviderPage, SearchProviderViewModel>("Watch Now", new FontIcon { Glyph = "\uE7C5" })
                 .AddMainNavigationViewItem<SearchMetadataProviderPage, SearchMetadataProviderViewModel>("Search Metadata", new FontIcon { Glyph = "\uF6FA" })
-                .AddDataViewMap<WatchPage, WatchViewModel, SearchResult>();
+                .AddDataViewMap<WatchPage, WatchViewModel, WatchViewModelNavigationParameter>();
 
         services.RegisterEvent<AnimeSelectedEvent>()
                 .RegisterEvent<EpisodeSelectedEvent>()
                 .RegisterEvent<PlaybackDurationChangedEvent>()
                 .RegisterEvent<PlaybackPositionChangedEvent>()
                 .RegisterEvent<TrackableAnimeSelectedEvent>();
+
+        services.AddSelectionUserInteraction<SelectProviderResult, SearchResult>()
+                .AddSelectionUserInteraction<SelectAnimeResult, AnimeModel>();
     }
 }

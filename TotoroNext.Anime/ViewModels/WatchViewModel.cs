@@ -3,20 +3,25 @@ using System.Reactive.Linq;
 using JetBrains.Annotations;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Abstractions.Models;
+using TotoroNext.Anime.ViewModels.Parameters;
 using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Anime.ViewModels;
 
 [UsedImplicitly]
-public partial class WatchViewModel(SearchResult result,
+public partial class WatchViewModel(WatchViewModelNavigationParameter navigationParameter,
                                     IEventAggregator eventAggregator) : ReactiveObject
 {
     public IMediaPlayer? MediaPlayer { get; set; }
 
     [Reactive]
-    public partial SearchResult Anime { get; set; }
+    public partial SearchResult ProviderResult { get; set; }
+
+    [Reactive]
+    public partial AnimeModel? Anime { get; set; }
 
     [Reactive]
     public partial Episode SelectedEpisode { get; set; }
@@ -43,7 +48,7 @@ public partial class WatchViewModel(SearchResult result,
 
     [ObservableAsProperty(PropertyName = "Episodes")]
     private IObservable<List<Episode>> EpisodesObservable() =>
-        this.WhenAnyValue(x => x.Anime)
+        this.WhenAnyValue(x => x.ProviderResult)
             .WhereNotNull()
             .SelectMany(anime => anime.GetEpisodes().ToListAsync().AsTask())
             .ObserveOn(RxApp.MainThreadScheduler);
@@ -52,7 +57,8 @@ public partial class WatchViewModel(SearchResult result,
     {
         InitializeOAPH();
 
-        Anime = result;
+        ProviderResult = navigationParameter.ProviderResult;
+        Anime = navigationParameter.Anime;
 
         this.WhenAnyValue(x => x.Servers)
             .Where(x => x is { Count: > 0 })
@@ -75,7 +81,11 @@ public partial class WatchViewModel(SearchResult result,
     {
         this.WhenAnyValue(x => x.Anime)
             .WhereNotNull()
-            .Subscribe(anime => eventAggregator.GetObserver<AnimeSelectedEvent>().OnNext(new(anime)));
+            .Subscribe(anime => eventAggregator.GetObserver<TrackableAnimeSelectedEvent>().OnNext(new(anime)));
+
+        this.WhenAnyValue(x => x.ProviderResult)
+            .WhereNotNull()
+            .Subscribe(result => eventAggregator.GetObserver<AnimeSelectedEvent>().OnNext(new(result)));
 
         this.WhenAnyValue(x => x.SelectedEpisode)
             .WhereNotNull()
@@ -99,7 +109,7 @@ public partial class WatchViewModel(SearchResult result,
             return;
         }
 
-        IEnumerable<string?> parts = [Anime.Title, $"Episode {SelectedEpisode.Number}", source.Title];
+        IEnumerable<string?> parts = [ProviderResult.Title, $"Episode {SelectedEpisode.Number}", source.Title];
         var title = string.Join(" - ", parts.Where(x => !string.IsNullOrEmpty(x)));
 
         MediaPlayer.Play(new Media(title, source.Url, source.Headers));

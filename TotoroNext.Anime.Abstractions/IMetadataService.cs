@@ -23,6 +23,8 @@ public partial class AnimeModel : ObservableObject
     public AiringStatus AiringStatus { get; set; }
     public float? MeanScore { get; set; }
     public int Popularity { get; set; }
+    public DateTime? NextEpisodeAt { get; set; }
+    public int AiredEpisodes { get; set; }
 }
 
 
