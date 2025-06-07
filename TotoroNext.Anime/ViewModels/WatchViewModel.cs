@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
+using System.Reflection;
 using FFMpegCore;
 using JetBrains.Annotations;
 using ReactiveUI;
@@ -73,7 +75,7 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
         this.WhenAnyValue(x => x.Servers)
             .Where(x => x is { Count: > 0 })
             .ObserveOn(RxApp.MainThreadScheduler)
-            .Subscribe(x => SelectedServer = x.Skip(1).First());
+            .Subscribe(x => SelectedServer = x.First());
 
         this.WhenAnyValue(x => x.Sources)
             .Where(x => x is { Count: 1 })
@@ -123,32 +125,10 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
         IEnumerable<string?> parts = [ProviderResult.Title, $"Episode {SelectedEpisode.Number}", source.Title];
         var title = string.Join(" - ", parts.Where(x => !string.IsNullOrEmpty(x)));
 
-        var duration = await GetDuration(source);
+        var duration = MediaHelper.GetDuration(source.Url, source.Headers);
 
-        IReadOnlyList<MediaSection> sections = [
-            new MediaSection(MediaSectionType.Opening, TimeSpan.FromSeconds(100), TimeSpan.FromSeconds(230)),
-            new MediaSection(MediaSectionType.Content, TimeSpan.FromSeconds(200), TimeSpan.FromSeconds(300))
-            ];
-        var metadata = new MediaMetadata(title, source.Headers, sections);
+        var metadata = new MediaMetadata(title, source.Headers);
 
         MediaPlayer.Play(new Media(source.Url, metadata));
-    }
-
-    private static async Task<TimeSpan> GetDuration(VideoSource source)
-    {
-        var client = new HttpClient();
-        if (source.Headers?.TryGetValue("user-agent", out string? userAgent) == true)
-        {
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
-        }
-
-        if (source.Headers?.TryGetValue("referer", out string? referer) == true)
-        {
-            client.DefaultRequestHeaders.Referrer = new Uri(referer);
-        }
-
-        var stream = await client.GetStreamAsync(source.Url);
-        var result = await FFProbe.AnalyseAsync(stream);
-        return result.Duration;
     }
 }

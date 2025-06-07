@@ -33,17 +33,19 @@ public class FrameNavigator(IViewRegistry locator,
         using var scope = serviceScopeFactory.CreateScope();
         var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType);
         type.DataContext = vmObj;
+        type.Loaded += (_, _) =>
+        {
+            if (vmObj is IInitializable { } i)
+            {
+                i.Initialize();
+            }
+            if (vmObj is IAsyncInitializable { } ia)
+            {
+                Task.Run(ia.InitializeAsync);
+            }
+        };
         Frame.Content = type;
         Navigated?.Invoke(this, view);
-
-        if (vmObj is IInitializable { } i)
-        {
-            i.Initialize();
-        }
-        if (vmObj is IAsyncInitializable { } ia)
-        {
-            Task.Run(ia.InitializeAsync);
-        }
     }
 
     public void NavigateToData<TData>(TData data)
@@ -64,19 +66,19 @@ public class FrameNavigator(IViewRegistry locator,
         using var scope = serviceScopeFactory.CreateScope();
         var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm, data);
         type.DataContext = vmObj;
-
+        type.Loaded += (_, _) =>
+        {
+            if (vmObj is IInitializable { } i)
+            {
+                i.Initialize();
+            }
+            if (vmObj is IAsyncInitializable { } ia)
+            {
+                Task.Run(ia.InitializeAsync);
+            }
+        };
         Frame.Content = type;
         Navigated?.Invoke(this, view);
-
-        if (vmObj is IInitializable { } i)
-        {
-            i.Initialize();
-        }
-        if (vmObj is IAsyncInitializable { } ia)
-        {
-            Task.Run(ia.InitializeAsync);
-        }
-
     }
 
     public void NavigateToRoute(string path)
@@ -92,17 +94,18 @@ public class FrameNavigator(IViewRegistry locator,
         using var scope = serviceScopeFactory.CreateScope();
         var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm);
         type.DataContext = vmObj;
-
+        type.Loaded += async (_, _) =>
+        {
+            if (vmObj is IInitializable { } i)
+            {
+                i.Initialize();
+            }
+            if (vmObj is IAsyncInitializable { } ia)
+            {
+                await ia.InitializeAsync();
+            }
+        };
         Frame.Content = type;
         Navigated?.Invoke(this, view);
-
-        if (vmObj is IInitializable { } i)
-        {
-            i.Initialize();
-        }
-        if (vmObj is IAsyncInitializable { } ia)
-        {
-            Task.Run(ia.InitializeAsync);
-        }
     }
 }

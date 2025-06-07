@@ -2,6 +2,7 @@ using System.Reactive.Concurrency;
 using System.Runtime.InteropServices;
 using ReactiveUI;
 using TotoroNext.Anime;
+using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
 using Uno.Resizetizer;
@@ -10,13 +11,9 @@ using Windows.Storage.Pickers;
 namespace TotoroNext;
 public partial class App : Application
 {
-    /// <summary>
-    /// Initializes the singleton application object. This is the first line of authored code
-    /// executed, and as such is the logical equivalent of main() or WinMain().
-    /// </summary>
     public App()
     {
-        this.InitializeComponent();
+        InitializeComponent();
     }
 
     protected Window? MainWindow { get; private set; }
@@ -24,7 +21,6 @@ public partial class App : Application
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
-
         List<IModule> modules =
         [
             new Anime.Module(),
@@ -61,9 +57,9 @@ public partial class App : Application
                     logBuilder
                         .SetMinimumLevel(
                             context.HostingEnvironment.IsDevelopment() ?
-                                LogLevel.Information :
+                                LogLevel.Debug :
                                 LogLevel.Warning)
-                        .CoreLogLevel(LogLevel.Warning);
+                        .CoreLogLevel(LogLevel.Debug);
 
                 }, enableUnoLogging: true)
                 .UseSerilog(consoleLoggingEnabled: true, fileLoggingEnabled: true)
@@ -134,9 +130,11 @@ public partial class App : Application
 
 #if WINDOWS
         RxApp.MainThreadScheduler = new DispatcherQueueScheduler(MainWindow.DispatcherQueue);
+        MainWindow.ExtendsContentIntoTitleBar = true;
 #else
         RxApp.MainThreadScheduler = new WaitForDispatcherScheduler(() => CoreDispatcherScheduler.Current);
 #endif
-        MainWindow.ExtendsContentIntoTitleBar = true;
+
+        await FFBinaries.DownloadLatest();
     }
 }

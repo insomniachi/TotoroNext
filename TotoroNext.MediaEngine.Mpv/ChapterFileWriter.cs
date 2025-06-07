@@ -9,7 +9,7 @@ internal class ChapterFileWriter
 {
     public static readonly string FilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TotoroNext", "Modules", typeof(ChapterFileWriter).Assembly.GetName().Name!, $"chapters.txt");
     
-    internal static string CreateChapterFile(IReadOnlyList<MediaSection> sections)
+    internal static string CreateChapterFile(IReadOnlyList<MediaSegment> sections)
     {
 
         var sb = new StringBuilder();
