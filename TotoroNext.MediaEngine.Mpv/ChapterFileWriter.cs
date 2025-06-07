@@ -20,7 +20,10 @@ internal class ChapterFileWriter
             sb.AppendLine("TIMEBASE=1/60");
             sb.AppendLine($"START={(int)section.Start.TotalSeconds * 60}");
             sb.AppendLine($"END={(int)section.End.TotalSeconds * 60}");
-            sb.AppendLine($"title={section.Type}");
+            if(section.Type != MediaSectionType.Content)
+            {
+                sb.AppendLine($"title={section.Type}");
+            }
         }
 
         File.WriteAllText(FilePath, sb.ToString());

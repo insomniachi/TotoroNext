@@ -5,6 +5,7 @@ using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Abstractions.Models;
+using TotoroNext.Anime.Extensions;
 using TotoroNext.Anime.ViewModels.Parameters;
 using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
@@ -36,8 +37,9 @@ public partial class SearchProviderViewModel(IFactory<IAnimeProvider, Guid> fact
         InitializeOAPH();
     }
 
-    public void NavigateToWatch(SearchResult result)
+    public async Task NavigateToWatch(SearchResult result)
     {
-        navigator.NavigateToData(new WatchViewModelNavigationParameter(result));
+        var anime = await _metadataService.SearchAndSelectAsync(result);
+        navigator.NavigateToData(new WatchViewModelNavigationParameter(result, anime));
     }
 }

@@ -14,6 +14,7 @@ public interface IMetadataService
 public partial class AnimeModel : ObservableObject
 {
     public long Id { get; set; }
+    public long MalId { get; set; }
     public string Image { get; set; } = "";
     public string Title { get; set; } = "";
     public string EngTitle { get; set; } = "";

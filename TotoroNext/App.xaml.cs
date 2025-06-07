@@ -32,6 +32,7 @@ public partial class App : Application
             [
                 new Anime.AllAnime.Module(),
                 new Anime.Anilist.Module(),
+                new Anime.Aniskip.Module(),
                 new MediaEngine.Mpv.Module(),
                 new MediaEngine.Vlc.Module()
             ]);
@@ -69,10 +70,7 @@ public partial class App : Application
                         .Section<AppConfig>()
                 )
                 .UseLocalization()
-                .UseHttp((context, services) =>
-                {
-
-                })
+                .UseHttp()
                 .ConfigureServices((context, services) =>
                 {
                     services.AddTransient(_ => window.Content!.XamlRoot!);

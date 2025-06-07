@@ -18,6 +18,7 @@ public partial class AniListModelToAnimeModelConverter
             EngTitle = media.Title.English ?? media.Title.Romaji ?? string.Empty,
             RomajiTitle = media.Title.Romaji ?? media.Title.English ?? string.Empty,
             Id = media.Id ?? 0,
+            MalId = media.IdMal ?? 0,
             Image = media.CoverImage.Large,
             TotalEpisodes = media.Episodes,
             AiringStatus = ConvertStatus(media.Status),
