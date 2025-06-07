@@ -11,6 +11,9 @@ public partial class Module : IModule
     {
         Id = new Guid("5ccd59c9-7fd1-485e-b542-e4b8cfaf5655"),
         Name = "Aniskip",
+        Components = [ ComponentTypes.MediaSegments ],
+        Description = "third party api to allow users to submit and vote on timestamp ranges for segments of episodes to skip.",
+        HeroImage = ResourceHelper.GetResource("aniskip.png")
     };
 
     public void ConfigureServices(IServiceCollection services)

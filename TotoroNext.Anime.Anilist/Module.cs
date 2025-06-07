@@ -47,7 +47,7 @@ public class Module : IModule<Settings>
             return new GraphQLHttpClient("https://graphql.anilist.co/", new NewtonsoftJsonSerializer(), httpClient);
         });
 
-        services.AddHostedService<TrackingUpdater>();
+        services.AddHostedService<AnilistTrackingUpdater>();
     }
 }
 

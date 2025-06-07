@@ -6,6 +6,7 @@ public class ComponentTypes
     public const string MediaEngine = "Media Engine";
     public const string Metadata = "Metadata";
     public const string Tracking = "Tracking";
+    public const string MediaSegments = "Segments";
 }
 
 public interface IComponentRegistry
