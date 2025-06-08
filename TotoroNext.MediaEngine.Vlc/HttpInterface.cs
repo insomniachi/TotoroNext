@@ -41,7 +41,7 @@ internal class HttpInterface
     public async Task<VlcStatus?> GetStatus()
     {
         IFlurlResponse? result = null;
-        
+
         try
         {
             result = await _api
@@ -50,7 +50,7 @@ internal class HttpInterface
         }
         catch { }
 
-        if(result is null)
+        if (result is null)
         {
             return null;
         }

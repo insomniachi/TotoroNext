@@ -64,7 +64,7 @@ internal partial class AnimeProvider : IAnimeProvider
 
         foreach (var item in sourceObjs)
         {
-            if(item.SourceUrl.StartsWith("--"))
+            if (item.SourceUrl.StartsWith("--"))
             {
                 item.SourceUrl = DecryptSourceUrl(item.SourceUrl);
             }
@@ -72,7 +72,7 @@ internal partial class AnimeProvider : IAnimeProvider
             switch (item.SourceName)
             {
                 case "Mp4":
-                    if(await VideoServers.FromMp4Upload(item.SourceName, item.SourceUrl) is { } server)
+                    if (await VideoServers.FromMp4Upload(item.SourceName, item.SourceUrl) is { } server)
                     {
                         yield return server;
                     }
@@ -129,20 +129,20 @@ internal partial class AnimeProvider : IAnimeProvider
 
     public async IAsyncEnumerable<SearchResult> SearchAsync(string query)
     {
-       var jObject = await Api
-            .WithGraphQLQuery(SEARCH_QUERY)
-            .SetGraphQLVariables(new
-            {
-                search = new
-                {
-                    allowAdult = true,
-                    allowUnknown = true,
-                    query
-                },
-                limit = 40
-            })
-            .PostGraphQLQueryAsync()
-            .ReceiveGraphQLRawSystemTextJsonResponse();
+        var jObject = await Api
+             .WithGraphQLQuery(SEARCH_QUERY)
+             .SetGraphQLVariables(new
+             {
+                 search = new
+                 {
+                     allowAdult = true,
+                     allowUnknown = true,
+                     query
+                 },
+                 limit = 40
+             })
+             .PostGraphQLQueryAsync()
+             .ReceiveGraphQLRawSystemTextJsonResponse();
 
         foreach (var item in jObject?["shows"]?["edges"]?.AsArray().OfType<JsonObject>() ?? [])
         {

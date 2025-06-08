@@ -18,7 +18,7 @@ public partial class MainViewModel : ReactiveObject
     public MainViewModel(
         IStringLocalizer localizer,
         IOptions<AppConfig> appInfo,
-        [FromKeyedServices("Main")]IContentControlNavigator navigationFacade,
+        [FromKeyedServices("Main")] IContentControlNavigator navigationFacade,
         IEnumerable<NavigationViewItem> navigationViewItems)
     {
         NavigationFacade = navigationFacade;

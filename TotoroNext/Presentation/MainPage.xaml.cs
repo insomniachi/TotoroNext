@@ -1,5 +1,3 @@
-using ReactiveUI.Uno;
-
 namespace TotoroNext.Presentation;
 
 public sealed partial class MainPage : Page

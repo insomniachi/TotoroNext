@@ -17,55 +17,55 @@ internal class MpvMediaPlayer(ModuleSettings settings) : IMediaPlayer
     public IObservable<TimeSpan> DurationChanged => _durationSubject;
     public IObservable<TimeSpan> PositionChanged => _positionSubject;
 
-	public void Play(Media media)
-	{
-		_process?.Kill();
-		_ipcStream?.Dispose();
+    public void Play(Media media)
+    {
+        _process?.Kill();
+        _ipcStream?.Dispose();
 
-		var pipeName = $"mpv-pipe-{Guid.NewGuid()}";
-		var pipePath = $@"\\.\pipe\{pipeName}";
+        var pipeName = $"mpv-pipe-{Guid.NewGuid()}";
+        var pipePath = $@"\\.\pipe\{pipeName}";
 
-		var startInfo = new ProcessStartInfo
-		{
-			FileName = settings.FileName,
-			ArgumentList =
-			{
-				media.Uri.ToString(),
-				$"--title={media.Metadata.Title}",
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = settings.FileName,
+            ArgumentList =
+            {
+                media.Uri.ToString(),
+                $"--title={media.Metadata.Title}",
                 $"--force-media-title={media.Metadata.Title}",
                 $"--input-ipc-server={pipePath}"
-			},
-		};
+            },
+        };
 
-        if(settings.LaunchFullScreen)
+        if (settings.LaunchFullScreen)
         {
             startInfo.ArgumentList.Add("--fullscreen");
         }
 
-		if (media.Metadata.Headers is { Count : > 0 } headers)
-		{
-			var headerFields = string.Join(" ", headers.Select(kvp => $"{kvp.Key}:{kvp.Value}"));
-			startInfo.ArgumentList.Add($"--http-header-fields={headerFields}");
-		}
+        if (media.Metadata.Headers is { Count: > 0 } headers)
+        {
+            var headerFields = string.Join(" ", headers.Select(kvp => $"{kvp.Key}:{kvp.Value}"));
+            startInfo.ArgumentList.Add($"--http-header-fields={headerFields}");
+        }
 
-        if(media.Metadata.MedaSections is { Count : > 0 } sections)
+        if (media.Metadata.MedaSections is { Count: > 0 } sections)
         {
             var file = ChapterFileWriter.CreateChapterFile(sections);
             startInfo.ArgumentList.Add($"--chapters-file={file}");
         }
 
-		_process = Process.Start(startInfo);
+        _process = Process.Start(startInfo);
 
-		Task.Run(async () =>
+        Task.Run(async () =>
         {
-            while(!File.Exists(pipePath))
+            while (!File.Exists(pipePath))
             {
                 await Task.Delay(500);
             }
 
             await IpcLoop(pipeName);
         });
-	}
+    }
 
     private async Task IpcLoop(string pipeName)
     {

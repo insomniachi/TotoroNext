@@ -30,17 +30,17 @@ internal class VlcMediaPlayer(Settings settings) : IMediaPlayer
             }
         };
 
-        if(settings.LaunchFullScreen)
+        if (settings.LaunchFullScreen)
         {
             startInfo.ArgumentList.Add("--fullscreen");
         }
 
-        if(media.Metadata.Headers?.TryGetValue("user-agent", out string? userAgent) == true)
+        if (media.Metadata.Headers?.TryGetValue("user-agent", out string? userAgent) == true)
         {
             startInfo.ArgumentList.Add($"--http-user-agent={userAgent}");
         }
 
-        if(media.Metadata.Headers?.TryGetValue("referer", out string? referer) == true)
+        if (media.Metadata.Headers?.TryGetValue("referer", out string? referer) == true)
         {
             startInfo.ArgumentList.Add($"--http-referrer={referer}");
         }
@@ -50,6 +50,6 @@ internal class VlcMediaPlayer(Settings settings) : IMediaPlayer
 
         var webInterface = new HttpInterface(_process);
         webInterface.DurationChanged.Subscribe(_positionSubject.OnNext);
-        webInterface.PositionChanged.Subscribe(_durationSubject.OnNext);    
+        webInterface.PositionChanged.Subscribe(_durationSubject.OnNext);
     }
 }

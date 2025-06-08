@@ -14,7 +14,7 @@ public abstract class TrackingUpdater(ITrackingService trackingService,
     public Task StartAsync(CancellationToken cancellationToken)
     {
         playbackProgressEvent.OnNext()
-            .Where(e => (e.Anime.Tracking?.WatchedEpisodes ?? 0) < e.Episode.Number )
+            .Where(e => (e.Anime.Tracking?.WatchedEpisodes ?? 0) < e.Episode.Number)
             .Where(e => e.Duration - e.Position < TimeSpan.FromMinutes(2))
             .SelectMany(e =>
             {
@@ -39,13 +39,13 @@ public abstract class TrackingUpdater(ITrackingService trackingService,
             })
             .Subscribe()
             .DisposeWith(_subscription);
-  
+
         return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        if(_subscription.IsDisposed)
+        if (_subscription.IsDisposed)
         {
             return Task.CompletedTask;
         }

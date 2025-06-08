@@ -13,10 +13,10 @@ public class Module : IModule
         Name = "AllAnime",
         Description = "AllAnime's goal is to provide you with the highest possible amount of daily anime episodes/manga chapters for free and without any kind of limitation.",
         HeroImage = ResourceHelper.GetResource("hero.png"),
-        Components = [ ComponentTypes.AnimeProvider ]
+        Components = [ComponentTypes.AnimeProvider]
     };
 
-    public void RegisterComponents(IComponentRegistry components) 
+    public void RegisterComponents(IComponentRegistry components)
     {
         components.RegisterComponent(ComponentTypes.AnimeProvider, Descriptor);
     }

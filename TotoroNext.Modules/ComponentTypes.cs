@@ -18,7 +18,7 @@ public interface IComponentRegistry
 
 public class ComponentRegistry : IComponentRegistry
 {
-    private readonly Dictionary<string, List<Descriptor>> _components = new();
+    private readonly Dictionary<string, List<Descriptor>> _components = [];
     public void RegisterComponent(string componentType, Descriptor descriptor)
     {
         if (_components.TryGetValue(componentType, out var list))

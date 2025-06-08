@@ -64,7 +64,7 @@ internal class AnilistMetadataService(GraphQLHttpClient client,
             result.AddRange(response.Data.Page.Media.Where(FilterNsfw).Select(AniListModelToAnimeModelConverter.ConvertModel));
         }
 
-        return result; 
+        return result;
     }
 
     public async Task<List<AnimeModel>> SearchAnimeAsync(string term)

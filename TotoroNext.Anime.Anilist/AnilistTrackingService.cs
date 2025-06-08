@@ -9,7 +9,7 @@ internal class AnilistTrackingService(GraphQLHttpClient client) : ITrackingServi
     {
         var userName = await FetchUserName();
 
-        if(string.IsNullOrEmpty(userName))
+        if (string.IsNullOrEmpty(userName))
         {
             return [];
         }
@@ -35,7 +35,7 @@ internal class AnilistTrackingService(GraphQLHttpClient client) : ITrackingServi
             Query = query
         });
 
-        if(response is { Data.Media.MediaListEntry: null } or null)
+        if (response is { Data.Media.MediaListEntry: null } or null)
         {
             return false;
         }

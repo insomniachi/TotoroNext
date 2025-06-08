@@ -15,7 +15,7 @@ public class Module : IModule<Settings>
         Name = "VLC Media Player",
         Description = "A module for integrating VLC media player into TotoroNext.",
         HeroImage = ResourceHelper.GetResource("vlc.jpeg"),
-        Components = [ ComponentTypes.MediaEngine ],
+        Components = [ComponentTypes.MediaEngine],
         SettingViewModel = typeof(SettingsPageViewModel)
     };
 

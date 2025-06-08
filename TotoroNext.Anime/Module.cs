@@ -15,7 +15,7 @@ public class Module : IModule
     public void ConfigureServices(IServiceCollection services)
     {
 
-        services.AddMainNavigationViewItem<UserListPage,UserListViewModel>("My List", new SymbolIcon(Symbol.Library))
+        services.AddMainNavigationViewItem<UserListPage, UserListViewModel>("My List", new SymbolIcon(Symbol.Library))
                 .AddMainNavigationViewItem<SearchProviderPage, SearchProviderViewModel>("Watch Now", new FontIcon { Glyph = "\uE7C5" })
                 .AddMainNavigationViewItem<SearchMetadataProviderPage, SearchMetadataProviderViewModel>("Search Metadata", new FontIcon { Glyph = "\uF6FA" })
                 .AddDataViewMap<WatchPage, WatchViewModel, WatchViewModelNavigationParameter>();

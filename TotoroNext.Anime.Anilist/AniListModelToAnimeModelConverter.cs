@@ -94,7 +94,7 @@ public partial class AniListModelToAnimeModelConverter
         };
     }
 
-	public static ListItemStatus? ConvertListStatus(MediaListStatus? status)
+    public static ListItemStatus? ConvertListStatus(MediaListStatus? status)
     {
         return status switch
         {

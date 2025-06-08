@@ -27,7 +27,7 @@ public class ModuleStore : IModuleStore
     private readonly HttpClient _client = new();
     private readonly string _url = "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/manifest.json";
     private readonly string _modulesPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TotoroNext", "Modules");
-    private readonly List<AssemblyLoadContext> _contexts = new();
+    private readonly List<AssemblyLoadContext> _contexts = [];
 
     public async IAsyncEnumerable<IModule> LoadModules()
     {

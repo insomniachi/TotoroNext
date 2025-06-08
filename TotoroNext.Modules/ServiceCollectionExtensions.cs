@@ -1,6 +1,5 @@
 using System.Reactive.Subjects;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Module;

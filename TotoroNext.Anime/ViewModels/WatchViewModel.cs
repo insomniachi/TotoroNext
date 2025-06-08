@@ -105,7 +105,7 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
 
     private async Task Play(VideoSource source)
     {
-        if(MediaPlayer is null || SelectedEpisode is null)
+        if (MediaPlayer is null || SelectedEpisode is null)
         {
             return;
         }
@@ -116,7 +116,7 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
         var duration = MediaHelper.GetDuration(source.Url, source.Headers);
         List<MediaSegment> segments = [];
 
-        if(Anime is not null)
+        if (Anime is not null)
         {
             var segmentsProvider = segmentsFactory.Create(new Guid("5ccd59c9-7fd1-485e-b542-e4b8cfaf5655"));
             segments.AddRange(await segmentsProvider.GetSegments(Anime.MalId, SelectedEpisode.Number, duration.TotalSeconds));

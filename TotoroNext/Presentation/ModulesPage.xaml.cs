@@ -14,7 +14,7 @@ public sealed partial class ModulesPage : Page
 
     private void ItemsView_ItemInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
     {
-        if(args.InvokedItem is Descriptor d)
+        if (args.InvokedItem is Descriptor d)
         {
             ViewModel?.NavigateToSettings(d);
         }

@@ -1,5 +1,4 @@
 using System.Reactive.Concurrency;
-using System.Runtime.InteropServices;
 using ReactiveUI;
 using TotoroNext.Anime;
 using TotoroNext.MediaEngine.Abstractions;
@@ -82,7 +81,7 @@ public partial class App : Application
                     {
                         var openPicker = new FileOpenPicker();
 
-                        if(OperatingSystem.IsWindows())
+                        if (OperatingSystem.IsWindows())
                         {
                             var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
                             WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);

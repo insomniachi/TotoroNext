@@ -5,12 +5,12 @@ using Windows.Storage.Pickers;
 
 namespace TotoroNext.MediaEngine.Mpv.ViewModels;
 
-public partial class SettingsPageViewModel: ModuleSettingsViewModel<ModuleSettings>
+public partial class SettingsPageViewModel : ModuleSettingsViewModel<ModuleSettings>
 {
     private readonly FileOpenPicker _picker;
 
     public SettingsPageViewModel(IModuleSettings<ModuleSettings> settings,
-                                 FileOpenPicker picker): base(settings)
+                                 FileOpenPicker picker) : base(settings)
     {
         _picker = picker;
 
@@ -37,7 +37,7 @@ public partial class SettingsPageViewModel: ModuleSettingsViewModel<ModuleSettin
     {
         var file = await _picker.PickSingleFileAsync();
 
-        if(file is null)
+        if (file is null)
         {
             return;
         }

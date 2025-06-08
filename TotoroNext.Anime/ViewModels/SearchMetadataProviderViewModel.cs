@@ -1,7 +1,4 @@
-using System.Collections.ObjectModel;
 using System.Reactive.Linq;
-using DynamicData;
-using DynamicData.Binding;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -15,7 +12,7 @@ namespace TotoroNext.Anime.ViewModels;
 
 public partial class SearchMetadataProviderViewModel(IFactory<IMetadataService, Guid> factory,
                                                      IFactory<IAnimeProvider, Guid> providerFactory,
-                                                     [FromKeyedServices("Main")]INavigator navigator) : ReactiveObject, IInitializable
+                                                     [FromKeyedServices("Main")] INavigator navigator) : ReactiveObject, IInitializable
 {
     private readonly IMetadataService _metadataService = factory.Create(new Guid("b5d31e9b-b988-44e8-8e28-348f58cf1d04"));
     private readonly IAnimeProvider _provider = providerFactory.Create(new Guid("489576c5-2879-493b-874a-7eb14e081280"));

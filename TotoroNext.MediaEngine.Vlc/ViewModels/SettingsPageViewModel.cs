@@ -5,7 +5,7 @@ using Windows.Storage.Pickers;
 
 namespace TotoroNext.MediaEngine.Vlc.ViewModels;
 
-public partial class SettingsPageViewModel: ModuleSettingsViewModel<Settings>
+public partial class SettingsPageViewModel : ModuleSettingsViewModel<Settings>
 {
     private readonly FileOpenPicker _picker;
 
@@ -36,7 +36,7 @@ public partial class SettingsPageViewModel: ModuleSettingsViewModel<Settings>
     {
         var file = await _picker.PickSingleFileAsync();
 
-        if(file is null)
+        if (file is null)
         {
             return;
         }

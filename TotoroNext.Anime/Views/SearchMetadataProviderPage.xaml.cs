@@ -15,7 +15,7 @@ public sealed partial class SearchMetadataProviderPage : Page
 
     private async void ItemsView_ItemInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
     {
-        if(args.InvokedItem is AnimeModel model)
+        if (args.InvokedItem is AnimeModel model)
         {
             await (ViewModel?.AnimeSelected(model) ?? Task.CompletedTask);
         }

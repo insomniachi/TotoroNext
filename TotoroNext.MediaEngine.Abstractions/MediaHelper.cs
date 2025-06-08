@@ -5,7 +5,7 @@ namespace TotoroNext.MediaEngine.Abstractions;
 
 public static class MediaHelper
 {
-    public static TimeSpan GetDuration(Uri url, IDictionary<string,string>? headers = null)
+    public static TimeSpan GetDuration(Uri url, IDictionary<string, string>? headers = null)
     {
         string ffprobePath = Directory.GetFiles(System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!).FirstOrDefault(x => x.Contains("ffprobe"))!;
 
@@ -18,7 +18,7 @@ public static class MediaHelper
             CreateNoWindow = true
         };
 
-        if (headers is { Count : >0 } )
+        if (headers is { Count: > 0 })
         {
             startInfo.ArgumentList.Add("-headers");
             startInfo.ArgumentList.Add(string.Join("\r\n", headers.Select(x => $"{x.Key}: {x.Value}")));

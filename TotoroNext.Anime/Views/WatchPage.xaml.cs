@@ -1,5 +1,3 @@
-using System.Reactive.Linq;
-using ReactiveUI;
 using TotoroNext.Anime.ViewModels;
 
 

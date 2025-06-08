@@ -11,7 +11,7 @@ public static class FFBinaries
     {
         var files = Directory.GetFiles(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!);
 
-        if(files.Any(x => x.Contains("ffprob")))
+        if (files.Any(x => x.Contains("ffprob")))
         {
             return;
         }
@@ -26,20 +26,20 @@ public static class FFBinaries
         }
 
         FFBinary? bin = null;
-        if(OperatingSystem.IsWindows())
+        if (OperatingSystem.IsWindows())
         {
             bin = release.Bin.Windows;
         }
-        else if(OperatingSystem.IsLinux())
+        else if (OperatingSystem.IsLinux())
         {
             bin = release.Bin.Linux;
         }
-        else if(OperatingSystem.IsMacOS())
+        else if (OperatingSystem.IsMacOS())
         {
             bin = release.Bin.Mac;
         }
 
-        if(bin is null)
+        if (bin is null)
         {
             return;
         }

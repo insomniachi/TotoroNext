@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using TotoroNext.Anime.ViewModels;
 using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.Module;
 
@@ -50,12 +49,12 @@ public sealed partial class MediaPlayerElementHost : UserControl
 
         var host = (MediaPlayerElementHost)d;
         var factory = Container.Services.GetKeyedService<IMediaPlayerElementFactory>(s);
-        if(factory is null)
+        if (factory is null)
         {
             return;
         }
         var player = factory.CreatePlayer();
-        if(factory.CreateElement(player) is { } element)
+        if (factory.CreateElement(player) is { } element)
         {
             host.RootGrid.Children.Insert(0, element);
         }

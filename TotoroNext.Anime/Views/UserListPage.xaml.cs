@@ -1,7 +1,4 @@
-using System.Threading.Tasks;
-using CommunityToolkit.WinUI;
 using TotoroNext.Anime.Abstractions;
-using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.Anime.ViewModels;
 
 namespace TotoroNext.Anime.Views;

@@ -5,7 +5,7 @@ namespace TotoroNext.Anime.Anilist.ViewModels;
 
 public partial class SettingsViewModel : ModuleSettingsViewModel<Settings>
 {
-    public SettingsViewModel(IModuleSettings<Settings> settings): base(settings)
+    public SettingsViewModel(IModuleSettings<Settings> settings) : base(settings)
     {
         IncludeNsfw = settings.Value.IncludeNsfw;
         SearchLimit = settings.Value.SearchLimit;

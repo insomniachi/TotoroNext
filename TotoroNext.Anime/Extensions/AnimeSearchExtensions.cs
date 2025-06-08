@@ -12,7 +12,7 @@ internal static class AnimeSearchExtensions
     {
         var results = await provider.SearchAsync(model.Title).ToListAsync();
 
-        if(results.Count == 0)
+        if (results.Count == 0)
         {
             return null;
         }

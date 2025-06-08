@@ -15,7 +15,7 @@ public class Module : IModule<ModuleSettings>
         Name = "MPV Media Player",
         Description = "A module for integrating MPV media player into TotoroNext.",
         HeroImage = ResourceHelper.GetResource("mpv.jpeg"),
-        Components = [ ComponentTypes.MediaEngine ],
+        Components = [ComponentTypes.MediaEngine],
         SettingViewModel = typeof(SettingsPageViewModel)
     };
 

@@ -10,7 +10,7 @@ public static class Converters
 {
     public static ImageSource? UriToImage(Uri? uri)
     {
-        if(uri is null)
+        if (uri is null)
         {
             return null;
         }
@@ -20,7 +20,7 @@ public static class Converters
 
     public static ImageSource? StreamToImage(Stream? stream)
     {
-        if(stream is null)
+        if (stream is null)
         {
             return null;
         }
@@ -42,19 +42,19 @@ public static class Converters
 
     public static Guid ToGuid(string guid) => Guid.Parse(guid);
 
-	public static string EnumToDescription(Enum enumValue)
-	{
-		var name = enumValue.ToString();
-		var field = enumValue.GetType().GetField(name);
-		if (field != null)
-		{
-			if (field.GetCustomAttribute<DescriptionAttribute>() is { } attr)
-			{
-				return attr.Description;
-			}
-		}
-		return name;
-	}
+    public static string EnumToDescription(Enum enumValue)
+    {
+        var name = enumValue.ToString();
+        var field = enumValue.GetType().GetField(name);
+        if (field != null)
+        {
+            if (field.GetCustomAttribute<DescriptionAttribute>() is { } attr)
+            {
+                return attr.Description;
+            }
+        }
+        return name;
+    }
 
     public static string NextEpisodeAiringTime(DateTime? airingAt, int current)
     {

@@ -18,7 +18,7 @@ public partial class ModulesStoreViewModel(IModuleStore store,
 
     public async Task Download(ModuleManifest manifest)
     {
-        if(!CanDownload(manifest))
+        if (!CanDownload(manifest))
         {
             return;
         }
@@ -28,7 +28,7 @@ public partial class ModulesStoreViewModel(IModuleStore store,
 
     private bool CanDownload(ModuleManifest manifest)
     {
-        if(descriptors.FirstOrDefault(x => x.Id == Guid.Parse(manifest.Id)) is not { } installedModule)
+        if (descriptors.FirstOrDefault(x => x.Id == Guid.Parse(manifest.Id)) is not { } installedModule)
         {
             return true;
         }

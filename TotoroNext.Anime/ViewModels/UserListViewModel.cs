@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using DynamicData;
 using DynamicData.Binding;
@@ -42,7 +41,7 @@ public partial class UserListViewModel : ReactiveObject, IAsyncInitializable
 
     }
 
-    public Filter Filter { get; } = new(); 
+    public Filter Filter { get; } = new();
 
     public List<ListItemStatus> AllStatus { get; } = [ListItemStatus.Watching, ListItemStatus.PlanToWatch, ListItemStatus.Completed, ListItemStatus.OnHold];
 
@@ -58,7 +57,7 @@ public partial class UserListViewModel : ReactiveObject, IAsyncInitializable
 
     public async Task AnimeSelected(AnimeModel model)
     {
-        if(await _provider.SearchAndSelectAsync(model) is not { } result)
+        if (await _provider.SearchAndSelectAsync(model) is not { } result)
         {
             return;
         }

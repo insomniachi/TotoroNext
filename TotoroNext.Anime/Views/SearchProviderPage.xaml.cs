@@ -14,7 +14,7 @@ public sealed partial class SearchProviderPage : Page
 
     private async void ItemsView_ItemInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
     {
-        if(args.InvokedItem is not SearchResult result)
+        if (args.InvokedItem is not SearchResult result)
         {
             return;
         }
