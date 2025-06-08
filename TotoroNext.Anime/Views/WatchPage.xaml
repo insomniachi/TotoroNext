@@ -21,12 +21,6 @@
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
-        <uc:MediaPlayerElementHost
-            x:Name="Host"
-            Grid.Row="0"
-            Grid.Column="0"
-            EngineType="{x:Bind c:Converters.ToGuid('b8c3f0d2-1c5e-4f6a-9b7d-3f8e1c5f0d2a')}" />
-
         <Grid
             Grid.Row="1"
             Padding="16"

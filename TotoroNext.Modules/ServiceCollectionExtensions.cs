@@ -11,10 +11,10 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddCoreServices(this IServiceCollection services)
     {
         services.AddHttpClient();
-        services.AddSingleton<IEventAggregator, EventAggregator>();
         services.AddSingleton<IComponentRegistry, ComponentRegistry>();
         services.AddSingleton<IViewRegistry, ViewRegistry>();
         services.AddTransient(typeof(IFactory<,>), typeof(Factory<,>));
+        services.AddTransient(typeof(IEvent<>), typeof(Event<>));
 
         return services;
     }
@@ -58,15 +58,7 @@ public static class ServiceCollectionExtensions
         return services.AddNavigationViewItem<TView, TViewModel>("Main", title, icon, isFooterItem);
     }
 
-    public static IServiceCollection RegisterEvent<TEvent>(this IServiceCollection services)
-        where TEvent : IEvent
-    {
-        var subject = new Subject<TEvent>();
-        services.AddSingleton<IObservable<TEvent>>(subject);
-        services.AddSingleton<IObserver<TEvent>>(subject);
-
-        return services;
-    }
+    public static IServiceCollection RegisterEvent<TArgs>(this IServiceCollection services) => services.AddSingleton<Subject<TArgs>>();
 
     public static IServiceCollection AddModuleSettings<TData>(this IServiceCollection services, IModule<TData> module)
         where TData : class, new()

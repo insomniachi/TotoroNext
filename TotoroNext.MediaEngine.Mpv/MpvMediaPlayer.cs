@@ -1,10 +1,9 @@
 using System.Diagnostics;
 using System.IO.Pipes;
 using System.Reactive.Subjects;
-using System.Text.Json;
 using System.Text;
+using System.Text.Json;
 using TotoroNext.MediaEngine.Abstractions;
-using TotoroNext.Module;
 
 namespace TotoroNext.MediaEngine.Mpv;
 
@@ -23,7 +22,6 @@ internal class MpvMediaPlayer(ModuleSettings settings) : IMediaPlayer
 		_process?.Kill();
 		_ipcStream?.Dispose();
 
-		// Generate a unique pipe name for each instance
 		var pipeName = $"mpv-pipe-{Guid.NewGuid()}";
 		var pipePath = $@"\\.\pipe\{pipeName}";
 
@@ -58,7 +56,15 @@ internal class MpvMediaPlayer(ModuleSettings settings) : IMediaPlayer
 
 		_process = Process.Start(startInfo);
 
-		Task.Run(async () => await IpcLoop(pipeName));
+		Task.Run(async () =>
+        {
+            while(!File.Exists(pipePath))
+            {
+                await Task.Delay(500);
+            }
+
+            await IpcLoop(pipeName);
+        });
 	}
 
     private async Task IpcLoop(string pipeName)

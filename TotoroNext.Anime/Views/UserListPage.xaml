@@ -58,6 +58,10 @@
                                     VerticalAlignment="Top"
                                     Background="{ThemeResource ControlOnImageFillColorDefaultBrush}"
                                     Visibility="{x:Bind root:Converters.ObjectToVisiblity(NextEpisodeAt)}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
                                     <TextBlock
                                         Padding="2"
                                         HorizontalAlignment="Stretch"
@@ -67,6 +71,13 @@
                                         Text="{x:Bind root:Converters.NextEpisodeAiringTime(NextEpisodeAt, AiredEpisodes), Mode=OneWay}"
                                         TextAlignment="Center"
                                         TextTrimming="CharacterEllipsis" />
+                                    <InfoBadge
+                                        Grid.Column="1"
+                                        Width="25"
+                                        Margin="8,0"
+                                        Background="Red"
+                                        Visibility="{x:Bind root:Converters.UnwatchedEpisodesVisiblity((taa:AnimeModel))}"
+                                        Value="{x:Bind root:Converters.GetUnwatchedEpsiodes((taa:AnimeModel))}" />
                                 </Grid>
                             </Grid>
 

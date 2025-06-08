@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Text;
 using Microsoft.UI.Xaml.Media.Imaging;
+using TotoroNext.Anime.Abstractions;
 
 namespace TotoroNext.Anime;
 
@@ -64,6 +65,31 @@ public static class Converters
 
     public static Visibility ObjectToVisiblity(object? value) => value is null ? Visibility.Collapsed : Visibility.Visible;
 
+    public static int GetUnwatchedEpsiodes(AnimeModel anime)
+    {
+        if (anime is null)
+        {
+            return -1;
+        }
+
+        if (anime.Tracking is null || anime.Tracking.WatchedEpisodes is null)
+        {
+            return -1;
+        }
+
+        if (anime.AiredEpisodes == 0)
+        {
+            return -1;
+        }
+
+        return (anime.AiredEpisodes - anime.Tracking.WatchedEpisodes.Value);
+    }
+
+    public static Visibility UnwatchedEpisodesVisiblity(AnimeModel anime)
+    {
+        return GetUnwatchedEpsiodes(anime) > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     public static string HumanizeTimeSpan(this TimeSpan ts)
     {
         var sb = new StringBuilder();
@@ -85,10 +111,10 @@ public static class Converters
         {
             sb.Append($"{ts.Minutes.ToString().PadLeft(2, '0')}m ");
         }
-        if (ts.Seconds > 0)
-        {
-            sb.Append($"{ts.Seconds.ToString().PadLeft(2, '0')}s ");
-        }
+        //if (ts.Seconds > 0)
+        //{
+        //    sb.Append($"{ts.Seconds.ToString().PadLeft(2, '0')}s ");
+        //}
 
         return sb.ToString().TrimEnd();
     }

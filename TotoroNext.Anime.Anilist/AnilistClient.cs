@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 #endif
 
 namespace TotoroNext.Anime.Anilist
@@ -23,38 +24,37 @@ namespace TotoroNext.Anime.Anilist
         public string Name { get; set; }
         public string DefaultAlias { get; set; }
         public bool IsComplex { get; set; }
-        public bool RequiresParameters { get; set; }
-        public global::System.Type QueryBuilderType { get; set; }
+        public Type QueryBuilderType { get; set; }
     }
-    
+
     public enum Formatting
     {
         None,
         Indented
     }
-    
+
     public class GraphQlObjectTypeAttribute : global::System.Attribute
     {
         public string TypeName { get; }
-    
+
         public GraphQlObjectTypeAttribute(string typeName) => TypeName = typeName;
     }
-    
-    #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
     public class QueryBuilderParameterConverter<T> : global::Newtonsoft.Json.JsonConverter
     {
-        public override object ReadJson(JsonReader reader, global::System.Type objectType, object existingValue, JsonSerializer serializer)
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             switch (reader.TokenType)
             {
                 case JsonToken.Null:
                     return null;
-    
+
                 default:
                     return (QueryBuilderParameter<T>)(T)serializer.Deserialize(reader, typeof(T));
             }
         }
-    
+
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             if (value == null)
@@ -62,58 +62,58 @@ namespace TotoroNext.Anime.Anilist
             else
                 serializer.Serialize(writer, ((QueryBuilderParameter<T>)value).Value, typeof(T));
         }
-    
-        public override bool CanConvert(global::System.Type objectType) => objectType.IsSubclassOf(typeof(QueryBuilderParameter));
+
+        public override bool CanConvert(Type objectType) => objectType.IsSubclassOf(typeof(QueryBuilderParameter));
     }
-    
+
     public class GraphQlInterfaceJsonConverter : global::Newtonsoft.Json.JsonConverter
     {
         private const string FieldNameType = "__typename";
-    
-        private static readonly Dictionary<string, global::System.Type> InterfaceTypeMapping =
+
+        private static readonly Dictionary<string, Type> InterfaceTypeMapping =
             typeof(GraphQlInterfaceJsonConverter).Assembly.GetTypes()
                 .Select(t => new { Type = t, Attribute = t.GetCustomAttribute<GraphQlObjectTypeAttribute>() })
                 .Where(x => x.Attribute != null && x.Type.Namespace == typeof(GraphQlInterfaceJsonConverter).Namespace)
                 .ToDictionary(x => x.Attribute.TypeName, x => x.Type);
-    
-        public override bool CanConvert(global::System.Type objectType) => objectType.IsInterface || objectType.IsArray;
-    
-        public override object ReadJson(JsonReader reader, global::System.Type objectType, object existingValue, JsonSerializer serializer)
+
+        public override bool CanConvert(Type objectType) => objectType.IsInterface || objectType.IsArray;
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             while (reader.TokenType == JsonToken.Comment)
                 reader.Read();
-    
+
             switch (reader.TokenType)
             {
                 case JsonToken.Null:
                     return null;
-    
+
                 case JsonToken.StartObject:
                     var jObject = JObject.Load(reader);
                     if (!jObject.TryGetValue(FieldNameType, out var token) || token.Type != JTokenType.String)
                         throw CreateJsonReaderException(reader, $"\"{GetType().FullName}\" requires JSON object to contain \"{FieldNameType}\" field with type name");
-    
+
                     var typeName = token.Value<string>();
                     if (!InterfaceTypeMapping.TryGetValue(typeName, out var type))
                         throw CreateJsonReaderException(reader, $"type \"{typeName}\" not found");
-    
+
                     using (reader = CloneReader(jObject, reader))
                         return serializer.Deserialize(reader, type);
-    
+
                 case JsonToken.StartArray:
                     var elementType = GetElementType(objectType);
                     if (elementType == null)
                         throw CreateJsonReaderException(reader, $"array element type could not be resolved for type \"{objectType.FullName}\"");
-    
+
                     return ReadArray(reader, objectType, elementType, serializer);
-    
+
                 default:
                     throw CreateJsonReaderException(reader, $"unrecognized token: {reader.TokenType}");
             }
         }
-    
+
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) => serializer.Serialize(writer, value);
-    
+
         private static JsonReader CloneReader(JToken jToken, JsonReader reader)
         {
             var jObjectReader = jToken.CreateReader();
@@ -126,125 +126,121 @@ namespace TotoroNext.Anime.Anilist
             jObjectReader.DateParseHandling = reader.DateParseHandling;
             return jObjectReader;
         }
-    
+
         private static JsonReaderException CreateJsonReaderException(JsonReader reader, string message)
         {
             if (reader is IJsonLineInfo lineInfo && lineInfo.HasLineInfo())
                 return new JsonReaderException(message, reader.Path, lineInfo.LineNumber, lineInfo.LinePosition, null);
-    
+
             return new JsonReaderException(message);
         }
-    
-        private static global::System.Type GetElementType(global::System.Type arrayOrGenericContainer) =>
+
+        private static Type GetElementType(Type arrayOrGenericContainer) =>
             arrayOrGenericContainer.IsArray ? arrayOrGenericContainer.GetElementType() : arrayOrGenericContainer.GenericTypeArguments.FirstOrDefault();
-    
-        private IList ReadArray(JsonReader reader, global::System.Type targetType, global::System.Type elementType, JsonSerializer serializer)
+
+        private IList ReadArray(JsonReader reader, Type targetType, Type elementType, JsonSerializer serializer)
         {
             var list = CreateCompatibleList(targetType, elementType);
             while (reader.Read() && reader.TokenType != JsonToken.EndArray)
                 list.Add(ReadJson(reader, elementType, null, serializer));
-    
+
             if (!targetType.IsArray)
                 return list;
-    
+
             var array = Array.CreateInstance(elementType, list.Count);
             list.CopyTo(array, 0);
             return array;
         }
-    
-        private static IList CreateCompatibleList(global::System.Type targetContainerType, global::System.Type elementType) =>
+
+        private static IList CreateCompatibleList(Type targetContainerType, Type elementType) =>
             (IList)Activator.CreateInstance(targetContainerType.IsArray || targetContainerType.IsAbstract ? typeof(List<>).MakeGenericType(elementType) : targetContainerType);
     }
-    #endif
-    
+#endif
+
     internal static class GraphQlQueryHelper
     {
+        private static readonly Regex RegexWhiteSpace = new Regex(@"\s", RegexOptions.Compiled);
         private static readonly Regex RegexGraphQlIdentifier = new Regex(@"^[_A-Za-z][_0-9A-Za-z]*$", RegexOptions.Compiled);
-        private static readonly Regex RegexEscapeGraphQlString = new Regex(@"[\\\""/\b\f\n\r\t]", RegexOptions.Compiled);
-    
+
         public static string GetIndentation(int level, byte indentationSize)
         {
             return new String(' ', level * indentationSize);
         }
-    
-        public static string EscapeGraphQlStringValue(string value)
+
+        public static string BuildArgumentValue(object value, string formatMask, Formatting formatting, int level, byte indentationSize)
         {
-            return RegexEscapeGraphQlString.Replace(value, m => @$"\{GetEscapeSequence(m.Value)}");
-        }
-    
-        private static string GetEscapeSequence(string input)
-        {
-            switch (input)
-            {
-                case "\\":
-                    return "\\";
-                case "\"":
-                    return "\"";
-                case "/":
-                    return "/";
-                case "\b":
-                    return "b";
-                case "\f":
-                    return "f";
-                case "\n":
-                    return "n";
-                case "\r":
-                    return "r";
-                case "\t":
-                    return "t";
-                default:
-                    throw new InvalidOperationException($"invalid character: {input}");
-            }
-        }
-    
-        public static string BuildArgumentValue(object value, string formatMask, GraphQlBuilderOptions options, int level)
-        {
-            var serializer = options.ArgumentBuilder ?? DefaultGraphQlArgumentBuilder.Instance;
-            if (serializer.TryBuild(new GraphQlArgumentBuilderContext { Value = value, FormatMask = formatMask, Options = options, Level = level }, out var serializedValue))
-                return serializedValue;
-    
             if (value is null)
                 return "null";
-    
+
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+            if (value is JValue jValue)
+            {
+                switch (jValue.Type)
+                {
+                    case JTokenType.Null:
+                        return "null";
+                    case JTokenType.Integer:
+                    case JTokenType.Float:
+                    case JTokenType.Boolean:
+                        return BuildArgumentValue(jValue.Value, null, formatting, level, indentationSize);
+                    case JTokenType.String:
+                        return "\"" + ((string)jValue.Value).Replace("\"", "\\\"") + "\"";
+                    default:
+                        return "\"" + jValue.Value + "\"";
+                }
+            }
+
+            if (value is JProperty jProperty)
+            {
+                if (RegexWhiteSpace.IsMatch(jProperty.Name))
+                    throw new ArgumentException($"JSON object keys used as GraphQL arguments must not contain whitespace; key: {jProperty.Name}");
+
+                return $"{jProperty.Name}:{(formatting == Formatting.Indented ? " " : null)}{BuildArgumentValue(jProperty.Value, null, formatting, level, indentationSize)}";
+            }
+
+            if (value is JObject jObject)
+                return BuildEnumerableArgument(jObject, null, formatting, level + 1, indentationSize, '{', '}');
+#endif
+
             var enumerable = value as IEnumerable;
             if (!String.IsNullOrEmpty(formatMask) && enumerable == null)
                 return
                     value is IFormattable formattable
-                        ? $"\"{EscapeGraphQlStringValue(formattable.ToString(formatMask, CultureInfo.InvariantCulture))}\""
+                        ? "\"" + formattable.ToString(formatMask, CultureInfo.InvariantCulture) + "\""
                         : throw new ArgumentException($"Value must implement {nameof(IFormattable)} interface to use a format mask. ", nameof(value));
-    
+
             if (value is Enum @enum)
                 return ConvertEnumToString(@enum);
-    
+
             if (value is bool @bool)
                 return @bool ? "true" : "false";
-    
+
             if (value is DateTime dateTime)
-                return $"\"{dateTime.ToString("O")}\"";
-    
+                return "\"" + dateTime.ToString("O") + "\"";
+
             if (value is DateTimeOffset dateTimeOffset)
-                return $"\"{dateTimeOffset.ToString("O")}\"";
-    
+                return "\"" + dateTimeOffset.ToString("O") + "\"";
+
             if (value is IGraphQlInputObject inputObject)
-                return BuildInputObject(inputObject, options, level + 2);
-    
+                return BuildInputObject(inputObject, formatting, level + 2, indentationSize);
+
             if (value is Guid)
-                return $"\"{value}\"";
-    
+                return "\"" + value + "\"";
+
             if (value is String @string)
-                return $"\"{EscapeGraphQlStringValue(@string)}\"";
-    
+                return "\"" + @string.Replace("\"", "\\\"") + "\"";
+
             if (enumerable != null)
-                return BuildEnumerableArgument(enumerable, formatMask, options, level, '[', ']');
-    
+                return BuildEnumerableArgument(enumerable, formatMask, formatting, level, indentationSize, '[', ']');
+
             if (value is short || value is ushort || value is byte || value is int || value is uint || value is long || value is ulong || value is float || value is double || value is decimal)
                 return Convert.ToString(value, CultureInfo.InvariantCulture);
-    
-            var argumentValue = EscapeGraphQlStringValue(Convert.ToString(value, CultureInfo.InvariantCulture));
-            return $"\"{argumentValue}\"";
+
+            var argumentValue = Convert.ToString(value, CultureInfo.InvariantCulture);
+            return "\"" + argumentValue + "\"";
         }
-    
-        public static string BuildEnumerableArgument(IEnumerable enumerable, string formatMask, GraphQlBuilderOptions options, int level, char openingSymbol, char closingSymbol)
+
+        private static string BuildEnumerableArgument(IEnumerable enumerable, string formatMask, Formatting formatting, int level, byte indentationSize, char openingSymbol, char closingSymbol)
         {
             var builder = new StringBuilder();
             builder.Append(openingSymbol);
@@ -252,27 +248,27 @@ namespace TotoroNext.Anime.Anilist
             foreach (var item in enumerable)
             {
                 builder.Append(delimiter);
-    
-                if (options.Formatting == Formatting.Indented)
+
+                if (formatting == Formatting.Indented)
                 {
                     builder.AppendLine();
-                    builder.Append(GetIndentation(level + 1, options.IndentationSize));
+                    builder.Append(GetIndentation(level + 1, indentationSize));
                 }
-    
-                builder.Append(BuildArgumentValue(item, formatMask, options, level));
+
+                builder.Append(BuildArgumentValue(item, formatMask, formatting, level, indentationSize));
                 delimiter = ",";
             }
-    
+
             builder.Append(closingSymbol);
             return builder.ToString();
         }
-    
-        public static string BuildInputObject(IGraphQlInputObject inputObject, GraphQlBuilderOptions options, int level)
+
+        public static string BuildInputObject(IGraphQlInputObject inputObject, Formatting formatting, int level, byte indentationSize)
         {
             var builder = new StringBuilder();
             builder.Append("{");
-    
-            var isIndentedFormatting = options.Formatting == Formatting.Indented;
+
+            var isIndentedFormatting = formatting == Formatting.Indented;
             string valueSeparator;
             if (isIndentedFormatting)
             {
@@ -281,194 +277,127 @@ namespace TotoroNext.Anime.Anilist
             }
             else
                 valueSeparator = ":";
-    
+
             var separator = String.Empty;
             foreach (var propertyValue in inputObject.GetPropertyValues())
             {
                 var queryBuilderParameter = propertyValue.Value as QueryBuilderParameter;
                 var value =
                     queryBuilderParameter?.Name != null
-                        ? $"${queryBuilderParameter.Name}"
-                        : BuildArgumentValue(queryBuilderParameter == null ? propertyValue.Value : queryBuilderParameter.Value, propertyValue.FormatMask, options, level);
-    
-                builder.Append(isIndentedFormatting ? GetIndentation(level, options.IndentationSize) : separator);
+                        ? "$" + queryBuilderParameter.Name
+                        : BuildArgumentValue(queryBuilderParameter == null ? propertyValue.Value : queryBuilderParameter.Value, propertyValue.FormatMask, formatting, level, indentationSize);
+
+                builder.Append(isIndentedFormatting ? GetIndentation(level, indentationSize) : separator);
                 builder.Append(propertyValue.Name);
                 builder.Append(valueSeparator);
                 builder.Append(value);
-    
+
                 separator = ",";
-    
+
                 if (isIndentedFormatting)
                     builder.AppendLine();
             }
-    
+
             if (isIndentedFormatting)
-                builder.Append(GetIndentation(level - 1, options.IndentationSize));
-    
+                builder.Append(GetIndentation(level - 1, indentationSize));
+
             builder.Append("}");
-    
+
             return builder.ToString();
         }
-    
-        public static string BuildDirective(GraphQlDirective directive, GraphQlBuilderOptions options, int level)
+
+        public static string BuildDirective(GraphQlDirective directive, Formatting formatting, int level, byte indentationSize)
         {
             if (directive == null)
                 return String.Empty;
-    
-            var isIndentedFormatting = options.Formatting == Formatting.Indented;
+
+            var isIndentedFormatting = formatting == Formatting.Indented;
             var indentationSpace = isIndentedFormatting ? " " : String.Empty;
             var builder = new StringBuilder();
             builder.Append(indentationSpace);
             builder.Append("@");
             builder.Append(directive.Name);
             builder.Append("(");
-    
+
             string separator = null;
             foreach (var kvp in directive.Arguments)
             {
                 var argumentName = kvp.Key;
                 var argument = kvp.Value;
-    
+
                 builder.Append(separator);
                 builder.Append(argumentName);
                 builder.Append(":");
                 builder.Append(indentationSpace);
-    
+
                 if (argument.Name == null)
-                    builder.Append(BuildArgumentValue(argument.Value, null, options, level));
+                    builder.Append(BuildArgumentValue(argument.Value, null, formatting, level, indentationSize));
                 else
                 {
                     builder.Append("$");
                     builder.Append(argument.Name);
                 }
-    
+
                 separator = isIndentedFormatting ? ", " : ",";
             }
-    
+
             builder.Append(")");
             return builder.ToString();
         }
-    
+
         public static void ValidateGraphQlIdentifier(string name, string identifier)
         {
             if (identifier != null && !RegexGraphQlIdentifier.IsMatch(identifier))
                 throw new ArgumentException("value must match " + RegexGraphQlIdentifier, name);
         }
-    
+
         private static string ConvertEnumToString(Enum @enum)
         {
             var enumMember = @enum.GetType().GetField(@enum.ToString());
             if (enumMember == null)
                 throw new InvalidOperationException("enum member resolution failed");
-    
+
             var enumMemberAttribute = (EnumMemberAttribute)enumMember.GetCustomAttribute(typeof(EnumMemberAttribute));
-    
+
             return enumMemberAttribute == null
                 ? @enum.ToString()
                 : enumMemberAttribute.Value;
         }
     }
-    
-    public interface IGraphQlArgumentBuilder
-    {
-        bool TryBuild(GraphQlArgumentBuilderContext context, out string graphQlString);
-    }
-    
-    public class GraphQlArgumentBuilderContext
-    {
-        public object Value { get; set; }
-        public string FormatMask { get; set; }
-        public GraphQlBuilderOptions Options { get; set; }
-        public int Level { get; set; }
-    }
-    
-    public class DefaultGraphQlArgumentBuilder : IGraphQlArgumentBuilder
-    {
-        private static readonly Regex RegexWhiteSpace = new Regex(@"\s", RegexOptions.Compiled);
-    
-        public static readonly DefaultGraphQlArgumentBuilder Instance = new();
-    
-        public bool TryBuild(GraphQlArgumentBuilderContext context, out string graphQlString)
-        {
-    #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-            if (context.Value is JValue jValue)
-            {
-                switch (jValue.Type)
-                {
-                    case JTokenType.Null:
-                        graphQlString = "null";
-                        return true;
-    
-                    case JTokenType.Integer:
-                    case JTokenType.Float:
-                    case JTokenType.Boolean:
-                        graphQlString = GraphQlQueryHelper.BuildArgumentValue(jValue.Value, null, context.Options, context.Level);
-                        return true;
-    
-                    case JTokenType.String:
-                        graphQlString = $"\"{GraphQlQueryHelper.EscapeGraphQlStringValue((string)jValue.Value)}\"";
-                        return true;
-    
-                    default:
-                        graphQlString = $"\"{jValue.Value}\"";
-                        return true;
-                }
-            }
-    
-            if (context.Value is JProperty jProperty)
-            {
-                if (RegexWhiteSpace.IsMatch(jProperty.Name))
-                    throw new ArgumentException($"JSON object keys used as GraphQL arguments must not contain whitespace; key: {jProperty.Name}");
-    
-                graphQlString = $"{jProperty.Name}:{(context.Options.Formatting == Formatting.Indented ? " " : null)}{GraphQlQueryHelper.BuildArgumentValue(jProperty.Value, null, context.Options, context.Level)}";
-                return true;
-            }
-    
-            if (context.Value is JObject jObject)
-            {
-                graphQlString = GraphQlQueryHelper.BuildEnumerableArgument(jObject, null, context.Options, context.Level + 1, '{', '}');
-                return true;
-            }
-    #endif
-    
-            graphQlString = null;
-            return false;
-        }
-    }
-    
+
     internal struct InputPropertyInfo
     {
         public string Name { get; set; }
         public object Value { get; set; }
         public string FormatMask { get; set; }
     }
-    
+
     internal interface IGraphQlInputObject
     {
         IEnumerable<InputPropertyInfo> GetPropertyValues();
     }
-    
+
     public interface IGraphQlQueryBuilder
     {
         void Clear();
         void IncludeAllFields();
         string Build(Formatting formatting = Formatting.None, byte indentationSize = 2);
     }
-    
+
     public struct QueryBuilderArgumentInfo
     {
         public string ArgumentName { get; set; }
         public QueryBuilderParameter ArgumentValue { get; set; }
         public string FormatMask { get; set; }
     }
-    
+
     public abstract class QueryBuilderParameter
     {
         private string _name;
-    
+
         internal string GraphQlTypeName { get; }
         internal object Value { get; set; }
-    
+
         public string Name
         {
             get => _name;
@@ -478,17 +407,17 @@ namespace TotoroNext.Anime.Anilist
                 _name = value;
             }
         }
-    
+
         protected QueryBuilderParameter(string name, string graphQlTypeName, object value)
         {
             Name = name?.Trim();
             GraphQlTypeName = graphQlTypeName?.Replace(" ", null).Replace("\t", null).Replace("\n", null).Replace("\r", null);
             Value = value;
         }
-    
+
         protected QueryBuilderParameter(object value) => Value = value;
     }
-    
+
     public class QueryBuilderParameter<T> : QueryBuilderParameter
     {
         public new T Value
@@ -496,38 +425,38 @@ namespace TotoroNext.Anime.Anilist
             get => base.Value == null ? default : (T)base.Value;
             set => base.Value = value;
         }
-    
+
         protected QueryBuilderParameter(string name, string graphQlTypeName, T value) : base(name, graphQlTypeName, value)
         {
             EnsureGraphQlTypeName(graphQlTypeName);
         }
-    
+
         protected QueryBuilderParameter(string name, string graphQlTypeName) : base(name, graphQlTypeName, null)
         {
             EnsureGraphQlTypeName(graphQlTypeName);
         }
-    
+
         private QueryBuilderParameter(T value) : base(value)
         {
         }
-    
+
         public void ResetValue() => base.Value = null;
-    
+
         public static implicit operator QueryBuilderParameter<T>(T value) => new QueryBuilderParameter<T>(value);
-    
+
         public static implicit operator T(QueryBuilderParameter<T> parameter) => parameter.Value;
-    
+
         private static void EnsureGraphQlTypeName(string graphQlTypeName)
         {
             if (String.IsNullOrWhiteSpace(graphQlTypeName))
                 throw new ArgumentException("value required", nameof(graphQlTypeName));
         }
     }
-    
+
     public class GraphQlQueryParameter<T> : QueryBuilderParameter<T>
     {
         private string _formatMask;
-    
+
         public string FormatMask
         {
             get => _formatMask;
@@ -536,42 +465,42 @@ namespace TotoroNext.Anime.Anilist
                     ? value
                     : throw new InvalidOperationException($"Value must be of {nameof(IFormattable)} type. ");
         }
-    
+
         public GraphQlQueryParameter(string name, string graphQlTypeName = null)
             : base(name, graphQlTypeName ?? GetGraphQlTypeName(typeof(T)))
         {
         }
-    
+
         public GraphQlQueryParameter(string name, string graphQlTypeName, T defaultValue)
             : base(name, graphQlTypeName, defaultValue)
         {
         }
-    
+
         public GraphQlQueryParameter(string name, T defaultValue, bool isNullable = true)
             : base(name, GetGraphQlTypeName(typeof(T), isNullable), defaultValue)
         {
         }
-    
-        private static string GetGraphQlTypeName(global::System.Type valueType, bool isNullable)
+
+        private static string GetGraphQlTypeName(Type valueType, bool isNullable)
         {
             var graphQlTypeName = GetGraphQlTypeName(valueType);
             if (!isNullable)
                 graphQlTypeName += "!";
-    
+
             return graphQlTypeName;
         }
-    
-        private static string GetGraphQlTypeName(global::System.Type valueType)
+
+        private static string GetGraphQlTypeName(Type valueType)
         {
             var nullableUnderlyingType = Nullable.GetUnderlyingType(valueType);
             valueType = nullableUnderlyingType ?? valueType;
-    
+
             if (valueType.IsArray)
             {
                 var arrayItemType = GetGraphQlTypeName(valueType.GetElementType());
                 return arrayItemType == null ? null : "[" + arrayItemType + "]";
             }
-    
+
             if (typeof(IEnumerable).IsAssignableFrom(valueType))
             {
                 var genericArguments = valueType.GetGenericArguments();
@@ -581,134 +510,165 @@ namespace TotoroNext.Anime.Anilist
                     return listItemType == null ? null : "[" + listItemType + "]";
                 }
             }
-    
+
             if (GraphQlTypes.ReverseMapping.TryGetValue(valueType, out var graphQlTypeName))
                 return graphQlTypeName;
-    
+
             if (valueType == typeof(string))
                 return "String";
-    
+
             var nullableSuffix = nullableUnderlyingType == null ? null : "?";
             graphQlTypeName = GetValueTypeGraphQlTypeName(valueType);
             return graphQlTypeName == null ? null : graphQlTypeName + nullableSuffix;
         }
-    
-        private static string GetValueTypeGraphQlTypeName(global::System.Type valueType)
+
+        private static string GetValueTypeGraphQlTypeName(Type valueType)
         {
             if (valueType == typeof(bool))
                 return "Boolean";
-    
+
             if (valueType == typeof(float) || valueType == typeof(double) || valueType == typeof(decimal))
                 return "Float";
-    
+
             if (valueType == typeof(Guid))
                 return "ID";
-    
+
             if (valueType == typeof(sbyte) || valueType == typeof(byte) || valueType == typeof(short) || valueType == typeof(ushort) || valueType == typeof(int) || valueType == typeof(uint) ||
                 valueType == typeof(long) || valueType == typeof(ulong))
                 return "Int";
-    
+
             return null;
         }
     }
-    
+
     public abstract class GraphQlDirective
     {
         private readonly Dictionary<string, QueryBuilderParameter> _arguments = new Dictionary<string, QueryBuilderParameter>();
-    
+
         internal IEnumerable<KeyValuePair<string, QueryBuilderParameter>> Arguments => _arguments;
-    
+
         public string Name { get; }
-    
+
         protected GraphQlDirective(string name)
         {
             GraphQlQueryHelper.ValidateGraphQlIdentifier(nameof(name), name);
             Name = name;
         }
-    
+
         protected void AddArgument(string name, QueryBuilderParameter value)
         {
             if (value != null)
                 _arguments[name] = value;
         }
     }
-    
-    public class GraphQlBuilderOptions
-    {
-        public Formatting Formatting { get; set; }
-        public byte IndentationSize { get; set; } = 2;
-        public IGraphQlArgumentBuilder ArgumentBuilder { get; set; }
-    }
-    
-    public abstract partial class GraphQlQueryBuilder : IGraphQlQueryBuilder
+
+    public abstract class GraphQlQueryBuilder : IGraphQlQueryBuilder
     {
         private readonly Dictionary<string, GraphQlFieldCriteria> _fieldCriteria = new Dictionary<string, GraphQlFieldCriteria>();
-    
+
         private readonly string _operationType;
         private readonly string _operationName;
         private Dictionary<string, GraphQlFragmentCriteria> _fragments;
         private List<QueryBuilderArgumentInfo> _queryParameters;
-    
+
         protected abstract string TypeName { get; }
-    
+
         public abstract IReadOnlyList<GraphQlFieldMetadata> AllFields { get; }
-    
+
         protected GraphQlQueryBuilder(string operationType, string operationName)
         {
             GraphQlQueryHelper.ValidateGraphQlIdentifier(nameof(operationName), operationName);
             _operationType = operationType;
             _operationName = operationName;
         }
-    
+
         public virtual void Clear()
         {
             _fieldCriteria.Clear();
             _fragments?.Clear();
             _queryParameters?.Clear();
         }
-    
+
         void IGraphQlQueryBuilder.IncludeAllFields()
         {
             IncludeAllFields();
         }
-    
+
         public string Build(Formatting formatting = Formatting.None, byte indentationSize = 2)
         {
-            return Build(new GraphQlBuilderOptions { Formatting = formatting, IndentationSize = indentationSize });
+            return Build(formatting, 1, indentationSize);
         }
-    
-        public string Build(GraphQlBuilderOptions options)
-        {
-            return Build(options, 1);
-        }
-    
+
         protected void IncludeAllFields()
         {
-            IncludeFields(AllFields.Where(f => !f.RequiresParameters));
+            IncludeFields(AllFields);
         }
-    
-        protected virtual string Build(GraphQlBuilderOptions options, int level)
+
+        protected virtual string Build(Formatting formatting, int level, byte indentationSize)
         {
-            var isIndentedFormatting = options.Formatting == Formatting.Indented;
+            var isIndentedFormatting = formatting == Formatting.Indented;
             var separator = String.Empty;
             var indentationSpace = isIndentedFormatting ? " " : String.Empty;
             var builder = new StringBuilder();
-    
-            BuildOperationSignature(builder, options, indentationSpace, level);
-    
-            if (builder.Length > 0 || level > 1)
-                builder.Append(indentationSpace);
-    
+
+            if (!String.IsNullOrEmpty(_operationType))
+            {
+                builder.Append(_operationType);
+
+                if (!String.IsNullOrEmpty(_operationName))
+                {
+                    builder.Append(" ");
+                    builder.Append(_operationName);
+                }
+
+                if (_queryParameters?.Count > 0)
+                {
+                    builder.Append(indentationSpace);
+                    builder.Append("(");
+
+                    foreach (var queryParameterInfo in _queryParameters)
+                    {
+                        if (isIndentedFormatting)
+                        {
+                            builder.AppendLine(separator);
+                            builder.Append(GraphQlQueryHelper.GetIndentation(level, indentationSize));
+                        }
+                        else
+                            builder.Append(separator);
+
+                        builder.Append("$");
+                        builder.Append(queryParameterInfo.ArgumentValue.Name);
+                        builder.Append(":");
+                        builder.Append(indentationSpace);
+
+                        builder.Append(queryParameterInfo.ArgumentValue.GraphQlTypeName);
+
+                        if (!queryParameterInfo.ArgumentValue.GraphQlTypeName.EndsWith("!") && queryParameterInfo.ArgumentValue.Value is not null)
+                        {
+                            builder.Append(indentationSpace);
+                            builder.Append("=");
+                            builder.Append(indentationSpace);
+                            builder.Append(GraphQlQueryHelper.BuildArgumentValue(queryParameterInfo.ArgumentValue.Value, queryParameterInfo.FormatMask, formatting, 0, indentationSize));
+                        }
+
+                        separator = ",";
+                    }
+
+                    builder.Append(")");
+                }
+            }
+
+            builder.Append(indentationSpace);
             builder.Append("{");
-    
+
             if (isIndentedFormatting)
                 builder.AppendLine();
-    
+
             separator = String.Empty;
-    
+
             foreach (var criteria in _fieldCriteria.Values.Concat(_fragments?.Values ?? Enumerable.Empty<GraphQlFragmentCriteria>()))
             {
-                var fieldCriteria = criteria.Build(options, level);
+                var fieldCriteria = criteria.Build(formatting, level, indentationSize);
                 if (isIndentedFormatting)
                     builder.AppendLine(fieldCriteria);
                 else if (!String.IsNullOrEmpty(fieldCriteria))
@@ -716,342 +676,260 @@ namespace TotoroNext.Anime.Anilist
                     builder.Append(separator);
                     builder.Append(fieldCriteria);
                 }
-    
+
                 separator = ",";
             }
-    
+
             if (isIndentedFormatting)
-                builder.Append(GraphQlQueryHelper.GetIndentation(level - 1, options.IndentationSize));
-    
+                builder.Append(GraphQlQueryHelper.GetIndentation(level - 1, indentationSize));
+
             builder.Append("}");
-    
+
             return builder.ToString();
         }
-    
-        private void BuildOperationSignature(StringBuilder builder, GraphQlBuilderOptions options, string indentationSpace, int level)
-        {
-            if (String.IsNullOrEmpty(_operationType))
-                return;
-    
-            builder.Append(_operationType);
-    
-            if (!String.IsNullOrEmpty(_operationName))
-            {
-                builder.Append(" ");
-                builder.Append(_operationName);
-            }
-    
-            if (_queryParameters?.Count > 0)
-            {
-                builder.Append(indentationSpace);
-                builder.Append("(");
-    
-                var separator = String.Empty;
-                var isIndentedFormatting = options.Formatting == Formatting.Indented;
-    
-                foreach (var queryParameterInfo in _queryParameters)
-                {
-                    if (isIndentedFormatting)
-                    {
-                        builder.AppendLine(separator);
-                        builder.Append(GraphQlQueryHelper.GetIndentation(level, options.IndentationSize));
-                    }
-                    else
-                        builder.Append(separator);
-    
-                    builder.Append("$");
-                    builder.Append(queryParameterInfo.ArgumentValue.Name);
-                    builder.Append(":");
-                    builder.Append(indentationSpace);
-    
-                    builder.Append(queryParameterInfo.ArgumentValue.GraphQlTypeName);
-    
-                    if (!queryParameterInfo.ArgumentValue.GraphQlTypeName.EndsWith("!") && queryParameterInfo.ArgumentValue.Value is not null)
-                    {
-                        builder.Append(indentationSpace);
-                        builder.Append("=");
-                        builder.Append(indentationSpace);
-                        builder.Append(GraphQlQueryHelper.BuildArgumentValue(queryParameterInfo.ArgumentValue.Value, queryParameterInfo.FormatMask, options, 0));
-                    }
-    
-                    if (!isIndentedFormatting)
-                        separator = ",";
-                }
-    
-                builder.Append(")");
-            }
-        }
-    
+
         protected void IncludeScalarField(string fieldName, string alias, IList<QueryBuilderArgumentInfo> args, GraphQlDirective[] directives)
         {
             _fieldCriteria[alias ?? fieldName] = new GraphQlScalarFieldCriteria(fieldName, alias, args, directives);
         }
-    
+
         protected void IncludeObjectField(string fieldName, string alias, GraphQlQueryBuilder objectFieldQueryBuilder, IList<QueryBuilderArgumentInfo> args, GraphQlDirective[] directives)
         {
             _fieldCriteria[alias ?? fieldName] = new GraphQlObjectFieldCriteria(fieldName, alias, objectFieldQueryBuilder, args, directives);
         }
-    
+
         protected void IncludeFragment(GraphQlQueryBuilder objectFieldQueryBuilder, GraphQlDirective[] directives)
         {
             _fragments = _fragments ?? new Dictionary<string, GraphQlFragmentCriteria>();
             _fragments[objectFieldQueryBuilder.TypeName] = new GraphQlFragmentCriteria(objectFieldQueryBuilder, directives);
         }
-    
+
         protected void ExcludeField(string fieldName)
         {
             if (fieldName == null)
                 throw new ArgumentNullException(nameof(fieldName));
-    
+
             _fieldCriteria.Remove(fieldName);
         }
-    
+
         protected void IncludeFields(IEnumerable<GraphQlFieldMetadata> fields)
         {
-            IncludeFields(fields, 0, new Dictionary<global::System.Type, int>());
+            IncludeFields(fields, null);
         }
-    
-        private void IncludeFields(IEnumerable<GraphQlFieldMetadata> fields, int level, Dictionary<global::System.Type, int> parentTypeLevel)
+
+        private void IncludeFields(IEnumerable<GraphQlFieldMetadata> fields, List<Type> parentTypes)
         {
-            global::System.Type builderType = null;
-    
             foreach (var field in fields)
             {
                 if (field.QueryBuilderType == null)
                     IncludeScalarField(field.Name, field.DefaultAlias, null, null);
                 else
                 {
-                    int parentLevel;
-                    if (_operationType != null && GetType() == field.QueryBuilderType ||
-                        parentTypeLevel.TryGetValue(field.QueryBuilderType, out parentLevel) && parentLevel < level)
+                    var builderType = GetType();
+
+                    if (parentTypes != null && parentTypes.Any(t => t.IsAssignableFrom(field.QueryBuilderType)))
                         continue;
-    
-                    if (builderType == null)
-                    {
-                        builderType = GetType();
-                        parentLevel = parentTypeLevel.TryGetValue(builderType, out parentLevel) ? parentLevel : level;
-                        parentTypeLevel[builderType] = Math.Min(level, parentLevel);
-                    }
-    
-                    var queryBuilder = InitializeChildQueryBuilder(field.QueryBuilderType, level, parentTypeLevel);
-    
-                    foreach (var includeFragmentMethod in field.QueryBuilderType.GetMethods().Where(IsIncludeFragmentMethod))
-                    {
-                        var includeFragmentParameterInfo = includeFragmentMethod.GetParameters();
-                        var includeFragmentQueryBuilderType = includeFragmentParameterInfo[0].ParameterType;
-                        if (parentTypeLevel.TryGetValue(includeFragmentQueryBuilderType, out parentLevel))
-                            continue;
-    
-                        var includeFragmentParameters = new object[includeFragmentParameterInfo.Length];
-                        includeFragmentParameters[0] = InitializeChildQueryBuilder(includeFragmentQueryBuilderType, level, parentTypeLevel);
-                        includeFragmentMethod.Invoke(queryBuilder, includeFragmentParameters);
-                    }
-    
-                    if (queryBuilder._fieldCriteria.Count > 0 || queryBuilder._fragments != null)
-                        IncludeObjectField(field.Name, field.DefaultAlias, queryBuilder, null, null);
+
+                    parentTypes?.Add(builderType);
+
+                    var queryBuilder = InitializeChildBuilder(builderType, field.QueryBuilderType, parentTypes);
+
+                    var includeFragmentMethods = field.QueryBuilderType.GetMethods().Where(IsIncludeFragmentMethod);
+
+                    foreach (var includeFragmentMethod in includeFragmentMethods)
+                        includeFragmentMethod.Invoke(queryBuilder, new object[] { InitializeChildBuilder(builderType, includeFragmentMethod.GetParameters()[0].ParameterType, parentTypes) });
+
+                    IncludeObjectField(field.Name, field.DefaultAlias, queryBuilder, null, null);
                 }
             }
         }
-    
-        private static GraphQlQueryBuilder InitializeChildQueryBuilder(global::System.Type queryBuilderType, int level, Dictionary<global::System.Type, int> parentTypeLevel)
+
+        private static GraphQlQueryBuilder InitializeChildBuilder(Type parentQueryBuilderType, Type queryBuilderType, List<Type> parentTypes)
         {
             var queryBuilder = (GraphQlQueryBuilder)Activator.CreateInstance(queryBuilderType);
-            queryBuilder.IncludeFields(
-                queryBuilder.AllFields.Where(f => !f.RequiresParameters),
-                level + 1,
-                parentTypeLevel);
-    
+            queryBuilder.IncludeFields(queryBuilder.AllFields, parentTypes ?? new List<Type> { parentQueryBuilderType });
             return queryBuilder;
         }
-    
+
         private static bool IsIncludeFragmentMethod(MethodInfo methodInfo)
         {
             if (!methodInfo.Name.StartsWith("With") || !methodInfo.Name.EndsWith("Fragment"))
                 return false;
-    
+
             var parameters = methodInfo.GetParameters();
-            return parameters.Count(p => !p.IsOptional) == 1 && parameters[0].ParameterType.IsSubclassOf(typeof(GraphQlQueryBuilder));
+            return parameters.Length == 1 && parameters[0].ParameterType.IsSubclassOf(typeof(GraphQlQueryBuilder));
         }
-    
+
         protected void AddParameter<T>(GraphQlQueryParameter<T> parameter)
         {
             if (_queryParameters == null)
                 _queryParameters = new List<QueryBuilderArgumentInfo>();
-    
+
             _queryParameters.Add(new QueryBuilderArgumentInfo { ArgumentValue = parameter, FormatMask = parameter.FormatMask });
         }
-    
+
         private abstract class GraphQlFieldCriteria
         {
             private readonly IList<QueryBuilderArgumentInfo> _args;
             private readonly GraphQlDirective[] _directives;
-    
+
             protected readonly string FieldName;
             protected readonly string Alias;
-    
+
             protected static string GetIndentation(Formatting formatting, int level, byte indentationSize) =>
                 formatting == Formatting.Indented ? GraphQlQueryHelper.GetIndentation(level, indentationSize) : null;
-    
+
             protected GraphQlFieldCriteria(string fieldName, string alias, IList<QueryBuilderArgumentInfo> args, GraphQlDirective[] directives)
             {
                 GraphQlQueryHelper.ValidateGraphQlIdentifier(nameof(alias), alias);
                 FieldName = fieldName;
                 Alias = alias;
-                _args = args;
+                _args = args?.Where(x => x.ArgumentValue.Value is { }).ToList();
                 _directives = directives;
             }
-    
-            public abstract string Build(GraphQlBuilderOptions options, int level);
-    
-            protected string BuildArgumentClause(GraphQlBuilderOptions options, int level)
+
+            public abstract string Build(Formatting formatting, int level, byte indentationSize);
+
+            protected string BuildArgumentClause(Formatting formatting, int level, byte indentationSize)
             {
-                var separator = options.Formatting == Formatting.Indented ? " " : null;
+                var separator = formatting == Formatting.Indented ? " " : null;
                 var argumentCount = _args?.Count ?? 0;
                 if (argumentCount == 0)
                     return String.Empty;
-    
+
                 var arguments =
                     _args.Select(
-                        a => $"{a.ArgumentName}:{separator}{(a.ArgumentValue.Name == null ? GraphQlQueryHelper.BuildArgumentValue(a.ArgumentValue.Value, a.FormatMask, options, level) : $"${a.ArgumentValue.Name}")}");
-    
+                        a => $"{a.ArgumentName}:{separator}{(a.ArgumentValue.Name == null ? GraphQlQueryHelper.BuildArgumentValue(a.ArgumentValue.Value, a.FormatMask, formatting, level, indentationSize) : "$" + a.ArgumentValue.Name)}");
+
                 return $"({String.Join($",{separator}", arguments)})";
             }
-    
-            protected string BuildDirectiveClause(GraphQlBuilderOptions options, int level) =>
-                _directives == null ? null : String.Concat(_directives.Select(d => d == null ? null : GraphQlQueryHelper.BuildDirective(d, options, level)));
-    
+
+            protected string BuildDirectiveClause(Formatting formatting, int level, byte indentationSize) =>
+                _directives == null ? null : String.Concat(_directives.Select(d => d == null ? null : GraphQlQueryHelper.BuildDirective(d, formatting, level, indentationSize)));
+
             protected static string BuildAliasPrefix(string alias, Formatting formatting)
             {
                 var separator = formatting == Formatting.Indented ? " " : String.Empty;
-                return String.IsNullOrWhiteSpace(alias) ? null : $"{alias}:{separator}";
+                return String.IsNullOrWhiteSpace(alias) ? null : alias + ':' + separator;
             }
         }
-    
+
         private class GraphQlScalarFieldCriteria : GraphQlFieldCriteria
         {
             public GraphQlScalarFieldCriteria(string fieldName, string alias, IList<QueryBuilderArgumentInfo> args, GraphQlDirective[] directives)
                 : base(fieldName, alias, args, directives)
             {
             }
-    
-            public override string Build(GraphQlBuilderOptions options, int level) =>
-                GetIndentation(options.Formatting, level, options.IndentationSize) +
-                BuildAliasPrefix(Alias, options.Formatting) +
+
+            public override string Build(Formatting formatting, int level, byte indentationSize) =>
+                GetIndentation(formatting, level, indentationSize) +
+                BuildAliasPrefix(Alias, formatting) +
                 FieldName +
-                BuildArgumentClause(options, level) +
-                BuildDirectiveClause(options, level);
+                BuildArgumentClause(formatting, level, indentationSize) +
+                BuildDirectiveClause(formatting, level, indentationSize);
         }
-    
+
         private class GraphQlObjectFieldCriteria : GraphQlFieldCriteria
         {
             private readonly GraphQlQueryBuilder _objectQueryBuilder;
-    
+
             public GraphQlObjectFieldCriteria(string fieldName, string alias, GraphQlQueryBuilder objectQueryBuilder, IList<QueryBuilderArgumentInfo> args, GraphQlDirective[] directives)
                 : base(fieldName, alias, args, directives)
             {
                 _objectQueryBuilder = objectQueryBuilder;
             }
-    
-            public override string Build(GraphQlBuilderOptions options, int level) =>
+
+            public override string Build(Formatting formatting, int level, byte indentationSize) =>
                 _objectQueryBuilder._fieldCriteria.Count > 0 || _objectQueryBuilder._fragments?.Count > 0
-                    ? GetIndentation(options.Formatting, level, options.IndentationSize) + BuildAliasPrefix(Alias, options.Formatting) + FieldName +
-                      BuildArgumentClause(options, level) + BuildDirectiveClause(options, level) + _objectQueryBuilder.Build(options, level + 1)
+                    ? GetIndentation(formatting, level, indentationSize) + BuildAliasPrefix(Alias, formatting) + FieldName +
+                      BuildArgumentClause(formatting, level, indentationSize) + BuildDirectiveClause(formatting, level, indentationSize) + _objectQueryBuilder.Build(formatting, level + 1, indentationSize)
                     : null;
         }
-    
+
         private class GraphQlFragmentCriteria : GraphQlFieldCriteria
         {
             private readonly GraphQlQueryBuilder _objectQueryBuilder;
-    
+
             public GraphQlFragmentCriteria(GraphQlQueryBuilder objectQueryBuilder, GraphQlDirective[] directives) : base(objectQueryBuilder.TypeName, null, null, directives)
             {
                 _objectQueryBuilder = objectQueryBuilder;
             }
-    
-            public override string Build(GraphQlBuilderOptions options, int level) =>
+
+            public override string Build(Formatting formatting, int level, byte indentationSize) =>
                 _objectQueryBuilder._fieldCriteria.Count == 0
                     ? null
-                    : GetIndentation(options.Formatting, level, options.IndentationSize) + "..." + (options.Formatting == Formatting.Indented ? " " : null) + "on " +
-                      FieldName + BuildArgumentClause(options, level) + BuildDirectiveClause(options, level) + _objectQueryBuilder.Build(options, level + 1);
+                    : GetIndentation(formatting, level, indentationSize) + "..." + (formatting == Formatting.Indented ? " " : null) + "on " +
+                      FieldName + BuildArgumentClause(formatting, level, indentationSize) + BuildDirectiveClause(formatting, level, indentationSize) + _objectQueryBuilder.Build(formatting, level + 1, indentationSize);
         }
     }
-    
-    public abstract partial class GraphQlQueryBuilder<TQueryBuilder> : GraphQlQueryBuilder where TQueryBuilder : GraphQlQueryBuilder<TQueryBuilder>
+
+    public abstract class GraphQlQueryBuilder<TQueryBuilder> : GraphQlQueryBuilder where TQueryBuilder : GraphQlQueryBuilder<TQueryBuilder>
     {
         protected GraphQlQueryBuilder(string operationType = null, string operationName = null) : base(operationType, operationName)
         {
         }
-    
-        /// <summary>
-        /// Includes all fields that don't require parameters into the query.
-        /// </summary>
+
         public TQueryBuilder WithAllFields()
         {
             IncludeAllFields();
             return (TQueryBuilder)this;
         }
-    
-        /// <summary>
-        /// Includes all scalar fields that don't require parameters into the query.
-        /// </summary>
+
         public TQueryBuilder WithAllScalarFields()
         {
-            IncludeFields(AllFields.Where(f => !f.IsComplex && !f.RequiresParameters));
+            IncludeFields(AllFields.Where(f => !f.IsComplex));
             return (TQueryBuilder)this;
         }
-    
+
         public TQueryBuilder ExceptField(string fieldName)
         {
             ExcludeField(fieldName);
             return (TQueryBuilder)this;
         }
-    
-        /// <summary>
-        /// Includes "__typename" field; included automatically for interface and union types.
-        /// </summary>
+
         public TQueryBuilder WithTypeName(string alias = null, params GraphQlDirective[] directives)
         {
             IncludeScalarField("__typename", alias, null, directives);
             return (TQueryBuilder)this;
         }
-    
+
         protected TQueryBuilder WithScalarField(string fieldName, string alias, GraphQlDirective[] directives, IList<QueryBuilderArgumentInfo> args = null)
         {
             IncludeScalarField(fieldName, alias, args, directives);
             return (TQueryBuilder)this;
         }
-    
+
         protected TQueryBuilder WithObjectField(string fieldName, string alias, GraphQlQueryBuilder queryBuilder, GraphQlDirective[] directives, IList<QueryBuilderArgumentInfo> args = null)
         {
             IncludeObjectField(fieldName, alias, queryBuilder, args, directives);
             return (TQueryBuilder)this;
         }
-    
+
         protected TQueryBuilder WithFragment(GraphQlQueryBuilder queryBuilder, GraphQlDirective[] directives)
         {
             IncludeFragment(queryBuilder, directives);
             return (TQueryBuilder)this;
         }
-    
+
         protected TQueryBuilder WithParameterInternal<T>(GraphQlQueryParameter<T> parameter)
         {
             AddParameter(parameter);
             return (TQueryBuilder)this;
         }
     }
-    
+
     public abstract class GraphQlResponse<TDataContract>
     {
         public TDataContract Data { get; set; }
         public ICollection<GraphQlQueryError> Errors { get; set; }
     }
-    
+
     public class GraphQlQueryError
     {
         public string Message { get; set; }
         public ICollection<GraphQlErrorLocation> Locations { get; set; }
     }
-    
+
     public class GraphQlErrorLocation
     {
         public int Line { get; set; }
@@ -1252,8 +1130,8 @@ namespace TotoroNext.Anime.Anilist
         public const string LikeableUnion = "LikeableUnion";
         public const string NotificationUnion = "NotificationUnion";
 
-        public static readonly IReadOnlyDictionary<global::System.Type, string> ReverseMapping =
-            new Dictionary<global::System.Type, string>
+        public static readonly IReadOnlyDictionary<Type, string> ReverseMapping =
+            new Dictionary<Type, string>
             {
                 { typeof(int), "Int" },
                 { typeof(string), "String" },
@@ -1609,9 +1487,7 @@ namespace TotoroNext.Anime.Anilist
         [EnumMember(Value = "MANGA_DATA")] MangaData,
         [EnumMember(Value = "LEAD_SOCIAL_MEDIA")] LeadSocialMedia,
         [EnumMember(Value = "SOCIAL_MEDIA")] SocialMedia,
-        [EnumMember(Value = "RETIRED")] Retired,
-        [EnumMember(Value = "CHARACTER_DATA")] CharacterData,
-        [EnumMember(Value = "STAFF_DATA")] StaffData
+        [EnumMember(Value = "RETIRED")] Retired
     }
 
     public enum MediaListSort
@@ -1782,7 +1658,7 @@ namespace TotoroNext.Anime.Anilist
     public class QueryQueryBuilder : GraphQlQueryBuilder<QueryQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "Page", IsComplex = true, QueryBuilderType = typeof(PageQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "Media", IsComplex = true, QueryBuilderType = typeof(MediaQueryBuilder) },
@@ -1801,21 +1677,21 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "Review", IsComplex = true, QueryBuilderType = typeof(ReviewQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "Activity", IsComplex = true, QueryBuilderType = typeof(ActivityUnionQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "ActivityReply", IsComplex = true, QueryBuilderType = typeof(ActivityReplyQueryBuilder) },
-                new GraphQlFieldMetadata { Name = "Following", RequiresParameters = true, IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
-                new GraphQlFieldMetadata { Name = "Follower", RequiresParameters = true, IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
+                new GraphQlFieldMetadata { Name = "Following", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
+                new GraphQlFieldMetadata { Name = "Follower", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "Thread", IsComplex = true, QueryBuilderType = typeof(ThreadQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "ThreadComment", IsComplex = true, QueryBuilderType = typeof(ThreadCommentQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "Recommendation", IsComplex = true, QueryBuilderType = typeof(RecommendationQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "Like", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
-                new GraphQlFieldMetadata { Name = "Markdown", RequiresParameters = true, IsComplex = true, QueryBuilderType = typeof(ParsedMarkdownQueryBuilder) },
+                new GraphQlFieldMetadata { Name = "Markdown", IsComplex = true, QueryBuilderType = typeof(ParsedMarkdownQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "AniChartUser", IsComplex = true, QueryBuilderType = typeof(AniChartUserQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "SiteStatistics", IsComplex = true, QueryBuilderType = typeof(SiteStatisticsQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "ExternalLinkSourceCollection", IsComplex = true, QueryBuilderType = typeof(MediaExternalLinkQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "Query"; } } 
+        protected override string TypeName { get { return "Query"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public QueryQueryBuilder(string operationName = null) : base("query", operationName)
         {
@@ -1830,10 +1706,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("Page", alias, pageQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -1847,211 +1723,211 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (idMal != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal", ArgumentValue = idMal} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal", ArgumentValue = idMal });
 
             if (startDate != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate", ArgumentValue = startDate} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate", ArgumentValue = startDate });
 
             if (endDate != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate", ArgumentValue = endDate} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate", ArgumentValue = endDate });
 
             if (season != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "season", ArgumentValue = season} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "season", ArgumentValue = season });
 
             if (seasonYear != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "seasonYear", ArgumentValue = seasonYear} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "seasonYear", ArgumentValue = seasonYear });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (format != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format", ArgumentValue = format} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format", ArgumentValue = format });
 
             if (status != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status });
 
             if (episodes != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes", ArgumentValue = episodes} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes", ArgumentValue = episodes });
 
             if (duration != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration", ArgumentValue = duration} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration", ArgumentValue = duration });
 
             if (chapters != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters", ArgumentValue = chapters} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters", ArgumentValue = chapters });
 
             if (volumes != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes", ArgumentValue = volumes} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes", ArgumentValue = volumes });
 
             if (isAdult != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isAdult", ArgumentValue = isAdult} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isAdult", ArgumentValue = isAdult });
 
             if (genre != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre", ArgumentValue = genre} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre", ArgumentValue = genre });
 
             if (tag != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag", ArgumentValue = tag} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag", ArgumentValue = tag });
 
             if (minimumTagRank != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "minimumTagRank", ArgumentValue = minimumTagRank} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "minimumTagRank", ArgumentValue = minimumTagRank });
 
             if (tagCategory != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory", ArgumentValue = tagCategory} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory", ArgumentValue = tagCategory });
 
             if (onList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList });
 
             if (licensedBy != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedBy", ArgumentValue = licensedBy} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedBy", ArgumentValue = licensedBy });
 
             if (licensedById != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedById", ArgumentValue = licensedById} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedById", ArgumentValue = licensedById });
 
             if (averageScore != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore", ArgumentValue = averageScore} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore", ArgumentValue = averageScore });
 
             if (popularity != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity", ArgumentValue = popularity} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity", ArgumentValue = popularity });
 
             if (source != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "source", ArgumentValue = source} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "source", ArgumentValue = source });
 
             if (countryOfOrigin != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "countryOfOrigin", ArgumentValue = countryOfOrigin} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "countryOfOrigin", ArgumentValue = countryOfOrigin });
 
             if (isLicensed != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isLicensed", ArgumentValue = isLicensed} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isLicensed", ArgumentValue = isLicensed });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (idMalNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_not", ArgumentValue = idMalNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_not", ArgumentValue = idMalNot });
 
             if (idMalIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_in", ArgumentValue = idMalIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_in", ArgumentValue = idMalIn });
 
             if (idMalNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_not_in", ArgumentValue = idMalNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_not_in", ArgumentValue = idMalNotIn });
 
             if (startDateGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_greater", ArgumentValue = startDateGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_greater", ArgumentValue = startDateGreater });
 
             if (startDateLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_lesser", ArgumentValue = startDateLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_lesser", ArgumentValue = startDateLesser });
 
             if (startDateLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_like", ArgumentValue = startDateLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_like", ArgumentValue = startDateLike });
 
             if (endDateGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_greater", ArgumentValue = endDateGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_greater", ArgumentValue = endDateGreater });
 
             if (endDateLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_lesser", ArgumentValue = endDateLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_lesser", ArgumentValue = endDateLesser });
 
             if (endDateLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_like", ArgumentValue = endDateLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_like", ArgumentValue = endDateLike });
 
             if (formatIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_in", ArgumentValue = formatIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_in", ArgumentValue = formatIn });
 
             if (formatNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_not", ArgumentValue = formatNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_not", ArgumentValue = formatNot });
 
             if (formatNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_not_in", ArgumentValue = formatNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_not_in", ArgumentValue = formatNotIn });
 
             if (statusIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_in", ArgumentValue = statusIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_in", ArgumentValue = statusIn });
 
             if (statusNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not", ArgumentValue = statusNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not", ArgumentValue = statusNot });
 
             if (statusNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not_in", ArgumentValue = statusNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not_in", ArgumentValue = statusNotIn });
 
             if (episodesGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes_greater", ArgumentValue = episodesGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes_greater", ArgumentValue = episodesGreater });
 
             if (episodesLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes_lesser", ArgumentValue = episodesLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes_lesser", ArgumentValue = episodesLesser });
 
             if (durationGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration_greater", ArgumentValue = durationGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration_greater", ArgumentValue = durationGreater });
 
             if (durationLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration_lesser", ArgumentValue = durationLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration_lesser", ArgumentValue = durationLesser });
 
             if (chaptersGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters_greater", ArgumentValue = chaptersGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters_greater", ArgumentValue = chaptersGreater });
 
             if (chaptersLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters_lesser", ArgumentValue = chaptersLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters_lesser", ArgumentValue = chaptersLesser });
 
             if (volumesGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes_greater", ArgumentValue = volumesGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes_greater", ArgumentValue = volumesGreater });
 
             if (volumesLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes_lesser", ArgumentValue = volumesLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes_lesser", ArgumentValue = volumesLesser });
 
             if (genreIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre_in", ArgumentValue = genreIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre_in", ArgumentValue = genreIn });
 
             if (genreNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre_not_in", ArgumentValue = genreNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre_not_in", ArgumentValue = genreNotIn });
 
             if (tagIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag_in", ArgumentValue = tagIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag_in", ArgumentValue = tagIn });
 
             if (tagNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag_not_in", ArgumentValue = tagNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag_not_in", ArgumentValue = tagNotIn });
 
             if (tagCategoryIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory_in", ArgumentValue = tagCategoryIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory_in", ArgumentValue = tagCategoryIn });
 
             if (tagCategoryNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory_not_in", ArgumentValue = tagCategoryNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory_not_in", ArgumentValue = tagCategoryNotIn });
 
             if (licensedByIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedBy_in", ArgumentValue = licensedByIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedBy_in", ArgumentValue = licensedByIn });
 
             if (licensedByIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedById_in", ArgumentValue = licensedByIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedById_in", ArgumentValue = licensedByIdIn });
 
             if (averageScoreNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_not", ArgumentValue = averageScoreNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_not", ArgumentValue = averageScoreNot });
 
             if (averageScoreGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_greater", ArgumentValue = averageScoreGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_greater", ArgumentValue = averageScoreGreater });
 
             if (averageScoreLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_lesser", ArgumentValue = averageScoreLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_lesser", ArgumentValue = averageScoreLesser });
 
             if (popularityNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_not", ArgumentValue = popularityNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_not", ArgumentValue = popularityNot });
 
             if (popularityGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_greater", ArgumentValue = popularityGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_greater", ArgumentValue = popularityGreater });
 
             if (popularityLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_lesser", ArgumentValue = popularityLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_lesser", ArgumentValue = popularityLesser });
 
             if (sourceIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "source_in", ArgumentValue = sourceIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "source_in", ArgumentValue = sourceIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("Media", alias, mediaQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2065,79 +1941,79 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (date != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date", ArgumentValue = date} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date", ArgumentValue = date });
 
             if (trending != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending", ArgumentValue = trending} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending", ArgumentValue = trending });
 
             if (averageScore != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore", ArgumentValue = averageScore} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore", ArgumentValue = averageScore });
 
             if (popularity != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity", ArgumentValue = popularity} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity", ArgumentValue = popularity });
 
             if (episode != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode", ArgumentValue = episode} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode", ArgumentValue = episode });
 
             if (releasing != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "releasing", ArgumentValue = releasing} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "releasing", ArgumentValue = releasing });
 
             if (mediaIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot });
 
             if (mediaIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn });
 
             if (mediaIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn });
 
             if (dateGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date_greater", ArgumentValue = dateGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date_greater", ArgumentValue = dateGreater });
 
             if (dateLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date_lesser", ArgumentValue = dateLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date_lesser", ArgumentValue = dateLesser });
 
             if (trendingGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_greater", ArgumentValue = trendingGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_greater", ArgumentValue = trendingGreater });
 
             if (trendingLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_lesser", ArgumentValue = trendingLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_lesser", ArgumentValue = trendingLesser });
 
             if (trendingNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_not", ArgumentValue = trendingNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_not", ArgumentValue = trendingNot });
 
             if (averageScoreGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_greater", ArgumentValue = averageScoreGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_greater", ArgumentValue = averageScoreGreater });
 
             if (averageScoreLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_lesser", ArgumentValue = averageScoreLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_lesser", ArgumentValue = averageScoreLesser });
 
             if (averageScoreNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_not", ArgumentValue = averageScoreNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_not", ArgumentValue = averageScoreNot });
 
             if (popularityGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_greater", ArgumentValue = popularityGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_greater", ArgumentValue = popularityGreater });
 
             if (popularityLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_lesser", ArgumentValue = popularityLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_lesser", ArgumentValue = popularityLesser });
 
             if (popularityNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_not", ArgumentValue = popularityNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_not", ArgumentValue = popularityNot });
 
             if (episodeGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_greater", ArgumentValue = episodeGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_greater", ArgumentValue = episodeGreater });
 
             if (episodeLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_lesser", ArgumentValue = episodeLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_lesser", ArgumentValue = episodeLesser });
 
             if (episodeNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not", ArgumentValue = episodeNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not", ArgumentValue = episodeNot });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("MediaTrend", alias, mediaTrendQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2151,61 +2027,61 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (episode != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode", ArgumentValue = episode} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode", ArgumentValue = episode });
 
             if (airingAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt", ArgumentValue = airingAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt", ArgumentValue = airingAt });
 
             if (notYetAired != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notYetAired", ArgumentValue = notYetAired} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notYetAired", ArgumentValue = notYetAired });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (mediaIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot });
 
             if (mediaIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn });
 
             if (mediaIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn });
 
             if (episodeNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not", ArgumentValue = episodeNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not", ArgumentValue = episodeNot });
 
             if (episodeIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_in", ArgumentValue = episodeIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_in", ArgumentValue = episodeIn });
 
             if (episodeNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not_in", ArgumentValue = episodeNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not_in", ArgumentValue = episodeNotIn });
 
             if (episodeGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_greater", ArgumentValue = episodeGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_greater", ArgumentValue = episodeGreater });
 
             if (episodeLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_lesser", ArgumentValue = episodeLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_lesser", ArgumentValue = episodeLesser });
 
             if (airingAtGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt_greater", ArgumentValue = airingAtGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt_greater", ArgumentValue = airingAtGreater });
 
             if (airingAtLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt_lesser", ArgumentValue = airingAtLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt_lesser", ArgumentValue = airingAtLesser });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("AiringSchedule", alias, airingScheduleQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2219,25 +2095,25 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (isBirthday != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isBirthday", ArgumentValue = isBirthday} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isBirthday", ArgumentValue = isBirthday });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("Character", alias, characterQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2251,25 +2127,25 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (isBirthday != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isBirthday", ArgumentValue = isBirthday} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isBirthday", ArgumentValue = isBirthday });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("Staff", alias, staffQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2283,79 +2159,79 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (userName != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userName", ArgumentValue = userName} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userName", ArgumentValue = userName });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (status != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (isFollowing != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isFollowing", ArgumentValue = isFollowing} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isFollowing", ArgumentValue = isFollowing });
 
             if (notes != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes", ArgumentValue = notes} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes", ArgumentValue = notes });
 
             if (startedAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt", ArgumentValue = startedAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt", ArgumentValue = startedAt });
 
             if (completedAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt", ArgumentValue = completedAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt", ArgumentValue = completedAt });
 
             if (compareWithAuthList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "compareWithAuthList", ArgumentValue = compareWithAuthList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "compareWithAuthList", ArgumentValue = compareWithAuthList });
 
             if (userIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_in", ArgumentValue = userIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_in", ArgumentValue = userIdIn });
 
             if (statusIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_in", ArgumentValue = statusIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_in", ArgumentValue = statusIn });
 
             if (statusNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not_in", ArgumentValue = statusNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not_in", ArgumentValue = statusNotIn });
 
             if (statusNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not", ArgumentValue = statusNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not", ArgumentValue = statusNot });
 
             if (mediaIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn });
 
             if (mediaIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn });
 
             if (notesLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes_like", ArgumentValue = notesLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes_like", ArgumentValue = notesLike });
 
             if (startedAtGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_greater", ArgumentValue = startedAtGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_greater", ArgumentValue = startedAtGreater });
 
             if (startedAtLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_lesser", ArgumentValue = startedAtLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_lesser", ArgumentValue = startedAtLesser });
 
             if (startedAtLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_like", ArgumentValue = startedAtLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_like", ArgumentValue = startedAtLike });
 
             if (completedAtGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_greater", ArgumentValue = completedAtGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_greater", ArgumentValue = completedAtGreater });
 
             if (completedAtLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_lesser", ArgumentValue = completedAtLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_lesser", ArgumentValue = completedAtLesser });
 
             if (completedAtLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_like", ArgumentValue = completedAtLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_like", ArgumentValue = completedAtLike });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("MediaList", alias, mediaListQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2369,67 +2245,67 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (userName != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userName", ArgumentValue = userName} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userName", ArgumentValue = userName });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (status != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status });
 
             if (notes != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes", ArgumentValue = notes} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes", ArgumentValue = notes });
 
             if (startedAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt", ArgumentValue = startedAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt", ArgumentValue = startedAt });
 
             if (completedAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt", ArgumentValue = completedAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt", ArgumentValue = completedAt });
 
             if (forceSingleCompletedList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "forceSingleCompletedList", ArgumentValue = forceSingleCompletedList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "forceSingleCompletedList", ArgumentValue = forceSingleCompletedList });
 
             if (chunk != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chunk", ArgumentValue = chunk} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chunk", ArgumentValue = chunk });
 
             if (perChunk != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perChunk", ArgumentValue = perChunk} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perChunk", ArgumentValue = perChunk });
 
             if (statusIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_in", ArgumentValue = statusIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_in", ArgumentValue = statusIn });
 
             if (statusNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not_in", ArgumentValue = statusNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not_in", ArgumentValue = statusNotIn });
 
             if (statusNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not", ArgumentValue = statusNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not", ArgumentValue = statusNot });
 
             if (notesLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes_like", ArgumentValue = notesLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes_like", ArgumentValue = notesLike });
 
             if (startedAtGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_greater", ArgumentValue = startedAtGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_greater", ArgumentValue = startedAtGreater });
 
             if (startedAtLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_lesser", ArgumentValue = startedAtLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_lesser", ArgumentValue = startedAtLesser });
 
             if (startedAtLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_like", ArgumentValue = startedAtLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_like", ArgumentValue = startedAtLike });
 
             if (completedAtGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_greater", ArgumentValue = completedAtGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_greater", ArgumentValue = completedAtGreater });
 
             if (completedAtLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_lesser", ArgumentValue = completedAtLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_lesser", ArgumentValue = completedAtLesser });
 
             if (completedAtLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_like", ArgumentValue = completedAtLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_like", ArgumentValue = completedAtLike });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("MediaListCollection", alias, mediaListCollectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2453,7 +2329,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (status != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status });
 
             return WithObjectField("MediaTagCollection", alias, mediaTagQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2467,19 +2343,19 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (name != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "name", ArgumentValue = name} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "name", ArgumentValue = name });
 
             if (isModerator != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isModerator", ArgumentValue = isModerator} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isModerator", ArgumentValue = isModerator });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("User", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2503,13 +2379,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (resetNotificationCount != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "resetNotificationCount", ArgumentValue = resetNotificationCount} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "resetNotificationCount", ArgumentValue = resetNotificationCount });
 
             if (typeIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_in", ArgumentValue = typeIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_in", ArgumentValue = typeIn });
 
             return WithObjectField("Notification", alias, notificationUnionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2523,22 +2399,22 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("Studio", alias, studioQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2552,19 +2428,19 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (mediaType != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaType", ArgumentValue = mediaType} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaType", ArgumentValue = mediaType });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("Review", alias, reviewQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2578,85 +2454,85 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (messengerId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId", ArgumentValue = messengerId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId", ArgumentValue = messengerId });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (isFollowing != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isFollowing", ArgumentValue = isFollowing} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isFollowing", ArgumentValue = isFollowing });
 
             if (hasReplies != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hasReplies", ArgumentValue = hasReplies} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hasReplies", ArgumentValue = hasReplies });
 
             if (hasRepliesOrTypeText != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hasRepliesOrTypeText", ArgumentValue = hasRepliesOrTypeText} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hasRepliesOrTypeText", ArgumentValue = hasRepliesOrTypeText });
 
             if (createdAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt", ArgumentValue = createdAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt", ArgumentValue = createdAt });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (userIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_not", ArgumentValue = userIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_not", ArgumentValue = userIdNot });
 
             if (userIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_in", ArgumentValue = userIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_in", ArgumentValue = userIdIn });
 
             if (userIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_not_in", ArgumentValue = userIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_not_in", ArgumentValue = userIdNotIn });
 
             if (messengerIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_not", ArgumentValue = messengerIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_not", ArgumentValue = messengerIdNot });
 
             if (messengerIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_in", ArgumentValue = messengerIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_in", ArgumentValue = messengerIdIn });
 
             if (messengerIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_not_in", ArgumentValue = messengerIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_not_in", ArgumentValue = messengerIdNotIn });
 
             if (mediaIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot });
 
             if (mediaIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn });
 
             if (mediaIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn });
 
             if (typeNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_not", ArgumentValue = typeNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_not", ArgumentValue = typeNot });
 
             if (typeIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_in", ArgumentValue = typeIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_in", ArgumentValue = typeIn });
 
             if (typeNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_not_in", ArgumentValue = typeNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_not_in", ArgumentValue = typeNotIn });
 
             if (createdAtGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt_greater", ArgumentValue = createdAtGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt_greater", ArgumentValue = createdAtGreater });
 
             if (createdAtLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt_lesser", ArgumentValue = createdAtLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt_lesser", ArgumentValue = createdAtLesser });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("Activity", alias, activityUnionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2670,10 +2546,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (activityId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "activityId", ArgumentValue = activityId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "activityId", ArgumentValue = activityId });
 
             return WithObjectField("ActivityReply", alias, activityReplyQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2686,9 +2562,9 @@ namespace TotoroNext.Anime.Anilist
         public QueryQueryBuilder WithFollowing(UserQueryBuilder userQueryBuilder, QueryBuilderParameter<int> userId, QueryBuilderParameter<IEnumerable<UserSort?>> sort = null, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
             var args = new List<QueryBuilderArgumentInfo>();
-            args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+            args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("Following", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2701,9 +2577,9 @@ namespace TotoroNext.Anime.Anilist
         public QueryQueryBuilder WithFollower(UserQueryBuilder userQueryBuilder, QueryBuilderParameter<int> userId, QueryBuilderParameter<IEnumerable<UserSort?>> sort = null, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
             var args = new List<QueryBuilderArgumentInfo>();
-            args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+            args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("Follower", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2717,31 +2593,31 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (replyUserId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "replyUserId", ArgumentValue = replyUserId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "replyUserId", ArgumentValue = replyUserId });
 
             if (subscribed != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "subscribed", ArgumentValue = subscribed} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "subscribed", ArgumentValue = subscribed });
 
             if (categoryId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "categoryId", ArgumentValue = categoryId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "categoryId", ArgumentValue = categoryId });
 
             if (mediaCategoryId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaCategoryId", ArgumentValue = mediaCategoryId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaCategoryId", ArgumentValue = mediaCategoryId });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("Thread", alias, threadQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2755,16 +2631,16 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (threadId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "threadId", ArgumentValue = threadId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "threadId", ArgumentValue = threadId });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("ThreadComment", alias, threadCommentQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2778,31 +2654,31 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (mediaRecommendationId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaRecommendationId", ArgumentValue = mediaRecommendationId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaRecommendationId", ArgumentValue = mediaRecommendationId });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (rating != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating", ArgumentValue = rating} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating", ArgumentValue = rating });
 
             if (onList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList });
 
             if (ratingGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating_greater", ArgumentValue = ratingGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating_greater", ArgumentValue = ratingGreater });
 
             if (ratingLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating_lesser", ArgumentValue = ratingLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating_lesser", ArgumentValue = ratingLesser });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("Recommendation", alias, recommendationQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2816,10 +2692,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (likeableId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "likeableId", ArgumentValue = likeableId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "likeableId", ArgumentValue = likeableId });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             return WithObjectField("Like", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2832,7 +2708,7 @@ namespace TotoroNext.Anime.Anilist
         public QueryQueryBuilder WithMarkdown(ParsedMarkdownQueryBuilder parsedMarkdownQueryBuilder, QueryBuilderParameter<string> markdown, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
             var args = new List<QueryBuilderArgumentInfo>();
-            args.Add(new QueryBuilderArgumentInfo { ArgumentName = "markdown", ArgumentValue = markdown} );
+            args.Add(new QueryBuilderArgumentInfo { ArgumentName = "markdown", ArgumentValue = markdown });
             return WithObjectField("Markdown", alias, parsedMarkdownQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
 
@@ -2865,13 +2741,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (mediaType != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaType", ArgumentValue = mediaType} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaType", ArgumentValue = mediaType });
 
             return WithObjectField("ExternalLinkSourceCollection", alias, mediaExternalLinkQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2885,7 +2761,7 @@ namespace TotoroNext.Anime.Anilist
     public class PageQueryBuilder : GraphQlQueryBuilder<PageQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "pageInfo", IsComplex = true, QueryBuilderType = typeof(PageInfoQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "users", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
@@ -2897,8 +2773,8 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "airingSchedules", IsComplex = true, QueryBuilderType = typeof(AiringScheduleQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "mediaTrends", IsComplex = true, QueryBuilderType = typeof(MediaTrendQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "notifications", IsComplex = true, QueryBuilderType = typeof(NotificationUnionQueryBuilder) },
-                new GraphQlFieldMetadata { Name = "followers", RequiresParameters = true, IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
-                new GraphQlFieldMetadata { Name = "following", RequiresParameters = true, IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
+                new GraphQlFieldMetadata { Name = "followers", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
+                new GraphQlFieldMetadata { Name = "following", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "activities", IsComplex = true, QueryBuilderType = typeof(ActivityUnionQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "activityReplies", IsComplex = true, QueryBuilderType = typeof(ActivityReplyQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "threads", IsComplex = true, QueryBuilderType = typeof(ThreadQueryBuilder) },
@@ -2908,9 +2784,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "likes", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "Page"; } } 
+        protected override string TypeName { get { return "Page"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public PageQueryBuilder WithPageInfo(PageInfoQueryBuilder pageInfoQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -2926,19 +2802,19 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (name != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "name", ArgumentValue = name} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "name", ArgumentValue = name });
 
             if (isModerator != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isModerator", ArgumentValue = isModerator} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isModerator", ArgumentValue = isModerator });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("users", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -2952,211 +2828,211 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (idMal != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal", ArgumentValue = idMal} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal", ArgumentValue = idMal });
 
             if (startDate != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate", ArgumentValue = startDate} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate", ArgumentValue = startDate });
 
             if (endDate != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate", ArgumentValue = endDate} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate", ArgumentValue = endDate });
 
             if (season != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "season", ArgumentValue = season} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "season", ArgumentValue = season });
 
             if (seasonYear != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "seasonYear", ArgumentValue = seasonYear} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "seasonYear", ArgumentValue = seasonYear });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (format != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format", ArgumentValue = format} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format", ArgumentValue = format });
 
             if (status != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status });
 
             if (episodes != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes", ArgumentValue = episodes} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes", ArgumentValue = episodes });
 
             if (duration != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration", ArgumentValue = duration} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration", ArgumentValue = duration });
 
             if (chapters != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters", ArgumentValue = chapters} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters", ArgumentValue = chapters });
 
             if (volumes != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes", ArgumentValue = volumes} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes", ArgumentValue = volumes });
 
             if (isAdult != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isAdult", ArgumentValue = isAdult} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isAdult", ArgumentValue = isAdult });
 
             if (genre != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre", ArgumentValue = genre} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre", ArgumentValue = genre });
 
             if (tag != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag", ArgumentValue = tag} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag", ArgumentValue = tag });
 
             if (minimumTagRank != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "minimumTagRank", ArgumentValue = minimumTagRank} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "minimumTagRank", ArgumentValue = minimumTagRank });
 
             if (tagCategory != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory", ArgumentValue = tagCategory} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory", ArgumentValue = tagCategory });
 
             if (onList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList });
 
             if (licensedBy != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedBy", ArgumentValue = licensedBy} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedBy", ArgumentValue = licensedBy });
 
             if (licensedById != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedById", ArgumentValue = licensedById} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedById", ArgumentValue = licensedById });
 
             if (averageScore != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore", ArgumentValue = averageScore} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore", ArgumentValue = averageScore });
 
             if (popularity != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity", ArgumentValue = popularity} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity", ArgumentValue = popularity });
 
             if (source != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "source", ArgumentValue = source} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "source", ArgumentValue = source });
 
             if (countryOfOrigin != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "countryOfOrigin", ArgumentValue = countryOfOrigin} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "countryOfOrigin", ArgumentValue = countryOfOrigin });
 
             if (isLicensed != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isLicensed", ArgumentValue = isLicensed} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isLicensed", ArgumentValue = isLicensed });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (idMalNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_not", ArgumentValue = idMalNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_not", ArgumentValue = idMalNot });
 
             if (idMalIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_in", ArgumentValue = idMalIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_in", ArgumentValue = idMalIn });
 
             if (idMalNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_not_in", ArgumentValue = idMalNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_not_in", ArgumentValue = idMalNotIn });
 
             if (startDateGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_greater", ArgumentValue = startDateGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_greater", ArgumentValue = startDateGreater });
 
             if (startDateLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_lesser", ArgumentValue = startDateLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_lesser", ArgumentValue = startDateLesser });
 
             if (startDateLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_like", ArgumentValue = startDateLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_like", ArgumentValue = startDateLike });
 
             if (endDateGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_greater", ArgumentValue = endDateGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_greater", ArgumentValue = endDateGreater });
 
             if (endDateLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_lesser", ArgumentValue = endDateLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_lesser", ArgumentValue = endDateLesser });
 
             if (endDateLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_like", ArgumentValue = endDateLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_like", ArgumentValue = endDateLike });
 
             if (formatIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_in", ArgumentValue = formatIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_in", ArgumentValue = formatIn });
 
             if (formatNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_not", ArgumentValue = formatNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_not", ArgumentValue = formatNot });
 
             if (formatNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_not_in", ArgumentValue = formatNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_not_in", ArgumentValue = formatNotIn });
 
             if (statusIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_in", ArgumentValue = statusIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_in", ArgumentValue = statusIn });
 
             if (statusNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not", ArgumentValue = statusNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not", ArgumentValue = statusNot });
 
             if (statusNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not_in", ArgumentValue = statusNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not_in", ArgumentValue = statusNotIn });
 
             if (episodesGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes_greater", ArgumentValue = episodesGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes_greater", ArgumentValue = episodesGreater });
 
             if (episodesLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes_lesser", ArgumentValue = episodesLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes_lesser", ArgumentValue = episodesLesser });
 
             if (durationGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration_greater", ArgumentValue = durationGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration_greater", ArgumentValue = durationGreater });
 
             if (durationLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration_lesser", ArgumentValue = durationLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration_lesser", ArgumentValue = durationLesser });
 
             if (chaptersGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters_greater", ArgumentValue = chaptersGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters_greater", ArgumentValue = chaptersGreater });
 
             if (chaptersLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters_lesser", ArgumentValue = chaptersLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters_lesser", ArgumentValue = chaptersLesser });
 
             if (volumesGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes_greater", ArgumentValue = volumesGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes_greater", ArgumentValue = volumesGreater });
 
             if (volumesLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes_lesser", ArgumentValue = volumesLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes_lesser", ArgumentValue = volumesLesser });
 
             if (genreIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre_in", ArgumentValue = genreIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre_in", ArgumentValue = genreIn });
 
             if (genreNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre_not_in", ArgumentValue = genreNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre_not_in", ArgumentValue = genreNotIn });
 
             if (tagIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag_in", ArgumentValue = tagIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag_in", ArgumentValue = tagIn });
 
             if (tagNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag_not_in", ArgumentValue = tagNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag_not_in", ArgumentValue = tagNotIn });
 
             if (tagCategoryIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory_in", ArgumentValue = tagCategoryIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory_in", ArgumentValue = tagCategoryIn });
 
             if (tagCategoryNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory_not_in", ArgumentValue = tagCategoryNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory_not_in", ArgumentValue = tagCategoryNotIn });
 
             if (licensedByIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedBy_in", ArgumentValue = licensedByIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedBy_in", ArgumentValue = licensedByIn });
 
             if (licensedByIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedById_in", ArgumentValue = licensedByIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedById_in", ArgumentValue = licensedByIdIn });
 
             if (averageScoreNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_not", ArgumentValue = averageScoreNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_not", ArgumentValue = averageScoreNot });
 
             if (averageScoreGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_greater", ArgumentValue = averageScoreGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_greater", ArgumentValue = averageScoreGreater });
 
             if (averageScoreLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_lesser", ArgumentValue = averageScoreLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_lesser", ArgumentValue = averageScoreLesser });
 
             if (popularityNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_not", ArgumentValue = popularityNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_not", ArgumentValue = popularityNot });
 
             if (popularityGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_greater", ArgumentValue = popularityGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_greater", ArgumentValue = popularityGreater });
 
             if (popularityLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_lesser", ArgumentValue = popularityLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_lesser", ArgumentValue = popularityLesser });
 
             if (sourceIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "source_in", ArgumentValue = sourceIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "source_in", ArgumentValue = sourceIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("media", alias, mediaQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3170,25 +3046,25 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (isBirthday != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isBirthday", ArgumentValue = isBirthday} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isBirthday", ArgumentValue = isBirthday });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("characters", alias, characterQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3202,25 +3078,25 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (isBirthday != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isBirthday", ArgumentValue = isBirthday} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isBirthday", ArgumentValue = isBirthday });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("staff", alias, staffQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3234,22 +3110,22 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("studios", alias, studioQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3263,79 +3139,79 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (userName != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userName", ArgumentValue = userName} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userName", ArgumentValue = userName });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (status != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (isFollowing != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isFollowing", ArgumentValue = isFollowing} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isFollowing", ArgumentValue = isFollowing });
 
             if (notes != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes", ArgumentValue = notes} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes", ArgumentValue = notes });
 
             if (startedAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt", ArgumentValue = startedAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt", ArgumentValue = startedAt });
 
             if (completedAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt", ArgumentValue = completedAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt", ArgumentValue = completedAt });
 
             if (compareWithAuthList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "compareWithAuthList", ArgumentValue = compareWithAuthList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "compareWithAuthList", ArgumentValue = compareWithAuthList });
 
             if (userIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_in", ArgumentValue = userIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_in", ArgumentValue = userIdIn });
 
             if (statusIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_in", ArgumentValue = statusIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_in", ArgumentValue = statusIn });
 
             if (statusNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not_in", ArgumentValue = statusNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not_in", ArgumentValue = statusNotIn });
 
             if (statusNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not", ArgumentValue = statusNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not", ArgumentValue = statusNot });
 
             if (mediaIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn });
 
             if (mediaIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn });
 
             if (notesLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes_like", ArgumentValue = notesLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes_like", ArgumentValue = notesLike });
 
             if (startedAtGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_greater", ArgumentValue = startedAtGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_greater", ArgumentValue = startedAtGreater });
 
             if (startedAtLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_lesser", ArgumentValue = startedAtLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_lesser", ArgumentValue = startedAtLesser });
 
             if (startedAtLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_like", ArgumentValue = startedAtLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_like", ArgumentValue = startedAtLike });
 
             if (completedAtGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_greater", ArgumentValue = completedAtGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_greater", ArgumentValue = completedAtGreater });
 
             if (completedAtLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_lesser", ArgumentValue = completedAtLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_lesser", ArgumentValue = completedAtLesser });
 
             if (completedAtLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_like", ArgumentValue = completedAtLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_like", ArgumentValue = completedAtLike });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("mediaList", alias, mediaListQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3349,61 +3225,61 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (episode != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode", ArgumentValue = episode} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode", ArgumentValue = episode });
 
             if (airingAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt", ArgumentValue = airingAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt", ArgumentValue = airingAt });
 
             if (notYetAired != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notYetAired", ArgumentValue = notYetAired} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notYetAired", ArgumentValue = notYetAired });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (mediaIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot });
 
             if (mediaIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn });
 
             if (mediaIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn });
 
             if (episodeNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not", ArgumentValue = episodeNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not", ArgumentValue = episodeNot });
 
             if (episodeIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_in", ArgumentValue = episodeIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_in", ArgumentValue = episodeIn });
 
             if (episodeNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not_in", ArgumentValue = episodeNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not_in", ArgumentValue = episodeNotIn });
 
             if (episodeGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_greater", ArgumentValue = episodeGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_greater", ArgumentValue = episodeGreater });
 
             if (episodeLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_lesser", ArgumentValue = episodeLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_lesser", ArgumentValue = episodeLesser });
 
             if (airingAtGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt_greater", ArgumentValue = airingAtGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt_greater", ArgumentValue = airingAtGreater });
 
             if (airingAtLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt_lesser", ArgumentValue = airingAtLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt_lesser", ArgumentValue = airingAtLesser });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("airingSchedules", alias, airingScheduleQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3417,79 +3293,79 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (date != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date", ArgumentValue = date} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date", ArgumentValue = date });
 
             if (trending != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending", ArgumentValue = trending} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending", ArgumentValue = trending });
 
             if (averageScore != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore", ArgumentValue = averageScore} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore", ArgumentValue = averageScore });
 
             if (popularity != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity", ArgumentValue = popularity} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity", ArgumentValue = popularity });
 
             if (episode != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode", ArgumentValue = episode} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode", ArgumentValue = episode });
 
             if (releasing != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "releasing", ArgumentValue = releasing} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "releasing", ArgumentValue = releasing });
 
             if (mediaIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot });
 
             if (mediaIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn });
 
             if (mediaIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn });
 
             if (dateGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date_greater", ArgumentValue = dateGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date_greater", ArgumentValue = dateGreater });
 
             if (dateLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date_lesser", ArgumentValue = dateLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date_lesser", ArgumentValue = dateLesser });
 
             if (trendingGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_greater", ArgumentValue = trendingGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_greater", ArgumentValue = trendingGreater });
 
             if (trendingLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_lesser", ArgumentValue = trendingLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_lesser", ArgumentValue = trendingLesser });
 
             if (trendingNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_not", ArgumentValue = trendingNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_not", ArgumentValue = trendingNot });
 
             if (averageScoreGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_greater", ArgumentValue = averageScoreGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_greater", ArgumentValue = averageScoreGreater });
 
             if (averageScoreLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_lesser", ArgumentValue = averageScoreLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_lesser", ArgumentValue = averageScoreLesser });
 
             if (averageScoreNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_not", ArgumentValue = averageScoreNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_not", ArgumentValue = averageScoreNot });
 
             if (popularityGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_greater", ArgumentValue = popularityGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_greater", ArgumentValue = popularityGreater });
 
             if (popularityLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_lesser", ArgumentValue = popularityLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_lesser", ArgumentValue = popularityLesser });
 
             if (popularityNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_not", ArgumentValue = popularityNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_not", ArgumentValue = popularityNot });
 
             if (episodeGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_greater", ArgumentValue = episodeGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_greater", ArgumentValue = episodeGreater });
 
             if (episodeLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_lesser", ArgumentValue = episodeLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_lesser", ArgumentValue = episodeLesser });
 
             if (episodeNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not", ArgumentValue = episodeNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not", ArgumentValue = episodeNot });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("mediaTrends", alias, mediaTrendQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3503,13 +3379,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (resetNotificationCount != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "resetNotificationCount", ArgumentValue = resetNotificationCount} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "resetNotificationCount", ArgumentValue = resetNotificationCount });
 
             if (typeIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_in", ArgumentValue = typeIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_in", ArgumentValue = typeIn });
 
             return WithObjectField("notifications", alias, notificationUnionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3522,9 +3398,9 @@ namespace TotoroNext.Anime.Anilist
         public PageQueryBuilder WithFollowers(UserQueryBuilder userQueryBuilder, QueryBuilderParameter<int> userId, QueryBuilderParameter<IEnumerable<UserSort?>> sort = null, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
             var args = new List<QueryBuilderArgumentInfo>();
-            args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+            args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("followers", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3537,9 +3413,9 @@ namespace TotoroNext.Anime.Anilist
         public PageQueryBuilder WithFollowing(UserQueryBuilder userQueryBuilder, QueryBuilderParameter<int> userId, QueryBuilderParameter<IEnumerable<UserSort?>> sort = null, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
             var args = new List<QueryBuilderArgumentInfo>();
-            args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+            args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("following", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3553,85 +3429,85 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (messengerId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId", ArgumentValue = messengerId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId", ArgumentValue = messengerId });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (isFollowing != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isFollowing", ArgumentValue = isFollowing} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isFollowing", ArgumentValue = isFollowing });
 
             if (hasReplies != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hasReplies", ArgumentValue = hasReplies} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hasReplies", ArgumentValue = hasReplies });
 
             if (hasRepliesOrTypeText != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hasRepliesOrTypeText", ArgumentValue = hasRepliesOrTypeText} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hasRepliesOrTypeText", ArgumentValue = hasRepliesOrTypeText });
 
             if (createdAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt", ArgumentValue = createdAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt", ArgumentValue = createdAt });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (userIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_not", ArgumentValue = userIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_not", ArgumentValue = userIdNot });
 
             if (userIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_in", ArgumentValue = userIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_in", ArgumentValue = userIdIn });
 
             if (userIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_not_in", ArgumentValue = userIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_not_in", ArgumentValue = userIdNotIn });
 
             if (messengerIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_not", ArgumentValue = messengerIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_not", ArgumentValue = messengerIdNot });
 
             if (messengerIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_in", ArgumentValue = messengerIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_in", ArgumentValue = messengerIdIn });
 
             if (messengerIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_not_in", ArgumentValue = messengerIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_not_in", ArgumentValue = messengerIdNotIn });
 
             if (mediaIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot });
 
             if (mediaIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn });
 
             if (mediaIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn });
 
             if (typeNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_not", ArgumentValue = typeNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_not", ArgumentValue = typeNot });
 
             if (typeIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_in", ArgumentValue = typeIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_in", ArgumentValue = typeIn });
 
             if (typeNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_not_in", ArgumentValue = typeNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_not_in", ArgumentValue = typeNotIn });
 
             if (createdAtGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt_greater", ArgumentValue = createdAtGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt_greater", ArgumentValue = createdAtGreater });
 
             if (createdAtLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt_lesser", ArgumentValue = createdAtLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt_lesser", ArgumentValue = createdAtLesser });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("activities", alias, activityUnionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3645,10 +3521,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (activityId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "activityId", ArgumentValue = activityId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "activityId", ArgumentValue = activityId });
 
             return WithObjectField("activityReplies", alias, activityReplyQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3662,31 +3538,31 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (replyUserId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "replyUserId", ArgumentValue = replyUserId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "replyUserId", ArgumentValue = replyUserId });
 
             if (subscribed != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "subscribed", ArgumentValue = subscribed} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "subscribed", ArgumentValue = subscribed });
 
             if (categoryId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "categoryId", ArgumentValue = categoryId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "categoryId", ArgumentValue = categoryId });
 
             if (mediaCategoryId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaCategoryId", ArgumentValue = mediaCategoryId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaCategoryId", ArgumentValue = mediaCategoryId });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("threads", alias, threadQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3700,16 +3576,16 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (threadId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "threadId", ArgumentValue = threadId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "threadId", ArgumentValue = threadId });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("threadComments", alias, threadCommentQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3723,19 +3599,19 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (mediaType != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaType", ArgumentValue = mediaType} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaType", ArgumentValue = mediaType });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("reviews", alias, reviewQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3749,31 +3625,31 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (mediaRecommendationId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaRecommendationId", ArgumentValue = mediaRecommendationId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaRecommendationId", ArgumentValue = mediaRecommendationId });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (rating != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating", ArgumentValue = rating} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating", ArgumentValue = rating });
 
             if (onList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList });
 
             if (ratingGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating_greater", ArgumentValue = ratingGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating_greater", ArgumentValue = ratingGreater });
 
             if (ratingLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating_lesser", ArgumentValue = ratingLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating_lesser", ArgumentValue = ratingLesser });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("recommendations", alias, recommendationQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3787,10 +3663,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (likeableId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "likeableId", ArgumentValue = likeableId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "likeableId", ArgumentValue = likeableId });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             return WithObjectField("likes", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -3804,7 +3680,7 @@ namespace TotoroNext.Anime.Anilist
     public class PageInfoQueryBuilder : GraphQlQueryBuilder<PageInfoQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "total" },
                 new GraphQlFieldMetadata { Name = "perPage" },
@@ -3813,9 +3689,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "hasNextPage" }
             };
 
-        protected override string TypeName { get { return "PageInfo"; } } 
+        protected override string TypeName { get { return "PageInfo"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public PageInfoQueryBuilder WithTotal(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -3871,7 +3747,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserQueryBuilder : GraphQlQueryBuilder<UserQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "name" },
@@ -3881,7 +3757,7 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "isFollowing" },
                 new GraphQlFieldMetadata { Name = "isFollower" },
                 new GraphQlFieldMetadata { Name = "isBlocked" },
-                new GraphQlFieldMetadata { Name = "bans" },
+                new GraphQlFieldMetadata { Name = "bans", IsComplex = true },
                 new GraphQlFieldMetadata { Name = "options", IsComplex = true, QueryBuilderType = typeof(UserOptionsQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "mediaListOptions", IsComplex = true, QueryBuilderType = typeof(MediaListOptionsQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "favourites", IsComplex = true, QueryBuilderType = typeof(FavouritesQueryBuilder) },
@@ -3896,9 +3772,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "previousNames", IsComplex = true, QueryBuilderType = typeof(UserPreviousNameQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "User"; } } 
+        protected override string TypeName { get { return "User"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -3924,7 +3800,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (asHtml != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml });
 
             return WithScalarField("about", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -4018,7 +3894,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             return WithObjectField("favourites", alias, favouritesQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -4122,15 +3998,15 @@ namespace TotoroNext.Anime.Anilist
     public class UserAvatarQueryBuilder : GraphQlQueryBuilder<UserAvatarQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "large" },
                 new GraphQlFieldMetadata { Name = "medium" }
             };
 
-        protected override string TypeName { get { return "UserAvatar"; } } 
+        protected override string TypeName { get { return "UserAvatar"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserAvatarQueryBuilder WithLarge(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -4156,7 +4032,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserOptionsQueryBuilder : GraphQlQueryBuilder<UserOptionsQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "titleLanguage" },
                 new GraphQlFieldMetadata { Name = "displayAdultContent" },
@@ -4170,9 +4046,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "disabledListActivity", IsComplex = true, QueryBuilderType = typeof(ListActivityOptionQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "UserOptions"; } } 
+        protected override string TypeName { get { return "UserOptions"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserOptionsQueryBuilder WithTitleLanguage(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -4278,15 +4154,15 @@ namespace TotoroNext.Anime.Anilist
     public class NotificationOptionQueryBuilder : GraphQlQueryBuilder<NotificationOptionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "type" },
                 new GraphQlFieldMetadata { Name = "enabled" }
             };
 
-        protected override string TypeName { get { return "NotificationOption"; } } 
+        protected override string TypeName { get { return "NotificationOption"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public NotificationOptionQueryBuilder WithType(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -4312,15 +4188,15 @@ namespace TotoroNext.Anime.Anilist
     public class ListActivityOptionQueryBuilder : GraphQlQueryBuilder<ListActivityOptionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "disabled" },
                 new GraphQlFieldMetadata { Name = "type" }
             };
 
-        protected override string TypeName { get { return "ListActivityOption"; } } 
+        protected override string TypeName { get { return "ListActivityOption"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ListActivityOptionQueryBuilder WithDisabled(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -4346,7 +4222,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaListOptionsQueryBuilder : GraphQlQueryBuilder<MediaListOptionsQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "scoreFormat" },
                 new GraphQlFieldMetadata { Name = "rowOrder" },
@@ -4354,9 +4230,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "mangaList", IsComplex = true, QueryBuilderType = typeof(MediaListTypeOptionsQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "MediaListOptions"; } } 
+        protected override string TypeName { get { return "MediaListOptions"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaListOptionsQueryBuilder WithScoreFormat(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -4402,7 +4278,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaListTypeOptionsQueryBuilder : GraphQlQueryBuilder<MediaListTypeOptionsQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "sectionOrder", IsComplex = true },
                 new GraphQlFieldMetadata { Name = "splitCompletedSectionByFormat" },
@@ -4411,9 +4287,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "advancedScoringEnabled" }
             };
 
-        protected override string TypeName { get { return "MediaListTypeOptions"; } } 
+        protected override string TypeName { get { return "MediaListTypeOptions"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaListTypeOptionsQueryBuilder WithSectionOrder(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -4469,7 +4345,7 @@ namespace TotoroNext.Anime.Anilist
     public class FavouritesQueryBuilder : GraphQlQueryBuilder<FavouritesQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "anime", IsComplex = true, QueryBuilderType = typeof(MediaConnectionQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "manga", IsComplex = true, QueryBuilderType = typeof(MediaConnectionQueryBuilder) },
@@ -4478,18 +4354,18 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "studios", IsComplex = true, QueryBuilderType = typeof(StudioConnectionQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "Favourites"; } } 
+        protected override string TypeName { get { return "Favourites"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public FavouritesQueryBuilder WithAnime(MediaConnectionQueryBuilder mediaConnectionQueryBuilder, QueryBuilderParameter<int?> page = null, QueryBuilderParameter<int?> perPage = null, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("anime", alias, mediaConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -4503,10 +4379,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("manga", alias, mediaConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -4520,10 +4396,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("characters", alias, characterConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -4537,10 +4413,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("staff", alias, staffConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -4554,10 +4430,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("studios", alias, studioConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -4571,16 +4447,16 @@ namespace TotoroNext.Anime.Anilist
     public class MediaConnectionQueryBuilder : GraphQlQueryBuilder<MediaConnectionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "edges", IsComplex = true, QueryBuilderType = typeof(MediaEdgeQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "nodes", IsComplex = true, QueryBuilderType = typeof(MediaQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "pageInfo", IsComplex = true, QueryBuilderType = typeof(PageInfoQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "MediaConnection"; } } 
+        protected override string TypeName { get { return "MediaConnection"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaConnectionQueryBuilder WithEdges(MediaEdgeQueryBuilder mediaEdgeQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -4616,7 +4492,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaEdgeQueryBuilder : GraphQlQueryBuilder<MediaEdgeQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "node", IsComplex = true, QueryBuilderType = typeof(MediaQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "id" },
@@ -4633,9 +4509,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "favouriteOrder" }
             };
 
-        protected override string TypeName { get { return "MediaEdge"; } } 
+        protected override string TypeName { get { return "MediaEdge"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaEdgeQueryBuilder WithNode(MediaQueryBuilder mediaQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -4661,7 +4537,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (version != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "version", ArgumentValue = version} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "version", ArgumentValue = version });
 
             return WithScalarField("relationType", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -4745,10 +4621,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (language != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "language", ArgumentValue = language} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "language", ArgumentValue = language });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("voiceActors", alias, staffQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -4762,10 +4638,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (language != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "language", ArgumentValue = language} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "language", ArgumentValue = language });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("voiceActorRoles", alias, staffRoleTypeQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -4789,7 +4665,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaQueryBuilder : GraphQlQueryBuilder<MediaQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "idMal" },
@@ -4807,7 +4683,7 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "duration" },
                 new GraphQlFieldMetadata { Name = "chapters" },
                 new GraphQlFieldMetadata { Name = "volumes" },
-                new GraphQlFieldMetadata { Name = "countryOfOrigin" },
+                new GraphQlFieldMetadata { Name = "countryOfOrigin", IsComplex = true },
                 new GraphQlFieldMetadata { Name = "isLicensed" },
                 new GraphQlFieldMetadata { Name = "source" },
                 new GraphQlFieldMetadata { Name = "hashtag" },
@@ -4848,9 +4724,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "modNotes" }
             };
 
-        protected override string TypeName { get { return "Media"; } } 
+        protected override string TypeName { get { return "Media"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -4906,7 +4782,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (version != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "version", ArgumentValue = version} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "version", ArgumentValue = version });
 
             return WithScalarField("status", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -4920,7 +4796,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (asHtml != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml });
 
             return WithScalarField("description", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -5044,7 +4920,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (version != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "version", ArgumentValue = version} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "version", ArgumentValue = version });
 
             return WithScalarField("source", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -5208,16 +5084,16 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (role != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "role", ArgumentValue = role} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "role", ArgumentValue = role });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("characters", alias, characterConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -5231,13 +5107,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("staff", alias, staffConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -5251,10 +5127,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (isMain != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isMain", ArgumentValue = isMain} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isMain", ArgumentValue = isMain });
 
             return WithObjectField("studios", alias, studioConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -5308,13 +5184,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (notYetAired != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notYetAired", ArgumentValue = notYetAired} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notYetAired", ArgumentValue = notYetAired });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("airingSchedule", alias, airingScheduleConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -5328,16 +5204,16 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (releasing != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "releasing", ArgumentValue = releasing} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "releasing", ArgumentValue = releasing });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("trends", alias, mediaTrendConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -5391,16 +5267,16 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (limit != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("reviews", alias, reviewConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -5414,13 +5290,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("recommendations", alias, recommendationConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -5494,7 +5370,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaTitleQueryBuilder : GraphQlQueryBuilder<MediaTitleQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "romaji" },
                 new GraphQlFieldMetadata { Name = "english" },
@@ -5502,15 +5378,15 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "userPreferred" }
             };
 
-        protected override string TypeName { get { return "MediaTitle"; } } 
+        protected override string TypeName { get { return "MediaTitle"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaTitleQueryBuilder WithRomaji(QueryBuilderParameter<bool?> stylised = null, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (stylised != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "stylised", ArgumentValue = stylised} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "stylised", ArgumentValue = stylised });
 
             return WithScalarField("romaji", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -5524,7 +5400,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (stylised != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "stylised", ArgumentValue = stylised} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "stylised", ArgumentValue = stylised });
 
             return WithScalarField("english", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -5538,7 +5414,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (stylised != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "stylised", ArgumentValue = stylised} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "stylised", ArgumentValue = stylised });
 
             return WithScalarField("native", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -5562,16 +5438,16 @@ namespace TotoroNext.Anime.Anilist
     public class FuzzyDateQueryBuilder : GraphQlQueryBuilder<FuzzyDateQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "year" },
                 new GraphQlFieldMetadata { Name = "month" },
                 new GraphQlFieldMetadata { Name = "day" }
             };
 
-        protected override string TypeName { get { return "FuzzyDate"; } } 
+        protected override string TypeName { get { return "FuzzyDate"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public FuzzyDateQueryBuilder WithYear(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -5607,16 +5483,16 @@ namespace TotoroNext.Anime.Anilist
     public class MediaTrailerQueryBuilder : GraphQlQueryBuilder<MediaTrailerQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "site" },
                 new GraphQlFieldMetadata { Name = "thumbnail" }
             };
 
-        protected override string TypeName { get { return "MediaTrailer"; } } 
+        protected override string TypeName { get { return "MediaTrailer"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaTrailerQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -5652,7 +5528,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaCoverImageQueryBuilder : GraphQlQueryBuilder<MediaCoverImageQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "extraLarge" },
                 new GraphQlFieldMetadata { Name = "large" },
@@ -5660,9 +5536,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "color" }
             };
 
-        protected override string TypeName { get { return "MediaCoverImage"; } } 
+        protected override string TypeName { get { return "MediaCoverImage"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaCoverImageQueryBuilder WithExtraLarge(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -5708,7 +5584,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaTagQueryBuilder : GraphQlQueryBuilder<MediaTagQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "name" },
@@ -5721,9 +5597,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "userId" }
             };
 
-        protected override string TypeName { get { return "MediaTag"; } } 
+        protected override string TypeName { get { return "MediaTag"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaTagQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -5819,16 +5695,16 @@ namespace TotoroNext.Anime.Anilist
     public class CharacterConnectionQueryBuilder : GraphQlQueryBuilder<CharacterConnectionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "edges", IsComplex = true, QueryBuilderType = typeof(CharacterEdgeQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "nodes", IsComplex = true, QueryBuilderType = typeof(CharacterQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "pageInfo", IsComplex = true, QueryBuilderType = typeof(PageInfoQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "CharacterConnection"; } } 
+        protected override string TypeName { get { return "CharacterConnection"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public CharacterConnectionQueryBuilder WithEdges(CharacterEdgeQueryBuilder characterEdgeQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -5864,7 +5740,7 @@ namespace TotoroNext.Anime.Anilist
     public class CharacterEdgeQueryBuilder : GraphQlQueryBuilder<CharacterEdgeQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "node", IsComplex = true, QueryBuilderType = typeof(CharacterQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "id" },
@@ -5876,9 +5752,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "favouriteOrder" }
             };
 
-        protected override string TypeName { get { return "CharacterEdge"; } } 
+        protected override string TypeName { get { return "CharacterEdge"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public CharacterEdgeQueryBuilder WithNode(CharacterQueryBuilder characterQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -5924,10 +5800,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (language != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "language", ArgumentValue = language} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "language", ArgumentValue = language });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("voiceActors", alias, staffQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -5941,10 +5817,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (language != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "language", ArgumentValue = language} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "language", ArgumentValue = language });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("voiceActorRoles", alias, staffRoleTypeQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -5978,7 +5854,7 @@ namespace TotoroNext.Anime.Anilist
     public class CharacterQueryBuilder : GraphQlQueryBuilder<CharacterQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "name", IsComplex = true, QueryBuilderType = typeof(CharacterNameQueryBuilder) },
@@ -5996,9 +5872,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "modNotes" }
             };
 
-        protected override string TypeName { get { return "Character"; } } 
+        protected override string TypeName { get { return "Character"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public CharacterQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -6034,7 +5910,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (asHtml != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml });
 
             return WithScalarField("description", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -6118,19 +5994,19 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (onList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("media", alias, mediaConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -6164,7 +6040,7 @@ namespace TotoroNext.Anime.Anilist
     public class CharacterNameQueryBuilder : GraphQlQueryBuilder<CharacterNameQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "first" },
                 new GraphQlFieldMetadata { Name = "middle" },
@@ -6176,9 +6052,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "userPreferred" }
             };
 
-        protected override string TypeName { get { return "CharacterName"; } } 
+        protected override string TypeName { get { return "CharacterName"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public CharacterNameQueryBuilder WithFirst(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -6264,15 +6140,15 @@ namespace TotoroNext.Anime.Anilist
     public class CharacterImageQueryBuilder : GraphQlQueryBuilder<CharacterImageQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "large" },
                 new GraphQlFieldMetadata { Name = "medium" }
             };
 
-        protected override string TypeName { get { return "CharacterImage"; } } 
+        protected override string TypeName { get { return "CharacterImage"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public CharacterImageQueryBuilder WithLarge(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -6298,7 +6174,7 @@ namespace TotoroNext.Anime.Anilist
     public class StaffQueryBuilder : GraphQlQueryBuilder<StaffQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "name", IsComplex = true, QueryBuilderType = typeof(StaffNameQueryBuilder) },
@@ -6327,9 +6203,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "modNotes" }
             };
 
-        protected override string TypeName { get { return "Staff"; } } 
+        protected override string TypeName { get { return "Staff"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public StaffQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -6375,7 +6251,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (asHtml != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml });
 
             return WithScalarField("description", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -6499,19 +6375,19 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (onList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("staffMedia", alias, mediaConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -6525,13 +6401,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("characters", alias, characterConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -6545,16 +6421,16 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (onList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("characterMedia", alias, mediaConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -6628,7 +6504,7 @@ namespace TotoroNext.Anime.Anilist
     public class StaffNameQueryBuilder : GraphQlQueryBuilder<StaffNameQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "first" },
                 new GraphQlFieldMetadata { Name = "middle" },
@@ -6639,9 +6515,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "userPreferred" }
             };
 
-        protected override string TypeName { get { return "StaffName"; } } 
+        protected override string TypeName { get { return "StaffName"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public StaffNameQueryBuilder WithFirst(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -6717,15 +6593,15 @@ namespace TotoroNext.Anime.Anilist
     public class StaffImageQueryBuilder : GraphQlQueryBuilder<StaffImageQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "large" },
                 new GraphQlFieldMetadata { Name = "medium" }
             };
 
-        protected override string TypeName { get { return "StaffImage"; } } 
+        protected override string TypeName { get { return "StaffImage"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public StaffImageQueryBuilder WithLarge(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -6751,16 +6627,16 @@ namespace TotoroNext.Anime.Anilist
     public class StaffRoleTypeQueryBuilder : GraphQlQueryBuilder<StaffRoleTypeQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "voiceActor", IsComplex = true, QueryBuilderType = typeof(StaffQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "roleNotes" },
                 new GraphQlFieldMetadata { Name = "dubGroup" }
             };
 
-        protected override string TypeName { get { return "StaffRoleType"; } } 
+        protected override string TypeName { get { return "StaffRoleType"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public StaffRoleTypeQueryBuilder WithVoiceActor(StaffQueryBuilder staffQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -6796,16 +6672,16 @@ namespace TotoroNext.Anime.Anilist
     public class StaffConnectionQueryBuilder : GraphQlQueryBuilder<StaffConnectionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "edges", IsComplex = true, QueryBuilderType = typeof(StaffEdgeQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "nodes", IsComplex = true, QueryBuilderType = typeof(StaffQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "pageInfo", IsComplex = true, QueryBuilderType = typeof(PageInfoQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "StaffConnection"; } } 
+        protected override string TypeName { get { return "StaffConnection"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public StaffConnectionQueryBuilder WithEdges(StaffEdgeQueryBuilder staffEdgeQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -6841,7 +6717,7 @@ namespace TotoroNext.Anime.Anilist
     public class StaffEdgeQueryBuilder : GraphQlQueryBuilder<StaffEdgeQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "node", IsComplex = true, QueryBuilderType = typeof(StaffQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "id" },
@@ -6849,9 +6725,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "favouriteOrder" }
             };
 
-        protected override string TypeName { get { return "StaffEdge"; } } 
+        protected override string TypeName { get { return "StaffEdge"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public StaffEdgeQueryBuilder WithNode(StaffQueryBuilder staffQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -6897,16 +6773,16 @@ namespace TotoroNext.Anime.Anilist
     public class StudioConnectionQueryBuilder : GraphQlQueryBuilder<StudioConnectionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "edges", IsComplex = true, QueryBuilderType = typeof(StudioEdgeQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "nodes", IsComplex = true, QueryBuilderType = typeof(StudioQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "pageInfo", IsComplex = true, QueryBuilderType = typeof(PageInfoQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "StudioConnection"; } } 
+        protected override string TypeName { get { return "StudioConnection"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public StudioConnectionQueryBuilder WithEdges(StudioEdgeQueryBuilder studioEdgeQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -6942,7 +6818,7 @@ namespace TotoroNext.Anime.Anilist
     public class StudioEdgeQueryBuilder : GraphQlQueryBuilder<StudioEdgeQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "node", IsComplex = true, QueryBuilderType = typeof(StudioQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "id" },
@@ -6950,9 +6826,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "favouriteOrder" }
             };
 
-        protected override string TypeName { get { return "StudioEdge"; } } 
+        protected override string TypeName { get { return "StudioEdge"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public StudioEdgeQueryBuilder WithNode(StudioQueryBuilder studioQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -6998,7 +6874,7 @@ namespace TotoroNext.Anime.Anilist
     public class StudioQueryBuilder : GraphQlQueryBuilder<StudioQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "name" },
@@ -7009,9 +6885,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "favourites" }
             };
 
-        protected override string TypeName { get { return "Studio"; } } 
+        protected override string TypeName { get { return "Studio"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public StudioQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -7047,19 +6923,19 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (isMain != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isMain", ArgumentValue = isMain} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isMain", ArgumentValue = isMain });
 
             if (onList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("media", alias, mediaConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -7103,7 +6979,7 @@ namespace TotoroNext.Anime.Anilist
     public class AiringScheduleQueryBuilder : GraphQlQueryBuilder<AiringScheduleQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "airingAt" },
@@ -7113,9 +6989,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "media", IsComplex = true, QueryBuilderType = typeof(MediaQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "AiringSchedule"; } } 
+        protected override string TypeName { get { return "AiringSchedule"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public AiringScheduleQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -7181,16 +7057,16 @@ namespace TotoroNext.Anime.Anilist
     public class AiringScheduleConnectionQueryBuilder : GraphQlQueryBuilder<AiringScheduleConnectionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "edges", IsComplex = true, QueryBuilderType = typeof(AiringScheduleEdgeQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "nodes", IsComplex = true, QueryBuilderType = typeof(AiringScheduleQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "pageInfo", IsComplex = true, QueryBuilderType = typeof(PageInfoQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "AiringScheduleConnection"; } } 
+        protected override string TypeName { get { return "AiringScheduleConnection"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public AiringScheduleConnectionQueryBuilder WithEdges(AiringScheduleEdgeQueryBuilder airingScheduleEdgeQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -7226,15 +7102,15 @@ namespace TotoroNext.Anime.Anilist
     public class AiringScheduleEdgeQueryBuilder : GraphQlQueryBuilder<AiringScheduleEdgeQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "node", IsComplex = true, QueryBuilderType = typeof(AiringScheduleQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "id" }
             };
 
-        protected override string TypeName { get { return "AiringScheduleEdge"; } } 
+        protected override string TypeName { get { return "AiringScheduleEdge"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public AiringScheduleEdgeQueryBuilder WithNode(AiringScheduleQueryBuilder airingScheduleQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -7260,16 +7136,16 @@ namespace TotoroNext.Anime.Anilist
     public class MediaTrendConnectionQueryBuilder : GraphQlQueryBuilder<MediaTrendConnectionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "edges", IsComplex = true, QueryBuilderType = typeof(MediaTrendEdgeQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "nodes", IsComplex = true, QueryBuilderType = typeof(MediaTrendQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "pageInfo", IsComplex = true, QueryBuilderType = typeof(PageInfoQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "MediaTrendConnection"; } } 
+        protected override string TypeName { get { return "MediaTrendConnection"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaTrendConnectionQueryBuilder WithEdges(MediaTrendEdgeQueryBuilder mediaTrendEdgeQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -7305,14 +7181,14 @@ namespace TotoroNext.Anime.Anilist
     public class MediaTrendEdgeQueryBuilder : GraphQlQueryBuilder<MediaTrendEdgeQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "node", IsComplex = true, QueryBuilderType = typeof(MediaTrendQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "MediaTrendEdge"; } } 
+        protected override string TypeName { get { return "MediaTrendEdge"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaTrendEdgeQueryBuilder WithNode(MediaTrendQueryBuilder mediaTrendQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -7328,7 +7204,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaTrendQueryBuilder : GraphQlQueryBuilder<MediaTrendQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "mediaId" },
                 new GraphQlFieldMetadata { Name = "date" },
@@ -7341,9 +7217,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "media", IsComplex = true, QueryBuilderType = typeof(MediaQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "MediaTrend"; } } 
+        protected override string TypeName { get { return "MediaTrend"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaTrendQueryBuilder WithMediaId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -7439,7 +7315,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaExternalLinkQueryBuilder : GraphQlQueryBuilder<MediaExternalLinkQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "url" },
@@ -7453,9 +7329,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "isDisabled" }
             };
 
-        protected override string TypeName { get { return "MediaExternalLink"; } } 
+        protected override string TypeName { get { return "MediaExternalLink"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaExternalLinkQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -7561,7 +7437,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaStreamingEpisodeQueryBuilder : GraphQlQueryBuilder<MediaStreamingEpisodeQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "title" },
                 new GraphQlFieldMetadata { Name = "thumbnail" },
@@ -7569,9 +7445,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "site" }
             };
 
-        protected override string TypeName { get { return "MediaStreamingEpisode"; } } 
+        protected override string TypeName { get { return "MediaStreamingEpisode"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaStreamingEpisodeQueryBuilder WithTitle(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -7617,7 +7493,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaRankQueryBuilder : GraphQlQueryBuilder<MediaRankQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "rank" },
@@ -7629,9 +7505,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "context" }
             };
 
-        protected override string TypeName { get { return "MediaRank"; } } 
+        protected override string TypeName { get { return "MediaRank"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaRankQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -7717,7 +7593,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaListQueryBuilder : GraphQlQueryBuilder<MediaListQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -7731,8 +7607,8 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "private" },
                 new GraphQlFieldMetadata { Name = "notes" },
                 new GraphQlFieldMetadata { Name = "hiddenFromStatusLists" },
-                new GraphQlFieldMetadata { Name = "customLists" },
-                new GraphQlFieldMetadata { Name = "advancedScores" },
+                new GraphQlFieldMetadata { Name = "customLists", IsComplex = true },
+                new GraphQlFieldMetadata { Name = "advancedScores", IsComplex = true },
                 new GraphQlFieldMetadata { Name = "startedAt", IsComplex = true, QueryBuilderType = typeof(FuzzyDateQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "completedAt", IsComplex = true, QueryBuilderType = typeof(FuzzyDateQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "updatedAt" },
@@ -7741,9 +7617,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "MediaList"; } } 
+        protected override string TypeName { get { return "MediaList"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaListQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -7789,7 +7665,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (format != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format", ArgumentValue = format} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format", ArgumentValue = format });
 
             return WithScalarField("score", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -7873,7 +7749,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (asArray != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asArray", ArgumentValue = asArray} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asArray", ArgumentValue = asArray });
 
             return WithScalarField("customLists", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -7957,16 +7833,16 @@ namespace TotoroNext.Anime.Anilist
     public class ReviewConnectionQueryBuilder : GraphQlQueryBuilder<ReviewConnectionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "edges", IsComplex = true, QueryBuilderType = typeof(ReviewEdgeQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "nodes", IsComplex = true, QueryBuilderType = typeof(ReviewQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "pageInfo", IsComplex = true, QueryBuilderType = typeof(PageInfoQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ReviewConnection"; } } 
+        protected override string TypeName { get { return "ReviewConnection"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ReviewConnectionQueryBuilder WithEdges(ReviewEdgeQueryBuilder reviewEdgeQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -8002,14 +7878,14 @@ namespace TotoroNext.Anime.Anilist
     public class ReviewEdgeQueryBuilder : GraphQlQueryBuilder<ReviewEdgeQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "node", IsComplex = true, QueryBuilderType = typeof(ReviewQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ReviewEdge"; } } 
+        protected override string TypeName { get { return "ReviewEdge"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ReviewEdgeQueryBuilder WithNode(ReviewQueryBuilder reviewQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -8025,7 +7901,7 @@ namespace TotoroNext.Anime.Anilist
     public class ReviewQueryBuilder : GraphQlQueryBuilder<ReviewQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -8045,9 +7921,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "media", IsComplex = true, QueryBuilderType = typeof(MediaQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "Review"; } } 
+        protected override string TypeName { get { return "Review"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ReviewQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -8103,7 +7979,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (asHtml != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml });
 
             return WithScalarField("body", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -8217,16 +8093,16 @@ namespace TotoroNext.Anime.Anilist
     public class RecommendationConnectionQueryBuilder : GraphQlQueryBuilder<RecommendationConnectionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "edges", IsComplex = true, QueryBuilderType = typeof(RecommendationEdgeQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "nodes", IsComplex = true, QueryBuilderType = typeof(RecommendationQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "pageInfo", IsComplex = true, QueryBuilderType = typeof(PageInfoQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "RecommendationConnection"; } } 
+        protected override string TypeName { get { return "RecommendationConnection"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public RecommendationConnectionQueryBuilder WithEdges(RecommendationEdgeQueryBuilder recommendationEdgeQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -8262,14 +8138,14 @@ namespace TotoroNext.Anime.Anilist
     public class RecommendationEdgeQueryBuilder : GraphQlQueryBuilder<RecommendationEdgeQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "node", IsComplex = true, QueryBuilderType = typeof(RecommendationQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "RecommendationEdge"; } } 
+        protected override string TypeName { get { return "RecommendationEdge"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public RecommendationEdgeQueryBuilder WithNode(RecommendationQueryBuilder recommendationQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -8285,7 +8161,7 @@ namespace TotoroNext.Anime.Anilist
     public class RecommendationQueryBuilder : GraphQlQueryBuilder<RecommendationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "rating" },
@@ -8295,9 +8171,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "Recommendation"; } } 
+        protected override string TypeName { get { return "Recommendation"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public RecommendationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -8363,15 +8239,15 @@ namespace TotoroNext.Anime.Anilist
     public class MediaStatsQueryBuilder : GraphQlQueryBuilder<MediaStatsQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "scoreDistribution", IsComplex = true, QueryBuilderType = typeof(ScoreDistributionQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "statusDistribution", IsComplex = true, QueryBuilderType = typeof(StatusDistributionQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "MediaStats"; } } 
+        protected override string TypeName { get { return "MediaStats"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaStatsQueryBuilder WithScoreDistribution(ScoreDistributionQueryBuilder scoreDistributionQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -8397,15 +8273,15 @@ namespace TotoroNext.Anime.Anilist
     public class ScoreDistributionQueryBuilder : GraphQlQueryBuilder<ScoreDistributionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "score" },
                 new GraphQlFieldMetadata { Name = "amount" }
             };
 
-        protected override string TypeName { get { return "ScoreDistribution"; } } 
+        protected override string TypeName { get { return "ScoreDistribution"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ScoreDistributionQueryBuilder WithScore(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -8431,15 +8307,15 @@ namespace TotoroNext.Anime.Anilist
     public class StatusDistributionQueryBuilder : GraphQlQueryBuilder<StatusDistributionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "status" },
                 new GraphQlFieldMetadata { Name = "amount" }
             };
 
-        protected override string TypeName { get { return "StatusDistribution"; } } 
+        protected override string TypeName { get { return "StatusDistribution"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public StatusDistributionQueryBuilder WithStatus(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -8465,16 +8341,16 @@ namespace TotoroNext.Anime.Anilist
     public class AiringProgressionQueryBuilder : GraphQlQueryBuilder<AiringProgressionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "episode" },
                 new GraphQlFieldMetadata { Name = "score" },
                 new GraphQlFieldMetadata { Name = "watching" }
             };
 
-        protected override string TypeName { get { return "AiringProgression"; } } 
+        protected override string TypeName { get { return "AiringProgression"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public AiringProgressionQueryBuilder WithEpisode(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -8510,15 +8386,15 @@ namespace TotoroNext.Anime.Anilist
     public class UserStatisticTypesQueryBuilder : GraphQlQueryBuilder<UserStatisticTypesQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "anime", IsComplex = true, QueryBuilderType = typeof(UserStatisticsQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "manga", IsComplex = true, QueryBuilderType = typeof(UserStatisticsQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "UserStatisticTypes"; } } 
+        protected override string TypeName { get { return "UserStatisticTypes"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserStatisticTypesQueryBuilder WithAnime(UserStatisticsQueryBuilder userStatisticsQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -8544,7 +8420,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserStatisticsQueryBuilder : GraphQlQueryBuilder<UserStatisticsQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "count" },
                 new GraphQlFieldMetadata { Name = "meanScore" },
@@ -8567,9 +8443,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "studios", IsComplex = true, QueryBuilderType = typeof(UserStudioStatisticQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "UserStatistics"; } } 
+        protected override string TypeName { get { return "UserStatistics"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserStatisticsQueryBuilder WithCount(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -8645,10 +8521,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (limit != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("formats", alias, userFormatStatisticQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -8662,10 +8538,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (limit != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("statuses", alias, userStatusStatisticQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -8679,10 +8555,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (limit != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("scores", alias, userScoreStatisticQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -8696,10 +8572,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (limit != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("lengths", alias, userLengthStatisticQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -8713,10 +8589,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (limit != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("releaseYears", alias, userReleaseYearStatisticQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -8730,10 +8606,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (limit != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("startYears", alias, userStartYearStatisticQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -8747,10 +8623,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (limit != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("genres", alias, userGenreStatisticQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -8764,10 +8640,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (limit != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("tags", alias, userTagStatisticQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -8781,10 +8657,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (limit != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("countries", alias, userCountryStatisticQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -8798,10 +8674,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (limit != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("voiceActors", alias, userVoiceActorStatisticQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -8815,10 +8691,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (limit != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("staff", alias, userStaffStatisticQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -8832,10 +8708,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (limit != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "limit", ArgumentValue = limit });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("studios", alias, userStudioStatisticQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -8849,7 +8725,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserFormatStatisticQueryBuilder : GraphQlQueryBuilder<UserFormatStatisticQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "count" },
                 new GraphQlFieldMetadata { Name = "meanScore" },
@@ -8859,9 +8735,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "format" }
             };
 
-        protected override string TypeName { get { return "UserFormatStatistic"; } } 
+        protected override string TypeName { get { return "UserFormatStatistic"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserFormatStatisticQueryBuilder WithCount(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -8927,7 +8803,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserStatusStatisticQueryBuilder : GraphQlQueryBuilder<UserStatusStatisticQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "count" },
                 new GraphQlFieldMetadata { Name = "meanScore" },
@@ -8937,9 +8813,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "status" }
             };
 
-        protected override string TypeName { get { return "UserStatusStatistic"; } } 
+        protected override string TypeName { get { return "UserStatusStatistic"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserStatusStatisticQueryBuilder WithCount(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -9005,7 +8881,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserScoreStatisticQueryBuilder : GraphQlQueryBuilder<UserScoreStatisticQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "count" },
                 new GraphQlFieldMetadata { Name = "meanScore" },
@@ -9015,9 +8891,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "score" }
             };
 
-        protected override string TypeName { get { return "UserScoreStatistic"; } } 
+        protected override string TypeName { get { return "UserScoreStatistic"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserScoreStatisticQueryBuilder WithCount(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -9083,7 +8959,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserLengthStatisticQueryBuilder : GraphQlQueryBuilder<UserLengthStatisticQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "count" },
                 new GraphQlFieldMetadata { Name = "meanScore" },
@@ -9093,9 +8969,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "length" }
             };
 
-        protected override string TypeName { get { return "UserLengthStatistic"; } } 
+        protected override string TypeName { get { return "UserLengthStatistic"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserLengthStatisticQueryBuilder WithCount(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -9161,7 +9037,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserReleaseYearStatisticQueryBuilder : GraphQlQueryBuilder<UserReleaseYearStatisticQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "count" },
                 new GraphQlFieldMetadata { Name = "meanScore" },
@@ -9171,9 +9047,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "releaseYear" }
             };
 
-        protected override string TypeName { get { return "UserReleaseYearStatistic"; } } 
+        protected override string TypeName { get { return "UserReleaseYearStatistic"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserReleaseYearStatisticQueryBuilder WithCount(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -9239,7 +9115,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserStartYearStatisticQueryBuilder : GraphQlQueryBuilder<UserStartYearStatisticQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "count" },
                 new GraphQlFieldMetadata { Name = "meanScore" },
@@ -9249,9 +9125,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "startYear" }
             };
 
-        protected override string TypeName { get { return "UserStartYearStatistic"; } } 
+        protected override string TypeName { get { return "UserStartYearStatistic"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserStartYearStatisticQueryBuilder WithCount(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -9317,7 +9193,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserGenreStatisticQueryBuilder : GraphQlQueryBuilder<UserGenreStatisticQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "count" },
                 new GraphQlFieldMetadata { Name = "meanScore" },
@@ -9327,9 +9203,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "genre" }
             };
 
-        protected override string TypeName { get { return "UserGenreStatistic"; } } 
+        protected override string TypeName { get { return "UserGenreStatistic"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserGenreStatisticQueryBuilder WithCount(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -9395,7 +9271,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserTagStatisticQueryBuilder : GraphQlQueryBuilder<UserTagStatisticQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "count" },
                 new GraphQlFieldMetadata { Name = "meanScore" },
@@ -9405,9 +9281,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "tag", IsComplex = true, QueryBuilderType = typeof(MediaTagQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "UserTagStatistic"; } } 
+        protected override string TypeName { get { return "UserTagStatistic"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserTagStatisticQueryBuilder WithCount(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -9473,19 +9349,19 @@ namespace TotoroNext.Anime.Anilist
     public class UserCountryStatisticQueryBuilder : GraphQlQueryBuilder<UserCountryStatisticQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "count" },
                 new GraphQlFieldMetadata { Name = "meanScore" },
                 new GraphQlFieldMetadata { Name = "minutesWatched" },
                 new GraphQlFieldMetadata { Name = "chaptersRead" },
                 new GraphQlFieldMetadata { Name = "mediaIds", IsComplex = true },
-                new GraphQlFieldMetadata { Name = "country" }
+                new GraphQlFieldMetadata { Name = "country", IsComplex = true }
             };
 
-        protected override string TypeName { get { return "UserCountryStatistic"; } } 
+        protected override string TypeName { get { return "UserCountryStatistic"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserCountryStatisticQueryBuilder WithCount(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -9551,7 +9427,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserVoiceActorStatisticQueryBuilder : GraphQlQueryBuilder<UserVoiceActorStatisticQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "count" },
                 new GraphQlFieldMetadata { Name = "meanScore" },
@@ -9562,9 +9438,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "characterIds", IsComplex = true }
             };
 
-        protected override string TypeName { get { return "UserVoiceActorStatistic"; } } 
+        protected override string TypeName { get { return "UserVoiceActorStatistic"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserVoiceActorStatisticQueryBuilder WithCount(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -9640,7 +9516,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserStaffStatisticQueryBuilder : GraphQlQueryBuilder<UserStaffStatisticQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "count" },
                 new GraphQlFieldMetadata { Name = "meanScore" },
@@ -9650,9 +9526,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "staff", IsComplex = true, QueryBuilderType = typeof(StaffQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "UserStaffStatistic"; } } 
+        protected override string TypeName { get { return "UserStaffStatistic"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserStaffStatisticQueryBuilder WithCount(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -9718,7 +9594,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserStudioStatisticQueryBuilder : GraphQlQueryBuilder<UserStudioStatisticQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "count" },
                 new GraphQlFieldMetadata { Name = "meanScore" },
@@ -9728,9 +9604,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "studio", IsComplex = true, QueryBuilderType = typeof(StudioQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "UserStudioStatistic"; } } 
+        protected override string TypeName { get { return "UserStudioStatistic"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserStudioStatisticQueryBuilder WithCount(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -9796,7 +9672,7 @@ namespace TotoroNext.Anime.Anilist
     public class UserStatsQueryBuilder : GraphQlQueryBuilder<UserStatsQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "watchedTime" },
                 new GraphQlFieldMetadata { Name = "chaptersRead" },
@@ -9817,9 +9693,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "favouredFormats", IsComplex = true, QueryBuilderType = typeof(FormatStatsQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "UserStats"; } } 
+        protected override string TypeName { get { return "UserStats"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserStatsQueryBuilder WithWatchedTime(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -9995,16 +9871,16 @@ namespace TotoroNext.Anime.Anilist
     public class UserActivityHistoryQueryBuilder : GraphQlQueryBuilder<UserActivityHistoryQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "date" },
                 new GraphQlFieldMetadata { Name = "amount" },
                 new GraphQlFieldMetadata { Name = "level" }
             };
 
-        protected override string TypeName { get { return "UserActivityHistory"; } } 
+        protected override string TypeName { get { return "UserActivityHistory"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserActivityHistoryQueryBuilder WithDate(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -10040,15 +9916,15 @@ namespace TotoroNext.Anime.Anilist
     public class ListScoreStatsQueryBuilder : GraphQlQueryBuilder<ListScoreStatsQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "meanScore" },
                 new GraphQlFieldMetadata { Name = "standardDeviation" }
             };
 
-        protected override string TypeName { get { return "ListScoreStats"; } } 
+        protected override string TypeName { get { return "ListScoreStats"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ListScoreStatsQueryBuilder WithMeanScore(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -10074,7 +9950,7 @@ namespace TotoroNext.Anime.Anilist
     public class GenreStatsQueryBuilder : GraphQlQueryBuilder<GenreStatsQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "genre" },
                 new GraphQlFieldMetadata { Name = "amount" },
@@ -10082,9 +9958,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "timeWatched" }
             };
 
-        protected override string TypeName { get { return "GenreStats"; } } 
+        protected override string TypeName { get { return "GenreStats"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public GenreStatsQueryBuilder WithGenre(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -10130,7 +10006,7 @@ namespace TotoroNext.Anime.Anilist
     public class TagStatsQueryBuilder : GraphQlQueryBuilder<TagStatsQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "tag", IsComplex = true, QueryBuilderType = typeof(MediaTagQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "amount" },
@@ -10138,9 +10014,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "timeWatched" }
             };
 
-        protected override string TypeName { get { return "TagStats"; } } 
+        protected override string TypeName { get { return "TagStats"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public TagStatsQueryBuilder WithTag(MediaTagQueryBuilder mediaTagQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -10186,7 +10062,7 @@ namespace TotoroNext.Anime.Anilist
     public class StaffStatsQueryBuilder : GraphQlQueryBuilder<StaffStatsQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "staff", IsComplex = true, QueryBuilderType = typeof(StaffQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "amount" },
@@ -10194,9 +10070,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "timeWatched" }
             };
 
-        protected override string TypeName { get { return "StaffStats"; } } 
+        protected override string TypeName { get { return "StaffStats"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public StaffStatsQueryBuilder WithStaff(StaffQueryBuilder staffQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -10242,7 +10118,7 @@ namespace TotoroNext.Anime.Anilist
     public class StudioStatsQueryBuilder : GraphQlQueryBuilder<StudioStatsQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "studio", IsComplex = true, QueryBuilderType = typeof(StudioQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "amount" },
@@ -10250,9 +10126,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "timeWatched" }
             };
 
-        protected override string TypeName { get { return "StudioStats"; } } 
+        protected override string TypeName { get { return "StudioStats"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public StudioStatsQueryBuilder WithStudio(StudioQueryBuilder studioQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -10298,16 +10174,16 @@ namespace TotoroNext.Anime.Anilist
     public class YearStatsQueryBuilder : GraphQlQueryBuilder<YearStatsQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "year" },
                 new GraphQlFieldMetadata { Name = "amount" },
                 new GraphQlFieldMetadata { Name = "meanScore" }
             };
 
-        protected override string TypeName { get { return "YearStats"; } } 
+        protected override string TypeName { get { return "YearStats"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public YearStatsQueryBuilder WithYear(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -10343,15 +10219,15 @@ namespace TotoroNext.Anime.Anilist
     public class FormatStatsQueryBuilder : GraphQlQueryBuilder<FormatStatsQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "format" },
                 new GraphQlFieldMetadata { Name = "amount" }
             };
 
-        protected override string TypeName { get { return "FormatStats"; } } 
+        protected override string TypeName { get { return "FormatStats"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public FormatStatsQueryBuilder WithFormat(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -10377,16 +10253,16 @@ namespace TotoroNext.Anime.Anilist
     public class UserPreviousNameQueryBuilder : GraphQlQueryBuilder<UserPreviousNameQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "name" },
                 new GraphQlFieldMetadata { Name = "createdAt" },
                 new GraphQlFieldMetadata { Name = "updatedAt" }
             };
 
-        protected override string TypeName { get { return "UserPreviousName"; } } 
+        protected override string TypeName { get { return "UserPreviousName"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserPreviousNameQueryBuilder WithName(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -10423,14 +10299,9 @@ namespace TotoroNext.Anime.Anilist
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata = new GraphQlFieldMetadata[0];
 
-        public NotificationUnionQueryBuilder()
-        {
-            WithTypeName();
-        }
+        protected override string TypeName { get { return "NotificationUnion"; } }
 
-        protected override string TypeName { get { return "NotificationUnion"; } } 
-
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public NotificationUnionQueryBuilder WithAiringNotificationFragment(AiringNotificationQueryBuilder airingNotificationQueryBuilder, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -10521,7 +10392,7 @@ namespace TotoroNext.Anime.Anilist
     public class AiringNotificationQueryBuilder : GraphQlQueryBuilder<AiringNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "type" },
@@ -10532,9 +10403,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "media", IsComplex = true, QueryBuilderType = typeof(MediaQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "AiringNotification"; } } 
+        protected override string TypeName { get { return "AiringNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public AiringNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -10610,7 +10481,7 @@ namespace TotoroNext.Anime.Anilist
     public class FollowingNotificationQueryBuilder : GraphQlQueryBuilder<FollowingNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -10620,9 +10491,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "FollowingNotification"; } } 
+        protected override string TypeName { get { return "FollowingNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public FollowingNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -10688,7 +10559,7 @@ namespace TotoroNext.Anime.Anilist
     public class ActivityMessageNotificationQueryBuilder : GraphQlQueryBuilder<ActivityMessageNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -10700,9 +10571,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ActivityMessageNotification"; } } 
+        protected override string TypeName { get { return "ActivityMessageNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ActivityMessageNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -10788,7 +10659,7 @@ namespace TotoroNext.Anime.Anilist
     public class MessageActivityQueryBuilder : GraphQlQueryBuilder<MessageActivityQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "recipientId" },
@@ -10809,9 +10680,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "likes", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "MessageActivity"; } } 
+        protected override string TypeName { get { return "MessageActivity"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MessageActivityQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -10867,7 +10738,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (asHtml != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml });
 
             return WithScalarField("message", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -10991,7 +10862,7 @@ namespace TotoroNext.Anime.Anilist
     public class ActivityReplyQueryBuilder : GraphQlQueryBuilder<ActivityReplyQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -11004,9 +10875,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "likes", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ActivityReply"; } } 
+        protected override string TypeName { get { return "ActivityReply"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ActivityReplyQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -11042,7 +10913,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (asHtml != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml });
 
             return WithScalarField("text", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -11106,7 +10977,7 @@ namespace TotoroNext.Anime.Anilist
     public class ActivityMentionNotificationQueryBuilder : GraphQlQueryBuilder<ActivityMentionNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -11118,9 +10989,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ActivityMentionNotification"; } } 
+        protected override string TypeName { get { return "ActivityMentionNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ActivityMentionNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -11207,14 +11078,9 @@ namespace TotoroNext.Anime.Anilist
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata = new GraphQlFieldMetadata[0];
 
-        public ActivityUnionQueryBuilder()
-        {
-            WithTypeName();
-        }
+        protected override string TypeName { get { return "ActivityUnion"; } }
 
-        protected override string TypeName { get { return "ActivityUnion"; } } 
-
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ActivityUnionQueryBuilder WithTextActivityFragment(TextActivityQueryBuilder textActivityQueryBuilder, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -11235,7 +11101,7 @@ namespace TotoroNext.Anime.Anilist
     public class TextActivityQueryBuilder : GraphQlQueryBuilder<TextActivityQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -11254,9 +11120,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "likes", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "TextActivity"; } } 
+        protected override string TypeName { get { return "TextActivity"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public TextActivityQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -11302,7 +11168,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (asHtml != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml });
 
             return WithScalarField("text", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -11416,7 +11282,7 @@ namespace TotoroNext.Anime.Anilist
     public class ListActivityQueryBuilder : GraphQlQueryBuilder<ListActivityQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -11437,9 +11303,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "likes", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ListActivity"; } } 
+        protected override string TypeName { get { return "ListActivity"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ListActivityQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -11615,7 +11481,7 @@ namespace TotoroNext.Anime.Anilist
     public class ActivityReplyNotificationQueryBuilder : GraphQlQueryBuilder<ActivityReplyNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -11627,9 +11493,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ActivityReplyNotification"; } } 
+        protected override string TypeName { get { return "ActivityReplyNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ActivityReplyNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -11715,7 +11581,7 @@ namespace TotoroNext.Anime.Anilist
     public class ActivityReplySubscribedNotificationQueryBuilder : GraphQlQueryBuilder<ActivityReplySubscribedNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -11727,9 +11593,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ActivityReplySubscribedNotification"; } } 
+        protected override string TypeName { get { return "ActivityReplySubscribedNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ActivityReplySubscribedNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -11815,7 +11681,7 @@ namespace TotoroNext.Anime.Anilist
     public class ActivityLikeNotificationQueryBuilder : GraphQlQueryBuilder<ActivityLikeNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -11827,9 +11693,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ActivityLikeNotification"; } } 
+        protected override string TypeName { get { return "ActivityLikeNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ActivityLikeNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -11915,7 +11781,7 @@ namespace TotoroNext.Anime.Anilist
     public class ActivityReplyLikeNotificationQueryBuilder : GraphQlQueryBuilder<ActivityReplyLikeNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -11927,9 +11793,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ActivityReplyLikeNotification"; } } 
+        protected override string TypeName { get { return "ActivityReplyLikeNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ActivityReplyLikeNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -12015,7 +11881,7 @@ namespace TotoroNext.Anime.Anilist
     public class ThreadCommentMentionNotificationQueryBuilder : GraphQlQueryBuilder<ThreadCommentMentionNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -12028,9 +11894,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ThreadCommentMentionNotification"; } } 
+        protected override string TypeName { get { return "ThreadCommentMentionNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ThreadCommentMentionNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -12126,7 +11992,7 @@ namespace TotoroNext.Anime.Anilist
     public class ThreadQueryBuilder : GraphQlQueryBuilder<ThreadQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "title" },
@@ -12152,9 +12018,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "mediaCategories", IsComplex = true, QueryBuilderType = typeof(MediaQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "Thread"; } } 
+        protected override string TypeName { get { return "Thread"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ThreadQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -12180,7 +12046,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (asHtml != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml });
 
             return WithScalarField("body", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -12384,15 +12250,15 @@ namespace TotoroNext.Anime.Anilist
     public class ThreadCategoryQueryBuilder : GraphQlQueryBuilder<ThreadCategoryQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "name" }
             };
 
-        protected override string TypeName { get { return "ThreadCategory"; } } 
+        protected override string TypeName { get { return "ThreadCategory"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ThreadCategoryQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -12418,7 +12284,7 @@ namespace TotoroNext.Anime.Anilist
     public class ThreadCommentQueryBuilder : GraphQlQueryBuilder<ThreadCommentQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -12432,13 +12298,13 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "thread", IsComplex = true, QueryBuilderType = typeof(ThreadQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "likes", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
-                new GraphQlFieldMetadata { Name = "childComments" },
+                new GraphQlFieldMetadata { Name = "childComments", IsComplex = true },
                 new GraphQlFieldMetadata { Name = "isLocked" }
             };
 
-        protected override string TypeName { get { return "ThreadComment"; } } 
+        protected override string TypeName { get { return "ThreadComment"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ThreadCommentQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -12474,7 +12340,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (asHtml != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asHtml", ArgumentValue = asHtml });
 
             return WithScalarField("comment", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -12588,7 +12454,7 @@ namespace TotoroNext.Anime.Anilist
     public class ThreadCommentReplyNotificationQueryBuilder : GraphQlQueryBuilder<ThreadCommentReplyNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -12601,9 +12467,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ThreadCommentReplyNotification"; } } 
+        protected override string TypeName { get { return "ThreadCommentReplyNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ThreadCommentReplyNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -12699,7 +12565,7 @@ namespace TotoroNext.Anime.Anilist
     public class ThreadCommentSubscribedNotificationQueryBuilder : GraphQlQueryBuilder<ThreadCommentSubscribedNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -12712,9 +12578,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ThreadCommentSubscribedNotification"; } } 
+        protected override string TypeName { get { return "ThreadCommentSubscribedNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ThreadCommentSubscribedNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -12810,7 +12676,7 @@ namespace TotoroNext.Anime.Anilist
     public class ThreadCommentLikeNotificationQueryBuilder : GraphQlQueryBuilder<ThreadCommentLikeNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -12823,9 +12689,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ThreadCommentLikeNotification"; } } 
+        protected override string TypeName { get { return "ThreadCommentLikeNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ThreadCommentLikeNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -12921,7 +12787,7 @@ namespace TotoroNext.Anime.Anilist
     public class ThreadLikeNotificationQueryBuilder : GraphQlQueryBuilder<ThreadLikeNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "userId" },
@@ -12934,9 +12800,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "ThreadLikeNotification"; } } 
+        protected override string TypeName { get { return "ThreadLikeNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ThreadLikeNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -13032,7 +12898,7 @@ namespace TotoroNext.Anime.Anilist
     public class RelatedMediaAdditionNotificationQueryBuilder : GraphQlQueryBuilder<RelatedMediaAdditionNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "type" },
@@ -13042,9 +12908,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "media", IsComplex = true, QueryBuilderType = typeof(MediaQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "RelatedMediaAdditionNotification"; } } 
+        protected override string TypeName { get { return "RelatedMediaAdditionNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public RelatedMediaAdditionNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -13110,7 +12976,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaDataChangeNotificationQueryBuilder : GraphQlQueryBuilder<MediaDataChangeNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "type" },
@@ -13121,9 +12987,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "media", IsComplex = true, QueryBuilderType = typeof(MediaQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "MediaDataChangeNotification"; } } 
+        protected override string TypeName { get { return "MediaDataChangeNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaDataChangeNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -13199,7 +13065,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaMergeNotificationQueryBuilder : GraphQlQueryBuilder<MediaMergeNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "type" },
@@ -13211,9 +13077,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "media", IsComplex = true, QueryBuilderType = typeof(MediaQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "MediaMergeNotification"; } } 
+        protected override string TypeName { get { return "MediaMergeNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaMergeNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -13299,7 +13165,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaDeletionNotificationQueryBuilder : GraphQlQueryBuilder<MediaDeletionNotificationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "type" },
@@ -13309,9 +13175,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "createdAt" }
             };
 
-        protected override string TypeName { get { return "MediaDeletionNotification"; } } 
+        protected override string TypeName { get { return "MediaDeletionNotification"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaDeletionNotificationQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -13377,16 +13243,16 @@ namespace TotoroNext.Anime.Anilist
     public class MediaListCollectionQueryBuilder : GraphQlQueryBuilder<MediaListCollectionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "lists", IsComplex = true, QueryBuilderType = typeof(MediaListGroupQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "hasNextChunk" }
             };
 
-        protected override string TypeName { get { return "MediaListCollection"; } } 
+        protected override string TypeName { get { return "MediaListCollection"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaListCollectionQueryBuilder WithLists(MediaListGroupQueryBuilder mediaListGroupQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -13422,7 +13288,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaListGroupQueryBuilder : GraphQlQueryBuilder<MediaListGroupQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "entries", IsComplex = true, QueryBuilderType = typeof(MediaListQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "name" },
@@ -13431,9 +13297,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "status" }
             };
 
-        protected override string TypeName { get { return "MediaListGroup"; } } 
+        protected override string TypeName { get { return "MediaListGroup"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaListGroupQueryBuilder WithEntries(MediaListQueryBuilder mediaListQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -13489,14 +13355,14 @@ namespace TotoroNext.Anime.Anilist
     public class ParsedMarkdownQueryBuilder : GraphQlQueryBuilder<ParsedMarkdownQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "html" }
             };
 
-        protected override string TypeName { get { return "ParsedMarkdown"; } } 
+        protected override string TypeName { get { return "ParsedMarkdown"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ParsedMarkdownQueryBuilder WithHtml(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -13512,16 +13378,16 @@ namespace TotoroNext.Anime.Anilist
     public class AniChartUserQueryBuilder : GraphQlQueryBuilder<AniChartUserQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
-                new GraphQlFieldMetadata { Name = "settings" },
-                new GraphQlFieldMetadata { Name = "highlights" }
+                new GraphQlFieldMetadata { Name = "settings", IsComplex = true },
+                new GraphQlFieldMetadata { Name = "highlights", IsComplex = true }
             };
 
-        protected override string TypeName { get { return "AniChartUser"; } } 
+        protected override string TypeName { get { return "AniChartUser"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public AniChartUserQueryBuilder WithUser(UserQueryBuilder userQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -13557,7 +13423,7 @@ namespace TotoroNext.Anime.Anilist
     public class SiteStatisticsQueryBuilder : GraphQlQueryBuilder<SiteStatisticsQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "users", IsComplex = true, QueryBuilderType = typeof(SiteTrendConnectionQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "anime", IsComplex = true, QueryBuilderType = typeof(SiteTrendConnectionQueryBuilder) },
@@ -13568,21 +13434,21 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "reviews", IsComplex = true, QueryBuilderType = typeof(SiteTrendConnectionQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "SiteStatistics"; } } 
+        protected override string TypeName { get { return "SiteStatistics"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public SiteStatisticsQueryBuilder WithUsers(SiteTrendConnectionQueryBuilder siteTrendConnectionQueryBuilder, QueryBuilderParameter<IEnumerable<SiteTrendSort?>> sort = null, QueryBuilderParameter<int?> page = null, QueryBuilderParameter<int?> perPage = null, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("users", alias, siteTrendConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -13596,13 +13462,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("anime", alias, siteTrendConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -13616,13 +13482,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("manga", alias, siteTrendConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -13636,13 +13502,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("characters", alias, siteTrendConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -13656,13 +13522,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("staff", alias, siteTrendConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -13676,13 +13542,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("studios", alias, siteTrendConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -13696,13 +13562,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             if (page != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "page", ArgumentValue = page });
 
             if (perPage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "perPage", ArgumentValue = perPage });
 
             return WithObjectField("reviews", alias, siteTrendConnectionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -13716,16 +13582,16 @@ namespace TotoroNext.Anime.Anilist
     public class SiteTrendConnectionQueryBuilder : GraphQlQueryBuilder<SiteTrendConnectionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "edges", IsComplex = true, QueryBuilderType = typeof(SiteTrendEdgeQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "nodes", IsComplex = true, QueryBuilderType = typeof(SiteTrendQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "pageInfo", IsComplex = true, QueryBuilderType = typeof(PageInfoQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "SiteTrendConnection"; } } 
+        protected override string TypeName { get { return "SiteTrendConnection"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public SiteTrendConnectionQueryBuilder WithEdges(SiteTrendEdgeQueryBuilder siteTrendEdgeQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -13761,14 +13627,14 @@ namespace TotoroNext.Anime.Anilist
     public class SiteTrendEdgeQueryBuilder : GraphQlQueryBuilder<SiteTrendEdgeQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "node", IsComplex = true, QueryBuilderType = typeof(SiteTrendQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "SiteTrendEdge"; } } 
+        protected override string TypeName { get { return "SiteTrendEdge"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public SiteTrendEdgeQueryBuilder WithNode(SiteTrendQueryBuilder siteTrendQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -13784,16 +13650,16 @@ namespace TotoroNext.Anime.Anilist
     public class SiteTrendQueryBuilder : GraphQlQueryBuilder<SiteTrendQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "date" },
                 new GraphQlFieldMetadata { Name = "count" },
                 new GraphQlFieldMetadata { Name = "change" }
             };
 
-        protected override string TypeName { get { return "SiteTrend"; } } 
+        protected override string TypeName { get { return "SiteTrend"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public SiteTrendQueryBuilder WithDate(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -13829,7 +13695,7 @@ namespace TotoroNext.Anime.Anilist
     public class MutationQueryBuilder : GraphQlQueryBuilder<MutationQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "UpdateUser", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "SaveMediaListEntry", IsComplex = true, QueryBuilderType = typeof(MediaListQueryBuilder) },
@@ -13858,13 +13724,13 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "ToggleThreadSubscription", IsComplex = true, QueryBuilderType = typeof(ThreadQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "SaveThreadComment", IsComplex = true, QueryBuilderType = typeof(ThreadCommentQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "DeleteThreadComment", IsComplex = true, QueryBuilderType = typeof(DeletedQueryBuilder) },
-                new GraphQlFieldMetadata { Name = "UpdateAniChartSettings" },
-                new GraphQlFieldMetadata { Name = "UpdateAniChartHighlights" }
+                new GraphQlFieldMetadata { Name = "UpdateAniChartSettings", IsComplex = true },
+                new GraphQlFieldMetadata { Name = "UpdateAniChartHighlights", IsComplex = true }
             };
 
-        protected override string TypeName { get { return "Mutation"; } } 
+        protected override string TypeName { get { return "Mutation"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MutationQueryBuilder(string operationName = null) : base("mutation", operationName)
         {
@@ -13879,52 +13745,52 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (about != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "about", ArgumentValue = about} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "about", ArgumentValue = about });
 
             if (titleLanguage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "titleLanguage", ArgumentValue = titleLanguage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "titleLanguage", ArgumentValue = titleLanguage });
 
             if (displayAdultContent != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "displayAdultContent", ArgumentValue = displayAdultContent} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "displayAdultContent", ArgumentValue = displayAdultContent });
 
             if (airingNotifications != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingNotifications", ArgumentValue = airingNotifications} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingNotifications", ArgumentValue = airingNotifications });
 
             if (scoreFormat != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "scoreFormat", ArgumentValue = scoreFormat} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "scoreFormat", ArgumentValue = scoreFormat });
 
             if (rowOrder != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rowOrder", ArgumentValue = rowOrder} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rowOrder", ArgumentValue = rowOrder });
 
             if (profileColor != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "profileColor", ArgumentValue = profileColor} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "profileColor", ArgumentValue = profileColor });
 
             if (donatorBadge != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "donatorBadge", ArgumentValue = donatorBadge} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "donatorBadge", ArgumentValue = donatorBadge });
 
             if (notificationOptions != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notificationOptions", ArgumentValue = notificationOptions} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notificationOptions", ArgumentValue = notificationOptions });
 
             if (timezone != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "timezone", ArgumentValue = timezone} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "timezone", ArgumentValue = timezone });
 
             if (activityMergeTime != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "activityMergeTime", ArgumentValue = activityMergeTime} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "activityMergeTime", ArgumentValue = activityMergeTime });
 
             if (animeListOptions != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "animeListOptions", ArgumentValue = animeListOptions} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "animeListOptions", ArgumentValue = animeListOptions });
 
             if (mangaListOptions != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mangaListOptions", ArgumentValue = mangaListOptions} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mangaListOptions", ArgumentValue = mangaListOptions });
 
             if (staffNameLanguage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "staffNameLanguage", ArgumentValue = staffNameLanguage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "staffNameLanguage", ArgumentValue = staffNameLanguage });
 
             if (restrictMessagesToFollowing != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "restrictMessagesToFollowing", ArgumentValue = restrictMessagesToFollowing} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "restrictMessagesToFollowing", ArgumentValue = restrictMessagesToFollowing });
 
             if (disabledListActivity != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "disabledListActivity", ArgumentValue = disabledListActivity} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "disabledListActivity", ArgumentValue = disabledListActivity });
 
             return WithObjectField("UpdateUser", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -13938,52 +13804,52 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (status != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status });
 
             if (score != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "score", ArgumentValue = score} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "score", ArgumentValue = score });
 
             if (scoreRaw != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "scoreRaw", ArgumentValue = scoreRaw} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "scoreRaw", ArgumentValue = scoreRaw });
 
             if (progress != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "progress", ArgumentValue = progress} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "progress", ArgumentValue = progress });
 
             if (progressVolumes != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "progressVolumes", ArgumentValue = progressVolumes} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "progressVolumes", ArgumentValue = progressVolumes });
 
             if (repeat != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "repeat", ArgumentValue = repeat} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "repeat", ArgumentValue = repeat });
 
             if (priority != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "priority", ArgumentValue = priority} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "priority", ArgumentValue = priority });
 
             if (@private != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "private", ArgumentValue = @private} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "private", ArgumentValue = @private });
 
             if (notes != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes", ArgumentValue = notes} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes", ArgumentValue = notes });
 
             if (hiddenFromStatusLists != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hiddenFromStatusLists", ArgumentValue = hiddenFromStatusLists} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hiddenFromStatusLists", ArgumentValue = hiddenFromStatusLists });
 
             if (customLists != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "customLists", ArgumentValue = customLists} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "customLists", ArgumentValue = customLists });
 
             if (advancedScores != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "advancedScores", ArgumentValue = advancedScores} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "advancedScores", ArgumentValue = advancedScores });
 
             if (startedAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt", ArgumentValue = startedAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt", ArgumentValue = startedAt });
 
             if (completedAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt", ArgumentValue = completedAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt", ArgumentValue = completedAt });
 
             return WithObjectField("SaveMediaListEntry", alias, mediaListQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -13997,46 +13863,46 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (status != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status });
 
             if (score != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "score", ArgumentValue = score} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "score", ArgumentValue = score });
 
             if (scoreRaw != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "scoreRaw", ArgumentValue = scoreRaw} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "scoreRaw", ArgumentValue = scoreRaw });
 
             if (progress != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "progress", ArgumentValue = progress} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "progress", ArgumentValue = progress });
 
             if (progressVolumes != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "progressVolumes", ArgumentValue = progressVolumes} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "progressVolumes", ArgumentValue = progressVolumes });
 
             if (repeat != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "repeat", ArgumentValue = repeat} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "repeat", ArgumentValue = repeat });
 
             if (priority != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "priority", ArgumentValue = priority} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "priority", ArgumentValue = priority });
 
             if (@private != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "private", ArgumentValue = @private} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "private", ArgumentValue = @private });
 
             if (notes != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes", ArgumentValue = notes} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes", ArgumentValue = notes });
 
             if (hiddenFromStatusLists != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hiddenFromStatusLists", ArgumentValue = hiddenFromStatusLists} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hiddenFromStatusLists", ArgumentValue = hiddenFromStatusLists });
 
             if (advancedScores != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "advancedScores", ArgumentValue = advancedScores} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "advancedScores", ArgumentValue = advancedScores });
 
             if (startedAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt", ArgumentValue = startedAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt", ArgumentValue = startedAt });
 
             if (completedAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt", ArgumentValue = completedAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt", ArgumentValue = completedAt });
 
             if (ids != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "ids", ArgumentValue = ids} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "ids", ArgumentValue = ids });
 
             return WithObjectField("UpdateMediaListEntries", alias, mediaListQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14050,7 +13916,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             return WithObjectField("DeleteMediaListEntry", alias, deletedQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14064,10 +13930,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (customList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "customList", ArgumentValue = customList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "customList", ArgumentValue = customList });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             return WithObjectField("DeleteCustomList", alias, deletedQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14081,13 +13947,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (text != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "text", ArgumentValue = text} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "text", ArgumentValue = text });
 
             if (locked != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "locked", ArgumentValue = locked} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "locked", ArgumentValue = locked });
 
             return WithObjectField("SaveTextActivity", alias, textActivityQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14101,22 +13967,22 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (message != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "message", ArgumentValue = message} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "message", ArgumentValue = message });
 
             if (recipientId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "recipientId", ArgumentValue = recipientId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "recipientId", ArgumentValue = recipientId });
 
             if (@private != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "private", ArgumentValue = @private} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "private", ArgumentValue = @private });
 
             if (locked != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "locked", ArgumentValue = locked} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "locked", ArgumentValue = locked });
 
             if (asMod != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asMod", ArgumentValue = asMod} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asMod", ArgumentValue = asMod });
 
             return WithObjectField("SaveMessageActivity", alias, messageActivityQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14130,10 +13996,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (locked != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "locked", ArgumentValue = locked} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "locked", ArgumentValue = locked });
 
             return WithObjectField("SaveListActivity", alias, listActivityQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14147,7 +14013,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             return WithObjectField("DeleteActivity", alias, deletedQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14161,10 +14027,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (pinned != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "pinned", ArgumentValue = pinned} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "pinned", ArgumentValue = pinned });
 
             return WithObjectField("ToggleActivityPin", alias, activityUnionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14178,10 +14044,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (activityId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "activityId", ArgumentValue = activityId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "activityId", ArgumentValue = activityId });
 
             if (subscribe != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "subscribe", ArgumentValue = subscribe} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "subscribe", ArgumentValue = subscribe });
 
             return WithObjectField("ToggleActivitySubscription", alias, activityUnionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14195,16 +14061,16 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (activityId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "activityId", ArgumentValue = activityId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "activityId", ArgumentValue = activityId });
 
             if (text != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "text", ArgumentValue = text} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "text", ArgumentValue = text });
 
             if (asMod != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asMod", ArgumentValue = asMod} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "asMod", ArgumentValue = asMod });
 
             return WithObjectField("SaveActivityReply", alias, activityReplyQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14218,7 +14084,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             return WithObjectField("DeleteActivityReply", alias, deletedQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14232,10 +14098,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             return WithObjectField("ToggleLike", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14249,10 +14115,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             return WithObjectField("ToggleLikeV2", alias, likeableUnionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14266,7 +14132,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             return WithObjectField("ToggleFollow", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14280,19 +14146,19 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (animeId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "animeId", ArgumentValue = animeId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "animeId", ArgumentValue = animeId });
 
             if (mangaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mangaId", ArgumentValue = mangaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mangaId", ArgumentValue = mangaId });
 
             if (characterId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "characterId", ArgumentValue = characterId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "characterId", ArgumentValue = characterId });
 
             if (staffId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "staffId", ArgumentValue = staffId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "staffId", ArgumentValue = staffId });
 
             if (studioId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "studioId", ArgumentValue = studioId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "studioId", ArgumentValue = studioId });
 
             return WithObjectField("ToggleFavourite", alias, favouritesQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14306,34 +14172,34 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (animeIds != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "animeIds", ArgumentValue = animeIds} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "animeIds", ArgumentValue = animeIds });
 
             if (mangaIds != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mangaIds", ArgumentValue = mangaIds} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mangaIds", ArgumentValue = mangaIds });
 
             if (characterIds != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "characterIds", ArgumentValue = characterIds} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "characterIds", ArgumentValue = characterIds });
 
             if (staffIds != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "staffIds", ArgumentValue = staffIds} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "staffIds", ArgumentValue = staffIds });
 
             if (studioIds != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "studioIds", ArgumentValue = studioIds} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "studioIds", ArgumentValue = studioIds });
 
             if (animeOrder != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "animeOrder", ArgumentValue = animeOrder} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "animeOrder", ArgumentValue = animeOrder });
 
             if (mangaOrder != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mangaOrder", ArgumentValue = mangaOrder} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mangaOrder", ArgumentValue = mangaOrder });
 
             if (characterOrder != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "characterOrder", ArgumentValue = characterOrder} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "characterOrder", ArgumentValue = characterOrder });
 
             if (staffOrder != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "staffOrder", ArgumentValue = staffOrder} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "staffOrder", ArgumentValue = staffOrder });
 
             if (studioOrder != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "studioOrder", ArgumentValue = studioOrder} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "studioOrder", ArgumentValue = studioOrder });
 
             return WithObjectField("UpdateFavouriteOrder", alias, favouritesQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14347,22 +14213,22 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (body != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "body", ArgumentValue = body} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "body", ArgumentValue = body });
 
             if (summary != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "summary", ArgumentValue = summary} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "summary", ArgumentValue = summary });
 
             if (score != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "score", ArgumentValue = score} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "score", ArgumentValue = score });
 
             if (@private != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "private", ArgumentValue = @private} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "private", ArgumentValue = @private });
 
             return WithObjectField("SaveReview", alias, reviewQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14376,7 +14242,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             return WithObjectField("DeleteReview", alias, deletedQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14390,10 +14256,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (reviewId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "reviewId", ArgumentValue = reviewId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "reviewId", ArgumentValue = reviewId });
 
             if (rating != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating", ArgumentValue = rating} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating", ArgumentValue = rating });
 
             return WithObjectField("RateReview", alias, reviewQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14407,13 +14273,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (mediaRecommendationId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaRecommendationId", ArgumentValue = mediaRecommendationId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaRecommendationId", ArgumentValue = mediaRecommendationId });
 
             if (rating != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating", ArgumentValue = rating} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating", ArgumentValue = rating });
 
             return WithObjectField("SaveRecommendation", alias, recommendationQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14427,25 +14293,25 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (title != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "title", ArgumentValue = title} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "title", ArgumentValue = title });
 
             if (body != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "body", ArgumentValue = body} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "body", ArgumentValue = body });
 
             if (categories != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "categories", ArgumentValue = categories} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "categories", ArgumentValue = categories });
 
             if (mediaCategories != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaCategories", ArgumentValue = mediaCategories} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaCategories", ArgumentValue = mediaCategories });
 
             if (sticky != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sticky", ArgumentValue = sticky} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sticky", ArgumentValue = sticky });
 
             if (locked != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "locked", ArgumentValue = locked} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "locked", ArgumentValue = locked });
 
             return WithObjectField("SaveThread", alias, threadQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14459,7 +14325,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             return WithObjectField("DeleteThread", alias, deletedQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14473,10 +14339,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (threadId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "threadId", ArgumentValue = threadId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "threadId", ArgumentValue = threadId });
 
             if (subscribe != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "subscribe", ArgumentValue = subscribe} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "subscribe", ArgumentValue = subscribe });
 
             return WithObjectField("ToggleThreadSubscription", alias, threadQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14490,19 +14356,19 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (threadId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "threadId", ArgumentValue = threadId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "threadId", ArgumentValue = threadId });
 
             if (parentCommentId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "parentCommentId", ArgumentValue = parentCommentId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "parentCommentId", ArgumentValue = parentCommentId });
 
             if (comment != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "comment", ArgumentValue = comment} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "comment", ArgumentValue = comment });
 
             if (locked != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "locked", ArgumentValue = locked} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "locked", ArgumentValue = locked });
 
             return WithObjectField("SaveThreadComment", alias, threadCommentQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14516,7 +14382,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             return WithObjectField("DeleteThreadComment", alias, deletedQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14530,16 +14396,16 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (titleLanguage != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "titleLanguage", ArgumentValue = titleLanguage} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "titleLanguage", ArgumentValue = titleLanguage });
 
             if (outgoingLinkProvider != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "outgoingLinkProvider", ArgumentValue = outgoingLinkProvider} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "outgoingLinkProvider", ArgumentValue = outgoingLinkProvider });
 
             if (theme != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "theme", ArgumentValue = theme} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "theme", ArgumentValue = theme });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithScalarField("UpdateAniChartSettings", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14553,7 +14419,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (highlights != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "highlights", ArgumentValue = highlights} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "highlights", ArgumentValue = highlights });
 
             return WithScalarField("UpdateAniChartHighlights", alias, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14567,14 +14433,14 @@ namespace TotoroNext.Anime.Anilist
     public class DeletedQueryBuilder : GraphQlQueryBuilder<DeletedQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "deleted" }
             };
 
-        protected override string TypeName { get { return "Deleted"; } } 
+        protected override string TypeName { get { return "Deleted"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public DeletedQueryBuilder WithDeleted(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -14591,14 +14457,9 @@ namespace TotoroNext.Anime.Anilist
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata = new GraphQlFieldMetadata[0];
 
-        public LikeableUnionQueryBuilder()
-        {
-            WithTypeName();
-        }
+        protected override string TypeName { get { return "LikeableUnion"; } }
 
-        protected override string TypeName { get { return "LikeableUnion"; } } 
-
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public LikeableUnionQueryBuilder WithListActivityFragment(ListActivityQueryBuilder listActivityQueryBuilder, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -14634,7 +14495,7 @@ namespace TotoroNext.Anime.Anilist
     public class InternalPageQueryBuilder : GraphQlQueryBuilder<InternalPageQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "mediaSubmissions", IsComplex = true, QueryBuilderType = typeof(MediaSubmissionQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "characterSubmissions", IsComplex = true, QueryBuilderType = typeof(CharacterSubmissionQueryBuilder) },
@@ -14653,8 +14514,8 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "airingSchedules", IsComplex = true, QueryBuilderType = typeof(AiringScheduleQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "mediaTrends", IsComplex = true, QueryBuilderType = typeof(MediaTrendQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "notifications", IsComplex = true, QueryBuilderType = typeof(NotificationUnionQueryBuilder) },
-                new GraphQlFieldMetadata { Name = "followers", RequiresParameters = true, IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
-                new GraphQlFieldMetadata { Name = "following", RequiresParameters = true, IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
+                new GraphQlFieldMetadata { Name = "followers", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
+                new GraphQlFieldMetadata { Name = "following", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "activities", IsComplex = true, QueryBuilderType = typeof(ActivityUnionQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "activityReplies", IsComplex = true, QueryBuilderType = typeof(ActivityReplyQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "threads", IsComplex = true, QueryBuilderType = typeof(ThreadQueryBuilder) },
@@ -14664,33 +14525,33 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "likes", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "InternalPage"; } } 
+        protected override string TypeName { get { return "InternalPage"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public InternalPageQueryBuilder WithMediaSubmissions(MediaSubmissionQueryBuilder mediaSubmissionQueryBuilder, QueryBuilderParameter<int?> mediaId = null, QueryBuilderParameter<int?> submissionId = null, QueryBuilderParameter<int?> userId = null, QueryBuilderParameter<int?> assigneeId = null, QueryBuilderParameter<SubmissionStatus?> status = null, QueryBuilderParameter<MediaType?> type = null, QueryBuilderParameter<IEnumerable<SubmissionSort?>> sort = null, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (submissionId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "submissionId", ArgumentValue = submissionId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "submissionId", ArgumentValue = submissionId });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (assigneeId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "assigneeId", ArgumentValue = assigneeId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "assigneeId", ArgumentValue = assigneeId });
 
             if (status != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("mediaSubmissions", alias, mediaSubmissionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14704,19 +14565,19 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (characterId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "characterId", ArgumentValue = characterId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "characterId", ArgumentValue = characterId });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (assigneeId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "assigneeId", ArgumentValue = assigneeId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "assigneeId", ArgumentValue = assigneeId });
 
             if (status != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("characterSubmissions", alias, characterSubmissionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14730,19 +14591,19 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (staffId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "staffId", ArgumentValue = staffId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "staffId", ArgumentValue = staffId });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (assigneeId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "assigneeId", ArgumentValue = assigneeId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "assigneeId", ArgumentValue = assigneeId });
 
             if (status != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("staffSubmissions", alias, staffSubmissionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14756,19 +14617,19 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (characterId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "characterId", ArgumentValue = characterId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "characterId", ArgumentValue = characterId });
 
             if (staffId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "staffId", ArgumentValue = staffId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "staffId", ArgumentValue = staffId });
 
             if (studioId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "studioId", ArgumentValue = studioId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "studioId", ArgumentValue = studioId });
 
             return WithObjectField("revisionHistory", alias, revisionHistoryQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14782,10 +14643,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (reporterId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "reporterId", ArgumentValue = reporterId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "reporterId", ArgumentValue = reporterId });
 
             if (reportedId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "reportedId", ArgumentValue = reportedId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "reportedId", ArgumentValue = reportedId });
 
             return WithObjectField("reports", alias, reportQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14799,10 +14660,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (modId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "modId", ArgumentValue = modId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "modId", ArgumentValue = modId });
 
             return WithObjectField("modActions", alias, modActionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14816,7 +14677,7 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             return WithObjectField("userBlockSearch", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14840,19 +14701,19 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (name != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "name", ArgumentValue = name} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "name", ArgumentValue = name });
 
             if (isModerator != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isModerator", ArgumentValue = isModerator} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isModerator", ArgumentValue = isModerator });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("users", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -14866,211 +14727,211 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (idMal != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal", ArgumentValue = idMal} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal", ArgumentValue = idMal });
 
             if (startDate != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate", ArgumentValue = startDate} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate", ArgumentValue = startDate });
 
             if (endDate != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate", ArgumentValue = endDate} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate", ArgumentValue = endDate });
 
             if (season != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "season", ArgumentValue = season} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "season", ArgumentValue = season });
 
             if (seasonYear != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "seasonYear", ArgumentValue = seasonYear} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "seasonYear", ArgumentValue = seasonYear });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (format != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format", ArgumentValue = format} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format", ArgumentValue = format });
 
             if (status != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status });
 
             if (episodes != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes", ArgumentValue = episodes} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes", ArgumentValue = episodes });
 
             if (duration != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration", ArgumentValue = duration} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration", ArgumentValue = duration });
 
             if (chapters != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters", ArgumentValue = chapters} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters", ArgumentValue = chapters });
 
             if (volumes != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes", ArgumentValue = volumes} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes", ArgumentValue = volumes });
 
             if (isAdult != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isAdult", ArgumentValue = isAdult} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isAdult", ArgumentValue = isAdult });
 
             if (genre != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre", ArgumentValue = genre} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre", ArgumentValue = genre });
 
             if (tag != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag", ArgumentValue = tag} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag", ArgumentValue = tag });
 
             if (minimumTagRank != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "minimumTagRank", ArgumentValue = minimumTagRank} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "minimumTagRank", ArgumentValue = minimumTagRank });
 
             if (tagCategory != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory", ArgumentValue = tagCategory} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory", ArgumentValue = tagCategory });
 
             if (onList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList });
 
             if (licensedBy != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedBy", ArgumentValue = licensedBy} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedBy", ArgumentValue = licensedBy });
 
             if (licensedById != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedById", ArgumentValue = licensedById} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedById", ArgumentValue = licensedById });
 
             if (averageScore != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore", ArgumentValue = averageScore} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore", ArgumentValue = averageScore });
 
             if (popularity != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity", ArgumentValue = popularity} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity", ArgumentValue = popularity });
 
             if (source != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "source", ArgumentValue = source} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "source", ArgumentValue = source });
 
             if (countryOfOrigin != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "countryOfOrigin", ArgumentValue = countryOfOrigin} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "countryOfOrigin", ArgumentValue = countryOfOrigin });
 
             if (isLicensed != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isLicensed", ArgumentValue = isLicensed} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isLicensed", ArgumentValue = isLicensed });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (idMalNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_not", ArgumentValue = idMalNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_not", ArgumentValue = idMalNot });
 
             if (idMalIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_in", ArgumentValue = idMalIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_in", ArgumentValue = idMalIn });
 
             if (idMalNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_not_in", ArgumentValue = idMalNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "idMal_not_in", ArgumentValue = idMalNotIn });
 
             if (startDateGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_greater", ArgumentValue = startDateGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_greater", ArgumentValue = startDateGreater });
 
             if (startDateLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_lesser", ArgumentValue = startDateLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_lesser", ArgumentValue = startDateLesser });
 
             if (startDateLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_like", ArgumentValue = startDateLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startDate_like", ArgumentValue = startDateLike });
 
             if (endDateGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_greater", ArgumentValue = endDateGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_greater", ArgumentValue = endDateGreater });
 
             if (endDateLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_lesser", ArgumentValue = endDateLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_lesser", ArgumentValue = endDateLesser });
 
             if (endDateLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_like", ArgumentValue = endDateLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "endDate_like", ArgumentValue = endDateLike });
 
             if (formatIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_in", ArgumentValue = formatIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_in", ArgumentValue = formatIn });
 
             if (formatNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_not", ArgumentValue = formatNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_not", ArgumentValue = formatNot });
 
             if (formatNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_not_in", ArgumentValue = formatNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "format_not_in", ArgumentValue = formatNotIn });
 
             if (statusIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_in", ArgumentValue = statusIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_in", ArgumentValue = statusIn });
 
             if (statusNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not", ArgumentValue = statusNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not", ArgumentValue = statusNot });
 
             if (statusNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not_in", ArgumentValue = statusNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not_in", ArgumentValue = statusNotIn });
 
             if (episodesGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes_greater", ArgumentValue = episodesGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes_greater", ArgumentValue = episodesGreater });
 
             if (episodesLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes_lesser", ArgumentValue = episodesLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episodes_lesser", ArgumentValue = episodesLesser });
 
             if (durationGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration_greater", ArgumentValue = durationGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration_greater", ArgumentValue = durationGreater });
 
             if (durationLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration_lesser", ArgumentValue = durationLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "duration_lesser", ArgumentValue = durationLesser });
 
             if (chaptersGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters_greater", ArgumentValue = chaptersGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters_greater", ArgumentValue = chaptersGreater });
 
             if (chaptersLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters_lesser", ArgumentValue = chaptersLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "chapters_lesser", ArgumentValue = chaptersLesser });
 
             if (volumesGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes_greater", ArgumentValue = volumesGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes_greater", ArgumentValue = volumesGreater });
 
             if (volumesLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes_lesser", ArgumentValue = volumesLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "volumes_lesser", ArgumentValue = volumesLesser });
 
             if (genreIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre_in", ArgumentValue = genreIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre_in", ArgumentValue = genreIn });
 
             if (genreNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre_not_in", ArgumentValue = genreNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "genre_not_in", ArgumentValue = genreNotIn });
 
             if (tagIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag_in", ArgumentValue = tagIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag_in", ArgumentValue = tagIn });
 
             if (tagNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag_not_in", ArgumentValue = tagNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tag_not_in", ArgumentValue = tagNotIn });
 
             if (tagCategoryIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory_in", ArgumentValue = tagCategoryIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory_in", ArgumentValue = tagCategoryIn });
 
             if (tagCategoryNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory_not_in", ArgumentValue = tagCategoryNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "tagCategory_not_in", ArgumentValue = tagCategoryNotIn });
 
             if (licensedByIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedBy_in", ArgumentValue = licensedByIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedBy_in", ArgumentValue = licensedByIn });
 
             if (licensedByIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedById_in", ArgumentValue = licensedByIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "licensedById_in", ArgumentValue = licensedByIdIn });
 
             if (averageScoreNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_not", ArgumentValue = averageScoreNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_not", ArgumentValue = averageScoreNot });
 
             if (averageScoreGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_greater", ArgumentValue = averageScoreGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_greater", ArgumentValue = averageScoreGreater });
 
             if (averageScoreLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_lesser", ArgumentValue = averageScoreLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_lesser", ArgumentValue = averageScoreLesser });
 
             if (popularityNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_not", ArgumentValue = popularityNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_not", ArgumentValue = popularityNot });
 
             if (popularityGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_greater", ArgumentValue = popularityGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_greater", ArgumentValue = popularityGreater });
 
             if (popularityLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_lesser", ArgumentValue = popularityLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_lesser", ArgumentValue = popularityLesser });
 
             if (sourceIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "source_in", ArgumentValue = sourceIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "source_in", ArgumentValue = sourceIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("media", alias, mediaQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15084,25 +14945,25 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (isBirthday != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isBirthday", ArgumentValue = isBirthday} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isBirthday", ArgumentValue = isBirthday });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("characters", alias, characterQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15116,25 +14977,25 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (isBirthday != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isBirthday", ArgumentValue = isBirthday} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isBirthday", ArgumentValue = isBirthday });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("staff", alias, staffQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15148,22 +15009,22 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("studios", alias, studioQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15177,79 +15038,79 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (userName != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userName", ArgumentValue = userName} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userName", ArgumentValue = userName });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (status != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status", ArgumentValue = status });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (isFollowing != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isFollowing", ArgumentValue = isFollowing} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isFollowing", ArgumentValue = isFollowing });
 
             if (notes != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes", ArgumentValue = notes} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes", ArgumentValue = notes });
 
             if (startedAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt", ArgumentValue = startedAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt", ArgumentValue = startedAt });
 
             if (completedAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt", ArgumentValue = completedAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt", ArgumentValue = completedAt });
 
             if (compareWithAuthList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "compareWithAuthList", ArgumentValue = compareWithAuthList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "compareWithAuthList", ArgumentValue = compareWithAuthList });
 
             if (userIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_in", ArgumentValue = userIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_in", ArgumentValue = userIdIn });
 
             if (statusIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_in", ArgumentValue = statusIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_in", ArgumentValue = statusIn });
 
             if (statusNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not_in", ArgumentValue = statusNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not_in", ArgumentValue = statusNotIn });
 
             if (statusNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not", ArgumentValue = statusNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "status_not", ArgumentValue = statusNot });
 
             if (mediaIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn });
 
             if (mediaIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn });
 
             if (notesLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes_like", ArgumentValue = notesLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notes_like", ArgumentValue = notesLike });
 
             if (startedAtGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_greater", ArgumentValue = startedAtGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_greater", ArgumentValue = startedAtGreater });
 
             if (startedAtLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_lesser", ArgumentValue = startedAtLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_lesser", ArgumentValue = startedAtLesser });
 
             if (startedAtLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_like", ArgumentValue = startedAtLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "startedAt_like", ArgumentValue = startedAtLike });
 
             if (completedAtGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_greater", ArgumentValue = completedAtGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_greater", ArgumentValue = completedAtGreater });
 
             if (completedAtLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_lesser", ArgumentValue = completedAtLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_lesser", ArgumentValue = completedAtLesser });
 
             if (completedAtLike != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_like", ArgumentValue = completedAtLike} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "completedAt_like", ArgumentValue = completedAtLike });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("mediaList", alias, mediaListQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15263,61 +15124,61 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (episode != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode", ArgumentValue = episode} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode", ArgumentValue = episode });
 
             if (airingAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt", ArgumentValue = airingAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt", ArgumentValue = airingAt });
 
             if (notYetAired != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notYetAired", ArgumentValue = notYetAired} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "notYetAired", ArgumentValue = notYetAired });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (mediaIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot });
 
             if (mediaIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn });
 
             if (mediaIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn });
 
             if (episodeNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not", ArgumentValue = episodeNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not", ArgumentValue = episodeNot });
 
             if (episodeIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_in", ArgumentValue = episodeIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_in", ArgumentValue = episodeIn });
 
             if (episodeNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not_in", ArgumentValue = episodeNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not_in", ArgumentValue = episodeNotIn });
 
             if (episodeGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_greater", ArgumentValue = episodeGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_greater", ArgumentValue = episodeGreater });
 
             if (episodeLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_lesser", ArgumentValue = episodeLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_lesser", ArgumentValue = episodeLesser });
 
             if (airingAtGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt_greater", ArgumentValue = airingAtGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt_greater", ArgumentValue = airingAtGreater });
 
             if (airingAtLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt_lesser", ArgumentValue = airingAtLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "airingAt_lesser", ArgumentValue = airingAtLesser });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("airingSchedules", alias, airingScheduleQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15331,79 +15192,79 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (date != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date", ArgumentValue = date} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date", ArgumentValue = date });
 
             if (trending != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending", ArgumentValue = trending} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending", ArgumentValue = trending });
 
             if (averageScore != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore", ArgumentValue = averageScore} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore", ArgumentValue = averageScore });
 
             if (popularity != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity", ArgumentValue = popularity} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity", ArgumentValue = popularity });
 
             if (episode != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode", ArgumentValue = episode} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode", ArgumentValue = episode });
 
             if (releasing != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "releasing", ArgumentValue = releasing} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "releasing", ArgumentValue = releasing });
 
             if (mediaIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot });
 
             if (mediaIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn });
 
             if (mediaIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn });
 
             if (dateGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date_greater", ArgumentValue = dateGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date_greater", ArgumentValue = dateGreater });
 
             if (dateLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date_lesser", ArgumentValue = dateLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "date_lesser", ArgumentValue = dateLesser });
 
             if (trendingGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_greater", ArgumentValue = trendingGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_greater", ArgumentValue = trendingGreater });
 
             if (trendingLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_lesser", ArgumentValue = trendingLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_lesser", ArgumentValue = trendingLesser });
 
             if (trendingNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_not", ArgumentValue = trendingNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "trending_not", ArgumentValue = trendingNot });
 
             if (averageScoreGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_greater", ArgumentValue = averageScoreGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_greater", ArgumentValue = averageScoreGreater });
 
             if (averageScoreLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_lesser", ArgumentValue = averageScoreLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_lesser", ArgumentValue = averageScoreLesser });
 
             if (averageScoreNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_not", ArgumentValue = averageScoreNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "averageScore_not", ArgumentValue = averageScoreNot });
 
             if (popularityGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_greater", ArgumentValue = popularityGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_greater", ArgumentValue = popularityGreater });
 
             if (popularityLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_lesser", ArgumentValue = popularityLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_lesser", ArgumentValue = popularityLesser });
 
             if (popularityNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_not", ArgumentValue = popularityNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "popularity_not", ArgumentValue = popularityNot });
 
             if (episodeGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_greater", ArgumentValue = episodeGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_greater", ArgumentValue = episodeGreater });
 
             if (episodeLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_lesser", ArgumentValue = episodeLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_lesser", ArgumentValue = episodeLesser });
 
             if (episodeNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not", ArgumentValue = episodeNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "episode_not", ArgumentValue = episodeNot });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("mediaTrends", alias, mediaTrendQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15417,13 +15278,13 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (resetNotificationCount != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "resetNotificationCount", ArgumentValue = resetNotificationCount} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "resetNotificationCount", ArgumentValue = resetNotificationCount });
 
             if (typeIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_in", ArgumentValue = typeIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_in", ArgumentValue = typeIn });
 
             return WithObjectField("notifications", alias, notificationUnionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15436,9 +15297,9 @@ namespace TotoroNext.Anime.Anilist
         public InternalPageQueryBuilder WithFollowers(UserQueryBuilder userQueryBuilder, QueryBuilderParameter<int> userId, QueryBuilderParameter<IEnumerable<UserSort?>> sort = null, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
             var args = new List<QueryBuilderArgumentInfo>();
-            args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+            args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("followers", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15451,9 +15312,9 @@ namespace TotoroNext.Anime.Anilist
         public InternalPageQueryBuilder WithFollowing(UserQueryBuilder userQueryBuilder, QueryBuilderParameter<int> userId, QueryBuilderParameter<IEnumerable<UserSort?>> sort = null, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
             var args = new List<QueryBuilderArgumentInfo>();
-            args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+            args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("following", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15467,85 +15328,85 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (messengerId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId", ArgumentValue = messengerId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId", ArgumentValue = messengerId });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             if (isFollowing != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isFollowing", ArgumentValue = isFollowing} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "isFollowing", ArgumentValue = isFollowing });
 
             if (hasReplies != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hasReplies", ArgumentValue = hasReplies} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hasReplies", ArgumentValue = hasReplies });
 
             if (hasRepliesOrTypeText != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hasRepliesOrTypeText", ArgumentValue = hasRepliesOrTypeText} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "hasRepliesOrTypeText", ArgumentValue = hasRepliesOrTypeText });
 
             if (createdAt != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt", ArgumentValue = createdAt} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt", ArgumentValue = createdAt });
 
             if (idNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not", ArgumentValue = idNot });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (idNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_not_in", ArgumentValue = idNotIn });
 
             if (userIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_not", ArgumentValue = userIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_not", ArgumentValue = userIdNot });
 
             if (userIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_in", ArgumentValue = userIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_in", ArgumentValue = userIdIn });
 
             if (userIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_not_in", ArgumentValue = userIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId_not_in", ArgumentValue = userIdNotIn });
 
             if (messengerIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_not", ArgumentValue = messengerIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_not", ArgumentValue = messengerIdNot });
 
             if (messengerIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_in", ArgumentValue = messengerIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_in", ArgumentValue = messengerIdIn });
 
             if (messengerIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_not_in", ArgumentValue = messengerIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "messengerId_not_in", ArgumentValue = messengerIdNotIn });
 
             if (mediaIdNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not", ArgumentValue = mediaIdNot });
 
             if (mediaIdIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_in", ArgumentValue = mediaIdIn });
 
             if (mediaIdNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId_not_in", ArgumentValue = mediaIdNotIn });
 
             if (typeNot != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_not", ArgumentValue = typeNot} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_not", ArgumentValue = typeNot });
 
             if (typeIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_in", ArgumentValue = typeIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_in", ArgumentValue = typeIn });
 
             if (typeNotIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_not_in", ArgumentValue = typeNotIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type_not_in", ArgumentValue = typeNotIn });
 
             if (createdAtGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt_greater", ArgumentValue = createdAtGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt_greater", ArgumentValue = createdAtGreater });
 
             if (createdAtLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt_lesser", ArgumentValue = createdAtLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "createdAt_lesser", ArgumentValue = createdAtLesser });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("activities", alias, activityUnionQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15559,10 +15420,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (activityId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "activityId", ArgumentValue = activityId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "activityId", ArgumentValue = activityId });
 
             return WithObjectField("activityReplies", alias, activityReplyQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15576,31 +15437,31 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (replyUserId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "replyUserId", ArgumentValue = replyUserId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "replyUserId", ArgumentValue = replyUserId });
 
             if (subscribed != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "subscribed", ArgumentValue = subscribed} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "subscribed", ArgumentValue = subscribed });
 
             if (categoryId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "categoryId", ArgumentValue = categoryId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "categoryId", ArgumentValue = categoryId });
 
             if (mediaCategoryId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaCategoryId", ArgumentValue = mediaCategoryId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaCategoryId", ArgumentValue = mediaCategoryId });
 
             if (search != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "search", ArgumentValue = search });
 
             if (idIn != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id_in", ArgumentValue = idIn });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("threads", alias, threadQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15614,16 +15475,16 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (threadId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "threadId", ArgumentValue = threadId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "threadId", ArgumentValue = threadId });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("threadComments", alias, threadCommentQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15637,19 +15498,19 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (mediaType != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaType", ArgumentValue = mediaType} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaType", ArgumentValue = mediaType });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("reviews", alias, reviewQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15663,31 +15524,31 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (id != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "id", ArgumentValue = id });
 
             if (mediaId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaId", ArgumentValue = mediaId });
 
             if (mediaRecommendationId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaRecommendationId", ArgumentValue = mediaRecommendationId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "mediaRecommendationId", ArgumentValue = mediaRecommendationId });
 
             if (userId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "userId", ArgumentValue = userId });
 
             if (rating != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating", ArgumentValue = rating} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating", ArgumentValue = rating });
 
             if (onList != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "onList", ArgumentValue = onList });
 
             if (ratingGreater != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating_greater", ArgumentValue = ratingGreater} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating_greater", ArgumentValue = ratingGreater });
 
             if (ratingLesser != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating_lesser", ArgumentValue = ratingLesser} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "rating_lesser", ArgumentValue = ratingLesser });
 
             if (sort != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "sort", ArgumentValue = sort });
 
             return WithObjectField("recommendations", alias, recommendationQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15701,10 +15562,10 @@ namespace TotoroNext.Anime.Anilist
         {
             var args = new List<QueryBuilderArgumentInfo>();
             if (likeableId != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "likeableId", ArgumentValue = likeableId} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "likeableId", ArgumentValue = likeableId });
 
             if (type != null)
-                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type} );
+                args.Add(new QueryBuilderArgumentInfo { ArgumentName = "type", ArgumentValue = type });
 
             return WithObjectField("likes", alias, userQueryBuilder, new GraphQlDirective[] { include, skip }, args);
         }
@@ -15718,13 +15579,13 @@ namespace TotoroNext.Anime.Anilist
     public class MediaSubmissionQueryBuilder : GraphQlQueryBuilder<MediaSubmissionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "submitter", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "assignee", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "status" },
-                new GraphQlFieldMetadata { Name = "submitterStats" },
+                new GraphQlFieldMetadata { Name = "submitterStats", IsComplex = true },
                 new GraphQlFieldMetadata { Name = "notes" },
                 new GraphQlFieldMetadata { Name = "source" },
                 new GraphQlFieldMetadata { Name = "changes", IsComplex = true },
@@ -15739,9 +15600,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "createdAt" }
             };
 
-        protected override string TypeName { get { return "MediaSubmission"; } } 
+        protected override string TypeName { get { return "MediaSubmission"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaSubmissionQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -15917,7 +15778,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaSubmissionComparisonQueryBuilder : GraphQlQueryBuilder<MediaSubmissionComparisonQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "submission", IsComplex = true, QueryBuilderType = typeof(MediaSubmissionEdgeQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "character", IsComplex = true, QueryBuilderType = typeof(MediaCharacterQueryBuilder) },
@@ -15926,9 +15787,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "externalLink", IsComplex = true, QueryBuilderType = typeof(MediaExternalLinkQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "MediaSubmissionComparison"; } } 
+        protected override string TypeName { get { return "MediaSubmissionComparison"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaSubmissionComparisonQueryBuilder WithSubmission(MediaSubmissionEdgeQueryBuilder mediaSubmissionEdgeQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -15984,7 +15845,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaSubmissionEdgeQueryBuilder : GraphQlQueryBuilder<MediaSubmissionEdgeQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "characterRole" },
@@ -16004,9 +15865,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "media", IsComplex = true, QueryBuilderType = typeof(MediaQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "MediaSubmissionEdge"; } } 
+        protected override string TypeName { get { return "MediaSubmissionEdge"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaSubmissionEdgeQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -16172,7 +16033,7 @@ namespace TotoroNext.Anime.Anilist
     public class MediaCharacterQueryBuilder : GraphQlQueryBuilder<MediaCharacterQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "role" },
@@ -16183,9 +16044,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "voiceActor", IsComplex = true, QueryBuilderType = typeof(StaffQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "MediaCharacter"; } } 
+        protected override string TypeName { get { return "MediaCharacter"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public MediaCharacterQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -16261,7 +16122,7 @@ namespace TotoroNext.Anime.Anilist
     public class CharacterSubmissionQueryBuilder : GraphQlQueryBuilder<CharacterSubmissionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "character", IsComplex = true, QueryBuilderType = typeof(CharacterQueryBuilder) },
@@ -16275,9 +16136,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "createdAt" }
             };
 
-        protected override string TypeName { get { return "CharacterSubmission"; } } 
+        protected override string TypeName { get { return "CharacterSubmission"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public CharacterSubmissionQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -16383,7 +16244,7 @@ namespace TotoroNext.Anime.Anilist
     public class StaffSubmissionQueryBuilder : GraphQlQueryBuilder<StaffSubmissionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "staff", IsComplex = true, QueryBuilderType = typeof(StaffQueryBuilder) },
@@ -16397,9 +16258,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "createdAt" }
             };
 
-        protected override string TypeName { get { return "StaffSubmission"; } } 
+        protected override string TypeName { get { return "StaffSubmission"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public StaffSubmissionQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -16505,11 +16366,11 @@ namespace TotoroNext.Anime.Anilist
     public class RevisionHistoryQueryBuilder : GraphQlQueryBuilder<RevisionHistoryQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "action" },
-                new GraphQlFieldMetadata { Name = "changes" },
+                new GraphQlFieldMetadata { Name = "changes", IsComplex = true },
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "media", IsComplex = true, QueryBuilderType = typeof(MediaQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "character", IsComplex = true, QueryBuilderType = typeof(CharacterQueryBuilder) },
@@ -16519,9 +16380,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "createdAt" }
             };
 
-        protected override string TypeName { get { return "RevisionHistory"; } } 
+        protected override string TypeName { get { return "RevisionHistory"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public RevisionHistoryQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -16627,7 +16488,7 @@ namespace TotoroNext.Anime.Anilist
     public class ReportQueryBuilder : GraphQlQueryBuilder<ReportQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "reporter", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
@@ -16637,9 +16498,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "cleared" }
             };
 
-        protected override string TypeName { get { return "Report"; } } 
+        protected override string TypeName { get { return "Report"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ReportQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -16705,7 +16566,7 @@ namespace TotoroNext.Anime.Anilist
     public class ModActionQueryBuilder : GraphQlQueryBuilder<ModActionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "id" },
                 new GraphQlFieldMetadata { Name = "user", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
@@ -16717,9 +16578,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "createdAt" }
             };
 
-        protected override string TypeName { get { return "ModAction"; } } 
+        protected override string TypeName { get { return "ModAction"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public ModActionQueryBuilder WithId(string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -16805,16 +16666,16 @@ namespace TotoroNext.Anime.Anilist
     public class CharacterSubmissionConnectionQueryBuilder : GraphQlQueryBuilder<CharacterSubmissionConnectionQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "edges", IsComplex = true, QueryBuilderType = typeof(CharacterSubmissionEdgeQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "nodes", IsComplex = true, QueryBuilderType = typeof(CharacterSubmissionQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "pageInfo", IsComplex = true, QueryBuilderType = typeof(PageInfoQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "CharacterSubmissionConnection"; } } 
+        protected override string TypeName { get { return "CharacterSubmissionConnection"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public CharacterSubmissionConnectionQueryBuilder WithEdges(CharacterSubmissionEdgeQueryBuilder characterSubmissionEdgeQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -16850,7 +16711,7 @@ namespace TotoroNext.Anime.Anilist
     public class CharacterSubmissionEdgeQueryBuilder : GraphQlQueryBuilder<CharacterSubmissionEdgeQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "node", IsComplex = true, QueryBuilderType = typeof(CharacterSubmissionQueryBuilder) },
                 new GraphQlFieldMetadata { Name = "role" },
@@ -16858,9 +16719,9 @@ namespace TotoroNext.Anime.Anilist
                 new GraphQlFieldMetadata { Name = "submittedVoiceActors", IsComplex = true, QueryBuilderType = typeof(StaffSubmissionQueryBuilder) }
             };
 
-        protected override string TypeName { get { return "CharacterSubmissionEdge"; } } 
+        protected override string TypeName { get { return "CharacterSubmissionEdge"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public CharacterSubmissionEdgeQueryBuilder WithNode(CharacterSubmissionQueryBuilder characterSubmissionQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -16906,19 +16767,19 @@ namespace TotoroNext.Anime.Anilist
     public class UserModDataQueryBuilder : GraphQlQueryBuilder<UserModDataQueryBuilder>
     {
         private static readonly GraphQlFieldMetadata[] AllFieldMetadata =
-            new []
+            new[]
             {
                 new GraphQlFieldMetadata { Name = "alts", IsComplex = true, QueryBuilderType = typeof(UserQueryBuilder) },
-                new GraphQlFieldMetadata { Name = "bans" },
-                new GraphQlFieldMetadata { Name = "ip" },
-                new GraphQlFieldMetadata { Name = "counts" },
+                new GraphQlFieldMetadata { Name = "bans", IsComplex = true },
+                new GraphQlFieldMetadata { Name = "ip", IsComplex = true },
+                new GraphQlFieldMetadata { Name = "counts", IsComplex = true },
                 new GraphQlFieldMetadata { Name = "privacy" },
                 new GraphQlFieldMetadata { Name = "email" }
             };
 
-        protected override string TypeName { get { return "UserModData"; } } 
+        protected override string TypeName { get { return "UserModData"; } }
 
-        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } } 
+        public override IReadOnlyList<GraphQlFieldMetadata> AllFields { get { return AllFieldMetadata; } }
 
         public UserModDataQueryBuilder WithAlts(UserQueryBuilder userQueryBuilder, string alias = null, IncludeDirective include = null, SkipDirective skip = null)
         {
@@ -16988,18 +16849,18 @@ namespace TotoroNext.Anime.Anilist
         private InputPropertyInfo _type;
         private InputPropertyInfo _enabled;
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<NotificationType?>))]
-        #endif
+#endif
         public QueryBuilderParameter<NotificationType?> Type
         {
             get { return (QueryBuilderParameter<NotificationType?>)_type.Value; }
             set { _type = new InputPropertyInfo { Name = "type", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<bool?>))]
-        #endif
+#endif
         public QueryBuilderParameter<bool?> Enabled
         {
             get { return (QueryBuilderParameter<bool?>)_enabled.Value; }
@@ -17008,8 +16869,10 @@ namespace TotoroNext.Anime.Anilist
 
         IEnumerable<InputPropertyInfo> IGraphQlInputObject.GetPropertyValues()
         {
-            if (_type.Name != null) yield return _type;
-            if (_enabled.Name != null) yield return _enabled;
+            if (_type.Name != null)
+                yield return _type;
+            if (_enabled.Name != null)
+                yield return _enabled;
         }
     }
 
@@ -17022,54 +16885,54 @@ namespace TotoroNext.Anime.Anilist
         private InputPropertyInfo _advancedScoringEnabled;
         private InputPropertyInfo _theme;
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<ICollection<string>>))]
-        #endif
+#endif
         public QueryBuilderParameter<ICollection<string>> SectionOrder
         {
             get { return (QueryBuilderParameter<ICollection<string>>)_sectionOrder.Value; }
             set { _sectionOrder = new InputPropertyInfo { Name = "sectionOrder", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<bool?>))]
-        #endif
+#endif
         public QueryBuilderParameter<bool?> SplitCompletedSectionByFormat
         {
             get { return (QueryBuilderParameter<bool?>)_splitCompletedSectionByFormat.Value; }
             set { _splitCompletedSectionByFormat = new InputPropertyInfo { Name = "splitCompletedSectionByFormat", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<ICollection<string>>))]
-        #endif
+#endif
         public QueryBuilderParameter<ICollection<string>> CustomLists
         {
             get { return (QueryBuilderParameter<ICollection<string>>)_customLists.Value; }
             set { _customLists = new InputPropertyInfo { Name = "customLists", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<ICollection<string>>))]
-        #endif
+#endif
         public QueryBuilderParameter<ICollection<string>> AdvancedScoring
         {
             get { return (QueryBuilderParameter<ICollection<string>>)_advancedScoring.Value; }
             set { _advancedScoring = new InputPropertyInfo { Name = "advancedScoring", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<bool?>))]
-        #endif
+#endif
         public QueryBuilderParameter<bool?> AdvancedScoringEnabled
         {
             get { return (QueryBuilderParameter<bool?>)_advancedScoringEnabled.Value; }
             set { _advancedScoringEnabled = new InputPropertyInfo { Name = "advancedScoringEnabled", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> Theme
         {
             get { return (QueryBuilderParameter<string>)_theme.Value; }
@@ -17078,12 +16941,18 @@ namespace TotoroNext.Anime.Anilist
 
         IEnumerable<InputPropertyInfo> IGraphQlInputObject.GetPropertyValues()
         {
-            if (_sectionOrder.Name != null) yield return _sectionOrder;
-            if (_splitCompletedSectionByFormat.Name != null) yield return _splitCompletedSectionByFormat;
-            if (_customLists.Name != null) yield return _customLists;
-            if (_advancedScoring.Name != null) yield return _advancedScoring;
-            if (_advancedScoringEnabled.Name != null) yield return _advancedScoringEnabled;
-            if (_theme.Name != null) yield return _theme;
+            if (_sectionOrder.Name != null)
+                yield return _sectionOrder;
+            if (_splitCompletedSectionByFormat.Name != null)
+                yield return _splitCompletedSectionByFormat;
+            if (_customLists.Name != null)
+                yield return _customLists;
+            if (_advancedScoring.Name != null)
+                yield return _advancedScoring;
+            if (_advancedScoringEnabled.Name != null)
+                yield return _advancedScoringEnabled;
+            if (_theme.Name != null)
+                yield return _theme;
         }
     }
 
@@ -17092,18 +16961,18 @@ namespace TotoroNext.Anime.Anilist
         private InputPropertyInfo _disabled;
         private InputPropertyInfo _type;
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<bool?>))]
-        #endif
+#endif
         public QueryBuilderParameter<bool?> Disabled
         {
             get { return (QueryBuilderParameter<bool?>)_disabled.Value; }
             set { _disabled = new InputPropertyInfo { Name = "disabled", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<MediaListStatus?>))]
-        #endif
+#endif
         public QueryBuilderParameter<MediaListStatus?> Type
         {
             get { return (QueryBuilderParameter<MediaListStatus?>)_type.Value; }
@@ -17112,8 +16981,10 @@ namespace TotoroNext.Anime.Anilist
 
         IEnumerable<InputPropertyInfo> IGraphQlInputObject.GetPropertyValues()
         {
-            if (_disabled.Name != null) yield return _disabled;
-            if (_type.Name != null) yield return _type;
+            if (_disabled.Name != null)
+                yield return _disabled;
+            if (_type.Name != null)
+                yield return _type;
         }
     }
 
@@ -17123,27 +16994,27 @@ namespace TotoroNext.Anime.Anilist
         private InputPropertyInfo _month;
         private InputPropertyInfo _day;
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<int?>))]
-        #endif
+#endif
         public QueryBuilderParameter<int?> Year
         {
             get { return (QueryBuilderParameter<int?>)_year.Value; }
             set { _year = new InputPropertyInfo { Name = "year", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<int?>))]
-        #endif
+#endif
         public QueryBuilderParameter<int?> Month
         {
             get { return (QueryBuilderParameter<int?>)_month.Value; }
             set { _month = new InputPropertyInfo { Name = "month", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<int?>))]
-        #endif
+#endif
         public QueryBuilderParameter<int?> Day
         {
             get { return (QueryBuilderParameter<int?>)_day.Value; }
@@ -17152,9 +17023,12 @@ namespace TotoroNext.Anime.Anilist
 
         IEnumerable<InputPropertyInfo> IGraphQlInputObject.GetPropertyValues()
         {
-            if (_year.Name != null) yield return _year;
-            if (_month.Name != null) yield return _month;
-            if (_day.Name != null) yield return _day;
+            if (_year.Name != null)
+                yield return _year;
+            if (_month.Name != null)
+                yield return _month;
+            if (_day.Name != null)
+                yield return _day;
         }
     }
 
@@ -17163,18 +17037,18 @@ namespace TotoroNext.Anime.Anilist
         private InputPropertyInfo _mediaId;
         private InputPropertyInfo _highlight;
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<int?>))]
-        #endif
+#endif
         public QueryBuilderParameter<int?> MediaId
         {
             get { return (QueryBuilderParameter<int?>)_mediaId.Value; }
             set { _mediaId = new InputPropertyInfo { Name = "mediaId", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> Highlight
         {
             get { return (QueryBuilderParameter<string>)_highlight.Value; }
@@ -17183,8 +17057,10 @@ namespace TotoroNext.Anime.Anilist
 
         IEnumerable<InputPropertyInfo> IGraphQlInputObject.GetPropertyValues()
         {
-            if (_mediaId.Name != null) yield return _mediaId;
-            if (_highlight.Name != null) yield return _highlight;
+            if (_mediaId.Name != null)
+                yield return _mediaId;
+            if (_highlight.Name != null)
+                yield return _highlight;
         }
     }
 
@@ -17194,27 +17070,27 @@ namespace TotoroNext.Anime.Anilist
         private InputPropertyInfo _english;
         private InputPropertyInfo _native;
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> Romaji
         {
             get { return (QueryBuilderParameter<string>)_romaji.Value; }
             set { _romaji = new InputPropertyInfo { Name = "romaji", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> English
         {
             get { return (QueryBuilderParameter<string>)_english.Value; }
             set { _english = new InputPropertyInfo { Name = "english", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> Native
         {
             get { return (QueryBuilderParameter<string>)_native.Value; }
@@ -17223,9 +17099,12 @@ namespace TotoroNext.Anime.Anilist
 
         IEnumerable<InputPropertyInfo> IGraphQlInputObject.GetPropertyValues()
         {
-            if (_romaji.Name != null) yield return _romaji;
-            if (_english.Name != null) yield return _english;
-            if (_native.Name != null) yield return _native;
+            if (_romaji.Name != null)
+                yield return _romaji;
+            if (_english.Name != null)
+                yield return _english;
+            if (_native.Name != null)
+                yield return _native;
         }
     }
 
@@ -17235,27 +17114,27 @@ namespace TotoroNext.Anime.Anilist
         private InputPropertyInfo _episode;
         private InputPropertyInfo _timeUntilAiring;
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<int?>))]
-        #endif
+#endif
         public QueryBuilderParameter<int?> AiringAt
         {
             get { return (QueryBuilderParameter<int?>)_airingAt.Value; }
             set { _airingAt = new InputPropertyInfo { Name = "airingAt", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<int?>))]
-        #endif
+#endif
         public QueryBuilderParameter<int?> Episode
         {
             get { return (QueryBuilderParameter<int?>)_episode.Value; }
             set { _episode = new InputPropertyInfo { Name = "episode", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<int?>))]
-        #endif
+#endif
         public QueryBuilderParameter<int?> TimeUntilAiring
         {
             get { return (QueryBuilderParameter<int?>)_timeUntilAiring.Value; }
@@ -17264,9 +17143,12 @@ namespace TotoroNext.Anime.Anilist
 
         IEnumerable<InputPropertyInfo> IGraphQlInputObject.GetPropertyValues()
         {
-            if (_airingAt.Name != null) yield return _airingAt;
-            if (_episode.Name != null) yield return _episode;
-            if (_timeUntilAiring.Name != null) yield return _timeUntilAiring;
+            if (_airingAt.Name != null)
+                yield return _airingAt;
+            if (_episode.Name != null)
+                yield return _episode;
+            if (_timeUntilAiring.Name != null)
+                yield return _timeUntilAiring;
         }
     }
 
@@ -17276,27 +17158,27 @@ namespace TotoroNext.Anime.Anilist
         private InputPropertyInfo _url;
         private InputPropertyInfo _site;
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<int?>))]
-        #endif
+#endif
         public QueryBuilderParameter<int?> Id
         {
             get { return (QueryBuilderParameter<int?>)_id.Value; }
             set { _id = new InputPropertyInfo { Name = "id", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> Url
         {
             get { return (QueryBuilderParameter<string>)_url.Value; }
             set { _url = new InputPropertyInfo { Name = "url", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> Site
         {
             get { return (QueryBuilderParameter<string>)_site.Value; }
@@ -17305,9 +17187,12 @@ namespace TotoroNext.Anime.Anilist
 
         IEnumerable<InputPropertyInfo> IGraphQlInputObject.GetPropertyValues()
         {
-            if (_id.Name != null) yield return _id;
-            if (_url.Name != null) yield return _url;
-            if (_site.Name != null) yield return _site;
+            if (_id.Name != null)
+                yield return _id;
+            if (_url.Name != null)
+                yield return _url;
+            if (_site.Name != null)
+                yield return _site;
         }
     }
 
@@ -17320,54 +17205,54 @@ namespace TotoroNext.Anime.Anilist
         private InputPropertyInfo _alternative;
         private InputPropertyInfo _alternativeSpoiler;
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> First
         {
             get { return (QueryBuilderParameter<string>)_first.Value; }
             set { _first = new InputPropertyInfo { Name = "first", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> Middle
         {
             get { return (QueryBuilderParameter<string>)_middle.Value; }
             set { _middle = new InputPropertyInfo { Name = "middle", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> Last
         {
             get { return (QueryBuilderParameter<string>)_last.Value; }
             set { _last = new InputPropertyInfo { Name = "last", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> Native
         {
             get { return (QueryBuilderParameter<string>)_native.Value; }
             set { _native = new InputPropertyInfo { Name = "native", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<ICollection<string>>))]
-        #endif
+#endif
         public QueryBuilderParameter<ICollection<string>> Alternative
         {
             get { return (QueryBuilderParameter<ICollection<string>>)_alternative.Value; }
             set { _alternative = new InputPropertyInfo { Name = "alternative", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<ICollection<string>>))]
-        #endif
+#endif
         public QueryBuilderParameter<ICollection<string>> AlternativeSpoiler
         {
             get { return (QueryBuilderParameter<ICollection<string>>)_alternativeSpoiler.Value; }
@@ -17376,12 +17261,18 @@ namespace TotoroNext.Anime.Anilist
 
         IEnumerable<InputPropertyInfo> IGraphQlInputObject.GetPropertyValues()
         {
-            if (_first.Name != null) yield return _first;
-            if (_middle.Name != null) yield return _middle;
-            if (_last.Name != null) yield return _last;
-            if (_native.Name != null) yield return _native;
-            if (_alternative.Name != null) yield return _alternative;
-            if (_alternativeSpoiler.Name != null) yield return _alternativeSpoiler;
+            if (_first.Name != null)
+                yield return _first;
+            if (_middle.Name != null)
+                yield return _middle;
+            if (_last.Name != null)
+                yield return _last;
+            if (_native.Name != null)
+                yield return _native;
+            if (_alternative.Name != null)
+                yield return _alternative;
+            if (_alternativeSpoiler.Name != null)
+                yield return _alternativeSpoiler;
         }
     }
 
@@ -17393,45 +17284,45 @@ namespace TotoroNext.Anime.Anilist
         private InputPropertyInfo _native;
         private InputPropertyInfo _alternative;
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> First
         {
             get { return (QueryBuilderParameter<string>)_first.Value; }
             set { _first = new InputPropertyInfo { Name = "first", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> Middle
         {
             get { return (QueryBuilderParameter<string>)_middle.Value; }
             set { _middle = new InputPropertyInfo { Name = "middle", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> Last
         {
             get { return (QueryBuilderParameter<string>)_last.Value; }
             set { _last = new InputPropertyInfo { Name = "last", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<string>))]
-        #endif
+#endif
         public QueryBuilderParameter<string> Native
         {
             get { return (QueryBuilderParameter<string>)_native.Value; }
             set { _native = new InputPropertyInfo { Name = "native", Value = value }; }
         }
 
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
+#if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
         [JsonConverter(typeof(QueryBuilderParameterConverter<ICollection<string>>))]
-        #endif
+#endif
         public QueryBuilderParameter<ICollection<string>> Alternative
         {
             get { return (QueryBuilderParameter<ICollection<string>>)_alternative.Value; }
@@ -17440,11 +17331,16 @@ namespace TotoroNext.Anime.Anilist
 
         IEnumerable<InputPropertyInfo> IGraphQlInputObject.GetPropertyValues()
         {
-            if (_first.Name != null) yield return _first;
-            if (_middle.Name != null) yield return _middle;
-            if (_last.Name != null) yield return _last;
-            if (_native.Name != null) yield return _native;
-            if (_alternative.Name != null) yield return _alternative;
+            if (_first.Name != null)
+                yield return _first;
+            if (_middle.Name != null)
+                yield return _middle;
+            if (_last.Name != null)
+                yield return _last;
+            if (_native.Name != null)
+                yield return _native;
+            if (_alternative.Name != null)
+                yield return _alternative;
         }
     }
     #endregion
@@ -17464,16 +17360,10 @@ namespace TotoroNext.Anime.Anilist
         public ICollection<MediaTag> MediaTagCollection { get; set; }
         public User User { get; set; }
         public User Viewer { get; set; }
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-        [JsonConverter(typeof(GraphQlInterfaceJsonConverter))]
-        #endif
-        public INotificationUnion Notification { get; set; }
+        public NotificationUnion Notification { get; set; }
         public Studio Studio { get; set; }
         public Review Review { get; set; }
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-        [JsonConverter(typeof(GraphQlInterfaceJsonConverter))]
-        #endif
-        public IActivityUnion Activity { get; set; }
+        public ActivityUnion Activity { get; set; }
         public ActivityReply ActivityReply { get; set; }
         public User Following { get; set; }
         public User Follower { get; set; }
@@ -17498,16 +17388,10 @@ namespace TotoroNext.Anime.Anilist
         public ICollection<MediaList> MediaList { get; set; }
         public ICollection<AiringSchedule> AiringSchedules { get; set; }
         public ICollection<MediaTrend> MediaTrends { get; set; }
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-        [JsonConverter(typeof(GraphQlInterfaceJsonConverter))]
-        #endif
-        public ICollection<INotificationUnion> Notifications { get; set; }
+        public ICollection<NotificationUnion> Notifications { get; set; }
         public ICollection<User> Followers { get; set; }
         public ICollection<User> Following { get; set; }
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-        [JsonConverter(typeof(GraphQlInterfaceJsonConverter))]
-        #endif
-        public ICollection<IActivityUnion> Activities { get; set; }
+        public ICollection<ActivityUnion> Activities { get; set; }
         public ICollection<ActivityReply> ActivityReplies { get; set; }
         public ICollection<Thread> Threads { get; set; }
         public ICollection<ThreadComment> ThreadComments { get; set; }
@@ -17544,7 +17428,7 @@ namespace TotoroNext.Anime.Anilist
         public string SiteUrl { get; set; }
         public int? DonatorTier { get; set; }
         public string DonatorBadge { get; set; }
-        public ICollection<ModRole?> ModeratorRoles { get; set; }
+        public ICollection<ModRole> ModeratorRoles { get; set; }
         public int? CreatedAt { get; set; }
         public int? UpdatedAt { get; set; }
         public ICollection<UserPreviousName> PreviousNames { get; set; }
@@ -17801,7 +17685,7 @@ namespace TotoroNext.Anime.Anilist
         public FuzzyDate DateOfBirth { get; set; }
         public FuzzyDate DateOfDeath { get; set; }
         public int? Age { get; set; }
-        public ICollection<int?> YearsActive { get; set; }
+        public ICollection<int> YearsActive { get; set; }
         public string HomeTown { get; set; }
         public string BloodType { get; set; }
         public bool? IsFavourite { get; set; }
@@ -18103,7 +17987,7 @@ namespace TotoroNext.Anime.Anilist
         public decimal? MeanScore { get; set; }
         public int? MinutesWatched { get; set; }
         public int? ChaptersRead { get; set; }
-        public ICollection<int?> MediaIds { get; set; }
+        public ICollection<int> MediaIds { get; set; }
         public MediaFormat? Format { get; set; }
     }
 
@@ -18113,7 +17997,7 @@ namespace TotoroNext.Anime.Anilist
         public decimal? MeanScore { get; set; }
         public int? MinutesWatched { get; set; }
         public int? ChaptersRead { get; set; }
-        public ICollection<int?> MediaIds { get; set; }
+        public ICollection<int> MediaIds { get; set; }
         public MediaListStatus? Status { get; set; }
     }
 
@@ -18123,7 +18007,7 @@ namespace TotoroNext.Anime.Anilist
         public decimal? MeanScore { get; set; }
         public int? MinutesWatched { get; set; }
         public int? ChaptersRead { get; set; }
-        public ICollection<int?> MediaIds { get; set; }
+        public ICollection<int> MediaIds { get; set; }
         public int? Score { get; set; }
     }
 
@@ -18133,7 +18017,7 @@ namespace TotoroNext.Anime.Anilist
         public decimal? MeanScore { get; set; }
         public int? MinutesWatched { get; set; }
         public int? ChaptersRead { get; set; }
-        public ICollection<int?> MediaIds { get; set; }
+        public ICollection<int> MediaIds { get; set; }
         public string Length { get; set; }
     }
 
@@ -18143,7 +18027,7 @@ namespace TotoroNext.Anime.Anilist
         public decimal? MeanScore { get; set; }
         public int? MinutesWatched { get; set; }
         public int? ChaptersRead { get; set; }
-        public ICollection<int?> MediaIds { get; set; }
+        public ICollection<int> MediaIds { get; set; }
         public int? ReleaseYear { get; set; }
     }
 
@@ -18153,7 +18037,7 @@ namespace TotoroNext.Anime.Anilist
         public decimal? MeanScore { get; set; }
         public int? MinutesWatched { get; set; }
         public int? ChaptersRead { get; set; }
-        public ICollection<int?> MediaIds { get; set; }
+        public ICollection<int> MediaIds { get; set; }
         public int? StartYear { get; set; }
     }
 
@@ -18163,7 +18047,7 @@ namespace TotoroNext.Anime.Anilist
         public decimal? MeanScore { get; set; }
         public int? MinutesWatched { get; set; }
         public int? ChaptersRead { get; set; }
-        public ICollection<int?> MediaIds { get; set; }
+        public ICollection<int> MediaIds { get; set; }
         public string Genre { get; set; }
     }
 
@@ -18173,7 +18057,7 @@ namespace TotoroNext.Anime.Anilist
         public decimal? MeanScore { get; set; }
         public int? MinutesWatched { get; set; }
         public int? ChaptersRead { get; set; }
-        public ICollection<int?> MediaIds { get; set; }
+        public ICollection<int> MediaIds { get; set; }
         public MediaTag Tag { get; set; }
     }
 
@@ -18183,7 +18067,7 @@ namespace TotoroNext.Anime.Anilist
         public decimal? MeanScore { get; set; }
         public int? MinutesWatched { get; set; }
         public int? ChaptersRead { get; set; }
-        public ICollection<int?> MediaIds { get; set; }
+        public ICollection<int> MediaIds { get; set; }
         public object Country { get; set; }
     }
 
@@ -18193,9 +18077,9 @@ namespace TotoroNext.Anime.Anilist
         public decimal? MeanScore { get; set; }
         public int? MinutesWatched { get; set; }
         public int? ChaptersRead { get; set; }
-        public ICollection<int?> MediaIds { get; set; }
+        public ICollection<int> MediaIds { get; set; }
         public StaffData VoiceActor { get; set; }
-        public ICollection<int?> CharacterIds { get; set; }
+        public ICollection<int> CharacterIds { get; set; }
     }
 
     public class UserStaffStatistic
@@ -18204,7 +18088,7 @@ namespace TotoroNext.Anime.Anilist
         public decimal? MeanScore { get; set; }
         public int? MinutesWatched { get; set; }
         public int? ChaptersRead { get; set; }
-        public ICollection<int?> MediaIds { get; set; }
+        public ICollection<int> MediaIds { get; set; }
         public StaffData Staff { get; set; }
     }
 
@@ -18214,7 +18098,7 @@ namespace TotoroNext.Anime.Anilist
         public decimal? MeanScore { get; set; }
         public int? MinutesWatched { get; set; }
         public int? ChaptersRead { get; set; }
-        public ICollection<int?> MediaIds { get; set; }
+        public ICollection<int> MediaIds { get; set; }
         public Studio Studio { get; set; }
     }
 
@@ -18304,12 +18188,32 @@ namespace TotoroNext.Anime.Anilist
         public int? UpdatedAt { get; set; }
     }
 
-    public interface INotificationUnion
+    public class NotificationUnion
     {
+        public int? Id { get; set; }
+        public NotificationType? Type { get; set; }
+        public int? AnimeId { get; set; }
+        public int? Episode { get; set; }
+        public ICollection<string> Contexts { get; set; }
+        public int? CreatedAt { get; set; }
+        public Media Media { get; set; }
+        public int? UserId { get; set; }
+        public string Context { get; set; }
+        public User User { get; set; }
+        public int? ActivityId { get; set; }
+        public MessageActivity Message { get; set; }
+        public ActivityUnion Activity { get; set; }
+        public int? CommentId { get; set; }
+        public Thread Thread { get; set; }
+        public ThreadComment Comment { get; set; }
+        public int? ThreadId { get; set; }
+        public int? MediaId { get; set; }
+        public string Reason { get; set; }
+        public ICollection<string> DeletedMediaTitles { get; set; }
+        public string DeletedMediaTitle { get; set; }
     }
 
-    [GraphQlObjectType("AiringNotification")]
-    public class AiringNotification : INotificationUnion
+    public class AiringNotification
     {
         public int? Id { get; set; }
         public NotificationType? Type { get; set; }
@@ -18320,8 +18224,7 @@ namespace TotoroNext.Anime.Anilist
         public Media Media { get; set; }
     }
 
-    [GraphQlObjectType("FollowingNotification")]
-    public class FollowingNotification : INotificationUnion
+    public class FollowingNotification
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18331,8 +18234,7 @@ namespace TotoroNext.Anime.Anilist
         public User User { get; set; }
     }
 
-    [GraphQlObjectType("ActivityMessageNotification")]
-    public class ActivityMessageNotification : INotificationUnion
+    public class ActivityMessageNotification
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18344,8 +18246,7 @@ namespace TotoroNext.Anime.Anilist
         public User User { get; set; }
     }
 
-    [GraphQlObjectType("MessageActivity")]
-    public class MessageActivity : IActivityUnion, ILikeableUnion
+    public class MessageActivity
     {
         public int? Id { get; set; }
         public int? RecipientId { get; set; }
@@ -18366,8 +18267,7 @@ namespace TotoroNext.Anime.Anilist
         public ICollection<User> Likes { get; set; }
     }
 
-    [GraphQlObjectType("ActivityReply")]
-    public class ActivityReply : ILikeableUnion
+    public class ActivityReply
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18380,8 +18280,7 @@ namespace TotoroNext.Anime.Anilist
         public ICollection<User> Likes { get; set; }
     }
 
-    [GraphQlObjectType("ActivityMentionNotification")]
-    public class ActivityMentionNotification : INotificationUnion
+    public class ActivityMentionNotification
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18389,19 +18288,39 @@ namespace TotoroNext.Anime.Anilist
         public int? ActivityId { get; set; }
         public string Context { get; set; }
         public int? CreatedAt { get; set; }
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-        [JsonConverter(typeof(GraphQlInterfaceJsonConverter))]
-        #endif
-        public IActivityUnion Activity { get; set; }
+        public ActivityUnion Activity { get; set; }
         public User User { get; set; }
     }
 
-    public interface IActivityUnion
+    public class ActivityUnion
     {
+        public int? Id { get; set; }
+        public int? UserId { get; set; }
+        public ActivityType? Type { get; set; }
+        public int? ReplyCount { get; set; }
+        public string Text { get; set; }
+        public string SiteUrl { get; set; }
+        public bool? IsLocked { get; set; }
+        public bool? IsSubscribed { get; set; }
+        public int? LikeCount { get; set; }
+        public bool? IsLiked { get; set; }
+        public bool? IsPinned { get; set; }
+        public int? CreatedAt { get; set; }
+        public User User { get; set; }
+        public ICollection<ActivityReply> Replies { get; set; }
+        public ICollection<User> Likes { get; set; }
+        public string Status { get; set; }
+        public string Progress { get; set; }
+        public Media Media { get; set; }
+        public int? RecipientId { get; set; }
+        public int? MessengerId { get; set; }
+        public string Message { get; set; }
+        public bool? IsPrivate { get; set; }
+        public User Recipient { get; set; }
+        public User Messenger { get; set; }
     }
 
-    [GraphQlObjectType("TextActivity")]
-    public class TextActivity : IActivityUnion, ILikeableUnion
+    public class TextActivity
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18420,8 +18339,7 @@ namespace TotoroNext.Anime.Anilist
         public ICollection<User> Likes { get; set; }
     }
 
-    [GraphQlObjectType("ListActivity")]
-    public class ListActivity : IActivityUnion, ILikeableUnion
+    public class ListActivity
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18442,8 +18360,7 @@ namespace TotoroNext.Anime.Anilist
         public ICollection<User> Likes { get; set; }
     }
 
-    [GraphQlObjectType("ActivityReplyNotification")]
-    public class ActivityReplyNotification : INotificationUnion
+    public class ActivityReplyNotification
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18451,15 +18368,11 @@ namespace TotoroNext.Anime.Anilist
         public int? ActivityId { get; set; }
         public string Context { get; set; }
         public int? CreatedAt { get; set; }
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-        [JsonConverter(typeof(GraphQlInterfaceJsonConverter))]
-        #endif
-        public IActivityUnion Activity { get; set; }
+        public ActivityUnion Activity { get; set; }
         public User User { get; set; }
     }
 
-    [GraphQlObjectType("ActivityReplySubscribedNotification")]
-    public class ActivityReplySubscribedNotification : INotificationUnion
+    public class ActivityReplySubscribedNotification
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18467,15 +18380,11 @@ namespace TotoroNext.Anime.Anilist
         public int? ActivityId { get; set; }
         public string Context { get; set; }
         public int? CreatedAt { get; set; }
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-        [JsonConverter(typeof(GraphQlInterfaceJsonConverter))]
-        #endif
-        public IActivityUnion Activity { get; set; }
+        public ActivityUnion Activity { get; set; }
         public User User { get; set; }
     }
 
-    [GraphQlObjectType("ActivityLikeNotification")]
-    public class ActivityLikeNotification : INotificationUnion
+    public class ActivityLikeNotification
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18483,15 +18392,11 @@ namespace TotoroNext.Anime.Anilist
         public int? ActivityId { get; set; }
         public string Context { get; set; }
         public int? CreatedAt { get; set; }
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-        [JsonConverter(typeof(GraphQlInterfaceJsonConverter))]
-        #endif
-        public IActivityUnion Activity { get; set; }
+        public ActivityUnion Activity { get; set; }
         public User User { get; set; }
     }
 
-    [GraphQlObjectType("ActivityReplyLikeNotification")]
-    public class ActivityReplyLikeNotification : INotificationUnion
+    public class ActivityReplyLikeNotification
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18499,15 +18404,11 @@ namespace TotoroNext.Anime.Anilist
         public int? ActivityId { get; set; }
         public string Context { get; set; }
         public int? CreatedAt { get; set; }
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-        [JsonConverter(typeof(GraphQlInterfaceJsonConverter))]
-        #endif
-        public IActivityUnion Activity { get; set; }
+        public ActivityUnion Activity { get; set; }
         public User User { get; set; }
     }
 
-    [GraphQlObjectType("ThreadCommentMentionNotification")]
-    public class ThreadCommentMentionNotification : INotificationUnion
+    public class ThreadCommentMentionNotification
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18520,8 +18421,7 @@ namespace TotoroNext.Anime.Anilist
         public User User { get; set; }
     }
 
-    [GraphQlObjectType("Thread")]
-    public class Thread : ILikeableUnion
+    public class Thread
     {
         public int? Id { get; set; }
         public string Title { get; set; }
@@ -18553,8 +18453,7 @@ namespace TotoroNext.Anime.Anilist
         public string Name { get; set; }
     }
 
-    [GraphQlObjectType("ThreadComment")]
-    public class ThreadComment : ILikeableUnion
+    public class ThreadComment
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18572,8 +18471,7 @@ namespace TotoroNext.Anime.Anilist
         public bool? IsLocked { get; set; }
     }
 
-    [GraphQlObjectType("ThreadCommentReplyNotification")]
-    public class ThreadCommentReplyNotification : INotificationUnion
+    public class ThreadCommentReplyNotification
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18586,8 +18484,7 @@ namespace TotoroNext.Anime.Anilist
         public User User { get; set; }
     }
 
-    [GraphQlObjectType("ThreadCommentSubscribedNotification")]
-    public class ThreadCommentSubscribedNotification : INotificationUnion
+    public class ThreadCommentSubscribedNotification
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18600,8 +18497,7 @@ namespace TotoroNext.Anime.Anilist
         public User User { get; set; }
     }
 
-    [GraphQlObjectType("ThreadCommentLikeNotification")]
-    public class ThreadCommentLikeNotification : INotificationUnion
+    public class ThreadCommentLikeNotification
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18614,8 +18510,7 @@ namespace TotoroNext.Anime.Anilist
         public User User { get; set; }
     }
 
-    [GraphQlObjectType("ThreadLikeNotification")]
-    public class ThreadLikeNotification : INotificationUnion
+    public class ThreadLikeNotification
     {
         public int? Id { get; set; }
         public int? UserId { get; set; }
@@ -18628,8 +18523,7 @@ namespace TotoroNext.Anime.Anilist
         public User User { get; set; }
     }
 
-    [GraphQlObjectType("RelatedMediaAdditionNotification")]
-    public class RelatedMediaAdditionNotification : INotificationUnion
+    public class RelatedMediaAdditionNotification
     {
         public int? Id { get; set; }
         public NotificationType? Type { get; set; }
@@ -18639,8 +18533,7 @@ namespace TotoroNext.Anime.Anilist
         public Media Media { get; set; }
     }
 
-    [GraphQlObjectType("MediaDataChangeNotification")]
-    public class MediaDataChangeNotification : INotificationUnion
+    public class MediaDataChangeNotification
     {
         public int? Id { get; set; }
         public NotificationType? Type { get; set; }
@@ -18651,8 +18544,7 @@ namespace TotoroNext.Anime.Anilist
         public Media Media { get; set; }
     }
 
-    [GraphQlObjectType("MediaMergeNotification")]
-    public class MediaMergeNotification : INotificationUnion
+    public class MediaMergeNotification
     {
         public int? Id { get; set; }
         public NotificationType? Type { get; set; }
@@ -18664,8 +18556,7 @@ namespace TotoroNext.Anime.Anilist
         public Media Media { get; set; }
     }
 
-    [GraphQlObjectType("MediaDeletionNotification")]
-    public class MediaDeletionNotification : INotificationUnion
+    public class MediaDeletionNotification
     {
         public int? Id { get; set; }
         public NotificationType? Type { get; set; }
@@ -18744,21 +18635,12 @@ namespace TotoroNext.Anime.Anilist
         public MessageActivity SaveMessageActivity { get; set; }
         public ListActivity SaveListActivity { get; set; }
         public DeletedData DeleteActivity { get; set; }
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-        [JsonConverter(typeof(GraphQlInterfaceJsonConverter))]
-        #endif
-        public IActivityUnion ToggleActivityPin { get; set; }
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-        [JsonConverter(typeof(GraphQlInterfaceJsonConverter))]
-        #endif
-        public IActivityUnion ToggleActivitySubscription { get; set; }
+        public ActivityUnion ToggleActivityPin { get; set; }
+        public ActivityUnion ToggleActivitySubscription { get; set; }
         public ActivityReply SaveActivityReply { get; set; }
         public DeletedData DeleteActivityReply { get; set; }
         public ICollection<User> ToggleLike { get; set; }
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-        [JsonConverter(typeof(GraphQlInterfaceJsonConverter))]
-        #endif
-        public ILikeableUnion ToggleLikeV2 { get; set; }
+        public LikeableUnion ToggleLikeV2 { get; set; }
         public User ToggleFollow { get; set; }
         public Favourites ToggleFavourite { get; set; }
         public Favourites UpdateFavouriteOrder { get; set; }
@@ -18780,8 +18662,48 @@ namespace TotoroNext.Anime.Anilist
         public bool? Deleted { get; set; }
     }
 
-    public interface ILikeableUnion
+    public class LikeableUnion
     {
+        public int? Id { get; set; }
+        public int? UserId { get; set; }
+        public ActivityType? Type { get; set; }
+        public int? ReplyCount { get; set; }
+        public string Status { get; set; }
+        public string Progress { get; set; }
+        public bool? IsLocked { get; set; }
+        public bool? IsSubscribed { get; set; }
+        public int? LikeCount { get; set; }
+        public bool? IsLiked { get; set; }
+        public bool? IsPinned { get; set; }
+        public string SiteUrl { get; set; }
+        public int? CreatedAt { get; set; }
+        public User User { get; set; }
+        public Media Media { get; set; }
+        public ICollection<ActivityReply> Replies { get; set; }
+        public ICollection<User> Likes { get; set; }
+        public string Text { get; set; }
+        public int? RecipientId { get; set; }
+        public int? MessengerId { get; set; }
+        public string Message { get; set; }
+        public bool? IsPrivate { get; set; }
+        public User Recipient { get; set; }
+        public User Messenger { get; set; }
+        public int? ActivityId { get; set; }
+        public string Title { get; set; }
+        public string Body { get; set; }
+        public int? ReplyUserId { get; set; }
+        public int? ReplyCommentId { get; set; }
+        public int? ViewCount { get; set; }
+        public bool? IsSticky { get; set; }
+        public int? RepliedAt { get; set; }
+        public int? UpdatedAt { get; set; }
+        public User ReplyUser { get; set; }
+        public ICollection<ThreadCategory> Categories { get; set; }
+        public ICollection<Media> MediaCategories { get; set; }
+        public int? ThreadId { get; set; }
+        public string Comment { get; set; }
+        public Thread Thread { get; set; }
+        public object ChildComments { get; set; }
     }
 
     public class InternalPage
@@ -18802,16 +18724,10 @@ namespace TotoroNext.Anime.Anilist
         public ICollection<MediaList> MediaList { get; set; }
         public ICollection<AiringSchedule> AiringSchedules { get; set; }
         public ICollection<MediaTrend> MediaTrends { get; set; }
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-        [JsonConverter(typeof(GraphQlInterfaceJsonConverter))]
-        #endif
-        public ICollection<INotificationUnion> Notifications { get; set; }
+        public ICollection<NotificationUnion> Notifications { get; set; }
         public ICollection<User> Followers { get; set; }
         public ICollection<User> Following { get; set; }
-        #if !GRAPHQL_GENERATOR_DISABLE_NEWTONSOFT_JSON
-        [JsonConverter(typeof(GraphQlInterfaceJsonConverter))]
-        #endif
-        public ICollection<IActivityUnion> Activities { get; set; }
+        public ICollection<ActivityUnion> Activities { get; set; }
         public ICollection<ActivityReply> ActivityReplies { get; set; }
         public ICollection<Thread> Threads { get; set; }
         public ICollection<ThreadComment> ThreadComments { get; set; }

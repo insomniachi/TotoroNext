@@ -14,10 +14,13 @@ namespace TotoroNext.Anime.ViewModels;
 
 [UsedImplicitly]
 public partial class WatchViewModel(WatchViewModelNavigationParameter navigationParameter,
-                                    IEventAggregator eventAggregator,
-                                    IFactory<IMediaSegmentsProvider, Guid> segmentsFactory) : ReactiveObject, IInitializable
+                                    IEvent<PlaybackProgressEventArgs> playbackProgressEvent,
+                                    IFactory<IMediaSegmentsProvider, Guid> segmentsFactory,
+                                    IFactory<IMediaPlayerElementFactory, Guid> mediaPlayerFactory) : ReactiveObject, IInitializable
 {
-    public IMediaPlayer? MediaPlayer { get; set; }
+    private TimeSpan _duration;
+
+    public IMediaPlayer MediaPlayer { get; } = mediaPlayerFactory.Create(new Guid("b8c3f0d2-1c5e-4f6a-9b7d-3f8e1c5f0d2a")).CreatePlayer();
 
     [Reactive]
     public partial SearchResult ProviderResult { get; set; }
@@ -90,27 +93,14 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
 
     private void InitializePublishers()
     {
-        this.WhenAnyValue(x => x.Anime)
-            .WhereNotNull()
-            .Subscribe(anime => eventAggregator.GetObserver<TrackableAnimeSelectedEvent>().OnNext(new(anime)));
+        MediaPlayer
+            .PositionChanged
+            .Where(_ => Anime is not null && SelectedEpisode is not null)
+            .Subscribe(position => playbackProgressEvent.Publish(new(Anime!, SelectedEpisode!, _duration, position)));
 
-        this.WhenAnyValue(x => x.ProviderResult)
-            .WhereNotNull()
-            .Subscribe(result => eventAggregator.GetObserver<AnimeSelectedEvent>().OnNext(new(result)));
-
-        this.WhenAnyValue(x => x.SelectedEpisode)
-            .WhereNotNull()
-            .Subscribe(ep => eventAggregator.GetObserver<EpisodeSelectedEvent>().OnNext(new(ep)));
-
-        this.WhenAnyValue(x => x.MediaPlayer)
-            .WhereNotNull()
-            .SelectMany(x => x.DurationChanged)
-            .Subscribe(duration => eventAggregator.GetObserver<PlaybackDurationChangedEvent>().OnNext(new(duration)));
-
-        this.WhenAnyValue(x => x.MediaPlayer)
-            .WhereNotNull()
-            .SelectMany(x => x.PositionChanged)
-            .Subscribe(position => eventAggregator.GetObserver<PlaybackPositionChangedEvent>().OnNext(new(position)));
+        MediaPlayer
+            .DurationChanged
+            .Subscribe(duration => _duration = duration);
     }
 
     private async Task Play(VideoSource source)

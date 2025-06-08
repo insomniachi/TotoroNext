@@ -20,11 +20,7 @@ public class Module : IModule
                 .AddMainNavigationViewItem<SearchMetadataProviderPage, SearchMetadataProviderViewModel>("Search Metadata", new FontIcon { Glyph = "\uF6FA" })
                 .AddDataViewMap<WatchPage, WatchViewModel, WatchViewModelNavigationParameter>();
 
-        services.RegisterEvent<AnimeSelectedEvent>()
-                .RegisterEvent<EpisodeSelectedEvent>()
-                .RegisterEvent<PlaybackDurationChangedEvent>()
-                .RegisterEvent<PlaybackPositionChangedEvent>()
-                .RegisterEvent<TrackableAnimeSelectedEvent>();
+        services.RegisterEvent<PlaybackProgressEventArgs>();
 
         services.AddSelectionUserInteraction<SelectProviderResult, SearchResult>()
                 .AddSelectionUserInteraction<SelectAnimeResult, AnimeModel>();

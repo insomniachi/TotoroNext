@@ -2,49 +2,56 @@ using System.Reactive.Linq;
 using Microsoft.Extensions.Hosting;
 using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.Module.Abstractions;
+using Uno.Disposables;
 
 namespace TotoroNext.Anime.Abstractions;
 
 public abstract class TrackingUpdater(ITrackingService trackingService,
-                                      IEventAggregator eventAggregator) : IHostedService
+                                      IEvent<PlaybackProgressEventArgs> playbackProgressEvent) : IHostedService
 {
-    private AnimeModel? _anime;
-    private Episode? _episode;
-    private TimeSpan? _duration;
+    private readonly SerialDisposable _subscription = new();
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        eventAggregator.GetObservable<TrackableAnimeSelectedEvent>().Subscribe(e => _anime = e.Item);
+        playbackProgressEvent.OnNext()
+            .Where(e => (e.Anime.Tracking?.WatchedEpisodes ?? 0) < e.Episode.Number )
+            .Where(e => e.Duration - e.Position < TimeSpan.FromMinutes(2))
+            .SelectMany(e =>
+            {
+                if (e.Anime.Tracking is null)
+                {
+                    e.Anime.Tracking = new Tracking
+                    {
+                        Status = ListItemStatus.Watching,
+                        StartDate = DateTime.Now,
+                    };
+                }
 
-        eventAggregator.GetObservable<EpisodeSelectedEvent>()
-                       .Where(_ => _anime is not null)
-                       .Where(e => e.Item.Number > (_anime!.Tracking?.WatchedEpisodes ?? 0))
-                       .Subscribe(e => _episode = e.Item);
+                var tracking = e.Anime.Tracking;
+                tracking.WatchedEpisodes = (int)e.Episode.Number;
 
-        eventAggregator.GetObservable<PlaybackDurationChangedEvent>()
-                       .Where(_ => _episode is not null)
-                       .Subscribe(e => _duration = e.Duration);
+                if (e.Anime.TotalEpisodes == e.Episode.Number)
+                {
+                    tracking.Status = ListItemStatus.Completed;
+                }
 
-        eventAggregator.GetObservable<PlaybackPositionChangedEvent>()
-                       .Where(_ => _duration is not null)
-                       .Where(e => _duration - e.Position < TimeSpan.FromMinutes(2))
-                       .FirstAsync()
-                       .SelectMany(_ =>
-                       {
-                           var tracking = new Tracking
-                           {
-                               WatchedEpisodes = (int?)_episode?.Number
-                           };
-                           return trackingService.Update(_anime!.Id, tracking);
-                       })
-                       .Subscribe();
-
-
+                return trackingService.Update(e.Anime.Id, tracking);
+            })
+            .Subscribe()
+            .DisposeWith(_subscription);
+  
         return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
+        if(_subscription.IsDisposed)
+        {
+            return Task.CompletedTask;
+        }
+
+        _subscription.Dispose();
+
         return Task.CompletedTask;
     }
 }
