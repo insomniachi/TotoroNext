@@ -61,17 +61,22 @@ public class ResourceHelper
     {
 
 #if WINDOWS
-        var targetFramework = "net9.0-windows10.0.26100";
-#else
-        var targetFramework = "net9.0-desktop";
-#endif
-
         return new Uri($"{Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                       "TotoroNext",
-                       "Modules",
-                       Assembly.GetCallingAssembly().GetName().Name ?? "",
-                       targetFramework,
-                       "Assets",
-                       name)}").AbsoluteUri;
+                "TotoroNext",
+                "Modules",
+                Assembly.GetCallingAssembly().GetName().Name ?? "",
+                "net9.0-windows10.0.26100",
+                "Assets",
+                name)}").AbsoluteUri;
+#else
+        return new Uri($"{Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "TotoroNext",
+                "Modules",
+                Assembly.GetCallingAssembly().GetName().Name ?? "",
+                "net9.0-desktop",
+                Assembly.GetCallingAssembly().GetName().Name ?? "",
+                "Assets",
+                name)}").AbsoluteUri;
+#endif
     }
 }

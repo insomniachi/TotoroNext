@@ -63,9 +63,9 @@ public partial class App : Application
                     logBuilder
                         .SetMinimumLevel(
                             context.HostingEnvironment.IsDevelopment() ?
-                                LogLevel.Debug :
+                                LogLevel.Information :
                                 LogLevel.Warning)
-                        .CoreLogLevel(LogLevel.Debug);
+                        .CoreLogLevel(LogLevel.Warning);
 
                 }, enableUnoLogging: true)
                 .UseSerilog(consoleLoggingEnabled: true, fileLoggingEnabled: true)
