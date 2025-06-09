@@ -1,9 +1,12 @@
 using System.Reactive.Concurrency;
 using ReactiveUI;
 using TotoroNext.Anime;
+using TotoroNext.Anime.Abstractions;
 using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
+using TotoroNext.ViewModels;
+using TotoroNext.Views;
 using Uno.Resizetizer;
 using Windows.Storage.Pickers;
 
@@ -29,9 +32,16 @@ public partial class App : Application
         var store = new DebugModuleStore();
         modules.AddRange(
             [
+                // Anime Providers
                 new Anime.AllAnime.Module(),
+
+                // Anime Tracking/Metadata
                 new Anime.Anilist.Module(),
+                
+                // Misc
                 new Anime.Aniskip.Module(),
+                
+                // Media Players
                 new MediaEngine.Mpv.Module(),
                 new MediaEngine.Vlc.Module()
             ]);
@@ -40,10 +50,6 @@ public partial class App : Application
 #endif
 
         modules.AddRange(await store.LoadModules().ToListAsync());
-
-#if WINDOWS
-        //modules.Add(new MediaEngine.Flyleaf.Module());
-#endif
 
         var builder = this.CreateBuilder(args)
             .Configure((host, window) => host
@@ -95,8 +101,22 @@ public partial class App : Application
                         module.ConfigureServices(services);
                     }
 
+                    services.RegisterFactory<ITrackingService>(nameof(SettingsModel.SelectedTrackingService))
+                            .RegisterFactory<IMediaPlayer>(nameof(SettingsModel.SelectedMediaEngine))
+                            .RegisterFactory<IMetadataService>(nameof(SettingsModel.SelectedTrackingService))
+                            .RegisterFactory<IAnimeProvider>(nameof(SettingsModel.SelectedAnimeProvider))
+                            .RegisterFactory<IMediaSegmentsProvider>(nameof(SettingsModel.SelectedSegmentsProvider));
+
                     services.AddMainNavigationViewItem<ModulesPage, ModulesViewModel>("My Modules", new FontIcon { Glyph = "\uED35" }, true);
                     services.AddMainNavigationViewItem<ModulesStorePage, ModulesStoreViewModel>("Store", new FontIcon { Glyph = "\uEA40" });
+                    services.AddTransient<ViewMap>(_ => new ViewMap<SettingsPage, SettingsViewModel>());
+                    services.AddSingleton<SettingsViewModel>();
+                    services.AddTransient(sp =>
+                    {
+                        var vm = sp.GetRequiredService<SettingsViewModel>();
+                        vm.Initialize();
+                        return vm.Settings;
+                    });
                 })
             );
 
@@ -133,5 +153,21 @@ public partial class App : Application
 #endif
 
         await FFBinaries.DownloadLatest();
+    }
+}
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection RegisterFactory<TService>(this IServiceCollection services, string key)
+        where TService : notnull
+    {
+        services.AddTransient<IFactory<TService, Guid>, Factory<TService, Guid>>(sp =>
+        {
+            var factory = sp.GetRequiredService<IServiceScopeFactory>();
+            var settings = sp.GetRequiredService<ILocalSettingsService>();
+            return new Factory<TService, Guid>(factory, settings, key);
+        });
+
+        return services;
     }
 }

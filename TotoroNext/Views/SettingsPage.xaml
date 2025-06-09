@@ -1,0 +1,44 @@
+﻿<Page
+    x:Class="TotoroNext.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctk="using:CommunityToolkit.WinUI.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:TotoroNext.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    mc:Ignorable="d">
+
+    <Grid Margin="36">
+        <StackPanel MaxWidth="1000" HorizontalAlignment="Stretch">
+            <ctk:SettingsCard Header="Selected Anime Provider">
+                <ComboBox
+                    DisplayMemberPath="Name"
+                    ItemsSource="{x:Bind ViewModel.AnimeProviders, Mode=OneWay}"
+                    SelectedValue="{x:Bind ViewModel.Settings.SelectedAnimeProvider, Mode=TwoWay}"
+                    SelectedValuePath="Id" />
+            </ctk:SettingsCard>
+            <ctk:SettingsCard Header="Selected Media Player">
+                <ComboBox
+                    DisplayMemberPath="Name"
+                    ItemsSource="{x:Bind ViewModel.MediaEngines}"
+                    SelectedValue="{x:Bind ViewModel.Settings.SelectedMediaEngine, Mode=TwoWay}"
+                    SelectedValuePath="Id" />
+            </ctk:SettingsCard>
+            <ctk:SettingsCard Header="Selected Media Player">
+                <ComboBox
+                    DisplayMemberPath="Name"
+                    ItemsSource="{x:Bind ViewModel.TrackingServices, Mode=OneWay}"
+                    SelectedValue="{x:Bind ViewModel.Settings.SelectedTrackingService, Mode=TwoWay}"
+                    SelectedValuePath="Id" />
+            </ctk:SettingsCard>
+            <ctk:SettingsCard Header="Selected Media Segments Provider">
+                <ComboBox
+                    DisplayMemberPath="Name"
+                    ItemsSource="{x:Bind ViewModel.SegmentProviders, Mode=OneWay}"
+                    SelectedValue="{x:Bind ViewModel.Settings.SelectedSegmentsProvider, Mode=TwoWay}"
+                    SelectedValuePath="Id" />
+            </ctk:SettingsCard>
+        </StackPanel>
+    </Grid>
+</Page>

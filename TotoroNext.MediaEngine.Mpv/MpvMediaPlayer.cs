@@ -4,12 +4,14 @@ using System.Reactive.Subjects;
 using System.Text;
 using System.Text.Json;
 using TotoroNext.MediaEngine.Abstractions;
+using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.MediaEngine.Mpv;
 
-internal class MpvMediaPlayer(ModuleSettings settings) : IMediaPlayer
+internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
 {
     private Process? _process;
+    private readonly Settings _settings = settings.Value;
     private NamedPipeClientStream? _ipcStream;
     private readonly Subject<TimeSpan> _durationSubject = new();
     private readonly Subject<TimeSpan> _positionSubject = new();
@@ -27,7 +29,7 @@ internal class MpvMediaPlayer(ModuleSettings settings) : IMediaPlayer
 
         var startInfo = new ProcessStartInfo
         {
-            FileName = settings.FileName,
+            FileName = _settings.FileName,
             ArgumentList =
             {
                 media.Uri.ToString(),
@@ -37,7 +39,7 @@ internal class MpvMediaPlayer(ModuleSettings settings) : IMediaPlayer
             },
         };
 
-        if (settings.LaunchFullScreen)
+        if (_settings.LaunchFullScreen)
         {
             startInfo.ArgumentList.Add("--fullscreen");
         }

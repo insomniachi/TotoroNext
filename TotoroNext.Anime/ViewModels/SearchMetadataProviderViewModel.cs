@@ -14,8 +14,8 @@ public partial class SearchMetadataProviderViewModel(IFactory<IMetadataService, 
                                                      IFactory<IAnimeProvider, Guid> providerFactory,
                                                      [FromKeyedServices("Main")] INavigator navigator) : ReactiveObject, IInitializable
 {
-    private readonly IMetadataService _metadataService = factory.Create(new Guid("b5d31e9b-b988-44e8-8e28-348f58cf1d04"));
-    private readonly IAnimeProvider _provider = providerFactory.Create(new Guid("489576c5-2879-493b-874a-7eb14e081280"));
+    private readonly IMetadataService? _metadataService = factory.CreateDefault();
+    private readonly IAnimeProvider? _provider = providerFactory.CreateDefault();
 
 
     [Reactive]
@@ -24,9 +24,10 @@ public partial class SearchMetadataProviderViewModel(IFactory<IMetadataService, 
     [ObservableAsProperty(PropertyName = "Items")]
     private IObservable<List<AnimeModel>> ItemsObservable() =>
         this.WhenAnyValue(x => x.Query)
+            .Where(_ => _metadataService is not null)
             .Where(query => query is { Length: > 3 })
             .Throttle(TimeSpan.FromMilliseconds(500))
-            .SelectMany(_metadataService.SearchAnimeAsync)
+            .SelectMany(_metadataService!.SearchAnimeAsync)
             .ObserveOn(RxApp.MainThreadScheduler);
 
     public void Initialize()
@@ -36,6 +37,11 @@ public partial class SearchMetadataProviderViewModel(IFactory<IMetadataService, 
 
     public async Task AnimeSelected(AnimeModel model)
     {
+        if(_provider is null)
+        {
+            return;
+        }
+
         if (await _provider.SearchAndSelectAsync(model) is not { } result)
         {
             return;

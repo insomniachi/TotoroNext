@@ -1,66 +1,60 @@
-﻿<Project Sdk="Uno.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <UnoSingleProject>true</UnoSingleProject>
-    <ApplicationId>com.companyname.TotoroNext</ApplicationId>
-    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-    <ApplicationVersion>1</ApplicationVersion>
-    <ApplicationPublisher>athul</ApplicationPublisher>
-    <Description>TotoroNext powered by Uno Platform.</Description>
-    <LangVersion>preview</LangVersion>
-    <Platforms>x64</Platforms>
-    <TargetFrameworks>net9.0-desktop;net9.0-windows10.0.26100</TargetFrameworks>
-    <UnoFeatures>
-        Hosting;
-        Toolkit;
-        Logging;
-        LoggingSerilog;
-        Mvvm;
-        Configuration;
-        Localization;
-        ThemeService;
-        SkiaRenderer;
-    </UnoFeatures>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-      <LangVersion>preview</LangVersion>
-  </PropertyGroup>
+<Project Sdk="Uno.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <UnoSingleProject>true</UnoSingleProject>
+        <ApplicationId>com.companyname.TotoroNext</ApplicationId>
+        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+        <ApplicationVersion>1</ApplicationVersion>
+        <ApplicationPublisher>athul</ApplicationPublisher>
+        <Description>TotoroNext powered by Uno Platform.</Description>
+        <LangVersion>preview</LangVersion>
+        <Platforms>x64</Platforms>
+        <TargetFrameworks>net9.0-desktop;net9.0-windows10.0.26100</TargetFrameworks>
+        <UnoFeatures>
+            Hosting;
+            Toolkit;
+            Logging;
+            LoggingSerilog;
+            Mvvm;
+            Configuration;
+            Localization;
+            ThemeService;
+            SkiaRenderer;
+        </UnoFeatures>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <LangVersion>preview</LangVersion>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="CommunityToolkit.WinUI.Animations" />
-    <PackageReference Include="CommunityToolkit.WinUI.Extensions" />
-    <PackageReference Include="ReactiveUI.SourceGenerators">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-      <PackageReference Include="ReactiveUI.Uno.WinUI" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="CommunityToolkit.WinUI.Animations" />
+        <PackageReference Include="CommunityToolkit.WinUI.Extensions" />
+        <PackageReference Include="ReactiveUI.SourceGenerators">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="ReactiveUI.Uno.WinUI" />
+    </ItemGroup>
 
   <!-- Modules -->
-  <ItemGroup>
-    <ProjectReference Include="..\TotoroNext.Anime.AllAnime\TotoroNext.Anime.AllAnime.csproj" />
-    <ProjectReference Include="..\TotoroNext.Anime.Anilist\TotoroNext.Anime.Anilist.csproj" />
-      <ProjectReference Include="..\TotoroNext.Anime.Aniskip\TotoroNext.Anime.Aniskip.csproj" />
-    <ProjectReference Include="..\TotoroNext.Anime\TotoroNext.Anime.csproj" />
-    <ProjectReference Include="..\TotoroNext.MediaEngine.Vlc\TotoroNext.MediaEngine.Vlc.csproj" />
-    <ProjectReference Include="..\TotoroNext.MediaEngine.Mpv\TotoroNext.MediaEngine.Mpv.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\TotoroNext.Anime.AllAnime\TotoroNext.Anime.AllAnime.csproj" />
+        <ProjectReference Include="..\TotoroNext.Anime.Anilist\TotoroNext.Anime.Anilist.csproj" />
+        <ProjectReference Include="..\TotoroNext.Anime.Aniskip\TotoroNext.Anime.Aniskip.csproj" />
+        <ProjectReference Include="..\TotoroNext.Anime\TotoroNext.Anime.csproj" />
+        <ProjectReference Include="..\TotoroNext.MediaEngine.Vlc\TotoroNext.MediaEngine.Vlc.csproj" />
+        <ProjectReference Include="..\TotoroNext.MediaEngine.Mpv\TotoroNext.MediaEngine.Mpv.csproj" />
+    </ItemGroup>
 
-  <!-- Windows Only Modules -->
-  <!--<ItemGroup Condition="'$(TargetFramework)'=='net9.0-windows10.0.26100'">
-      <ProjectReference Include="..\TotoroNext.MediaEngine.Flyleaf\TotoroNext.MediaEngine.Flyleaf.csproj">
-          <Private>false</Private>
-          <ExcludeAssets>runtime</ExcludeAssets>
-      </ProjectReference>
-  </ItemGroup>-->
-  <ItemGroup>
-    <Page Update="Presentation\ModulesPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="Presentation\ModulesStorePage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
+    <ItemGroup>
+        <Page Update="Views\ModulesPage.xaml">
+            <Generator>MSBuild:Compile</Generator>
+        </Page>
+        <Page Update="Views\ModulesStorePage.xaml">
+            <Generator>MSBuild:Compile</Generator>
+        </Page>
+        <Page Update="Views\SettingsPage.xaml">
+            <Generator>MSBuild:Compile</Generator>
+        </Page>
+    </ItemGroup>
     
 </Project>

@@ -24,7 +24,7 @@ public class Module : IModule<Settings>
         services.AddViewMap<SettingsPage, SettingsPageViewModel>();
         services.AddTransient(_ => Descriptor);
         services.AddModuleSettings(this);
-        services.AddKeyedTransient<IMediaPlayerElementFactory, VlcMediaPlayerElementFactory>(Descriptor.Id);
+        services.AddKeyedTransient<IMediaPlayer, VlcMediaPlayer>(Descriptor.Id);
     }
 }
 

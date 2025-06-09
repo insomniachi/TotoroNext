@@ -7,7 +7,7 @@ using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.MediaEngine.Mpv;
 
-public class Module : IModule<ModuleSettings>
+public class Module : IModule<Settings>
 {
     public Descriptor Descriptor { get; } = new()
     {
@@ -24,13 +24,13 @@ public class Module : IModule<ModuleSettings>
         services.AddViewMap<SettingsPage, SettingsPageViewModel>();
         services.AddTransient(_ => Descriptor);
         services.AddModuleSettings(this);
-        services.AddKeyedTransient<IMediaPlayerElementFactory, MpvMediaPlayerElementFactory>(Descriptor.Id);
+        services.AddKeyedTransient<IMediaPlayer, MpvMediaPlayer>(Descriptor.Id);
     }
 }
 
-public class ModuleSettings
+public class Settings
 {
-    public ModuleSettings()
+    public Settings()
     {
         if (OperatingSystem.IsLinux())
         {

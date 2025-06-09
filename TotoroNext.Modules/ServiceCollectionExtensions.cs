@@ -12,8 +12,9 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient();
         services.AddSingleton<IComponentRegistry, ComponentRegistry>();
         services.AddSingleton<IViewRegistry, ViewRegistry>();
-        services.AddTransient(typeof(IFactory<,>), typeof(Factory<,>));
+        //services.AddTransient(typeof(IFactory<,>), typeof(Factory<,>));
         services.AddTransient(typeof(IEvent<>), typeof(Event<>));
+        services.AddSingleton<ILocalSettingsService, LocalSettingsService>();
 
         return services;
     }

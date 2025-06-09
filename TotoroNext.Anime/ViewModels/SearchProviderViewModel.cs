@@ -17,8 +17,8 @@ public partial class SearchProviderViewModel(IFactory<IAnimeProvider, Guid> fact
                                              IFactory<IMetadataService, Guid> metaDataFactory,
                                              [FromKeyedServices("Main")] INavigator navigator) : ReactiveObject, IInitializable
 {
-    private readonly IAnimeProvider _provider = factory.Create(new Guid("489576c5-2879-493b-874a-7eb14e081280"));
-    private readonly IMetadataService _metadataService = metaDataFactory.Create(new Guid("b5d31e9b-b988-44e8-8e28-348f58cf1d04"));
+    private readonly IAnimeProvider? _provider = factory.CreateDefault();
+    private readonly IMetadataService? _metadataService = metaDataFactory.CreateDefault();
 
     [Reactive]
     public partial string Query { get; set; }
@@ -26,9 +26,10 @@ public partial class SearchProviderViewModel(IFactory<IAnimeProvider, Guid> fact
     [ObservableAsProperty(PropertyName = "Items")]
     private IObservable<List<SearchResult>> ItemsObservable() =>
         this.WhenAnyValue(x => x.Query)
+            .Where(_ => _provider is not null)
             .Where(query => query is { Length: > 3 })
             .Throttle(TimeSpan.FromMilliseconds(500))
-            .SelectMany(query => _provider.SearchAsync(query).ToListAsync().AsTask())
+            .SelectMany(query => _provider!.SearchAsync(query).ToListAsync().AsTask())
             .ObserveOn(RxApp.MainThreadScheduler);
 
 
@@ -39,7 +40,14 @@ public partial class SearchProviderViewModel(IFactory<IAnimeProvider, Guid> fact
 
     public async Task NavigateToWatch(SearchResult result)
     {
-        var anime = await _metadataService.SearchAndSelectAsync(result);
-        navigator.NavigateToData(new WatchViewModelNavigationParameter(result, anime));
+        if(_metadataService is null)
+        {
+            navigator.NavigateToData(new WatchViewModelNavigationParameter(result));
+        }
+        else
+        {
+            var anime = await _metadataService.SearchAndSelectAsync(result);
+            navigator.NavigateToData(new WatchViewModelNavigationParameter(result, anime));
+        }
     }
 }

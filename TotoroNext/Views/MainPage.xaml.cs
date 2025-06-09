@@ -1,3 +1,5 @@
+using TotoroNext.ViewModels;
+
 namespace TotoroNext.Presentation;
 
 public sealed partial class MainPage : Page
@@ -22,6 +24,14 @@ public sealed partial class MainPage : Page
         {
             vm.NavigationFacade.Frame = NavFrame;
             vm.NavigateToDefault();
+
+            NavView.ItemInvoked += (_, e) =>
+            {
+                if(e.IsSettingsInvoked)
+                {
+                    vm.NavigationFacade.NavigateViewModel(typeof(SettingsViewModel));
+                }
+            };
         }
     }
 

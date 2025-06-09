@@ -16,11 +16,11 @@ namespace TotoroNext.Anime.ViewModels;
 public partial class WatchViewModel(WatchViewModelNavigationParameter navigationParameter,
                                     IEvent<PlaybackProgressEventArgs> playbackProgressEvent,
                                     IFactory<IMediaSegmentsProvider, Guid> segmentsFactory,
-                                    IFactory<IMediaPlayerElementFactory, Guid> mediaPlayerFactory) : ReactiveObject, IInitializable
+                                    IFactory<IMediaPlayer, Guid> mediaPlayerFactory) : ReactiveObject, IInitializable
 {
     private TimeSpan _duration;
 
-    public IMediaPlayer MediaPlayer { get; } = mediaPlayerFactory.Create(new Guid("b8c3f0d2-1c5e-4f6a-9b7d-3f8e1c5f0d2a")).CreatePlayer();
+    public IMediaPlayer? MediaPlayer { get; } = mediaPlayerFactory.CreateDefault();
 
     [Reactive]
     public partial SearchResult ProviderResult { get; set; }
@@ -93,6 +93,11 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
 
     private void InitializePublishers()
     {
+        if(MediaPlayer is null)
+        {
+            return;
+        }
+
         MediaPlayer
             .PositionChanged
             .Where(_ => Anime is not null && SelectedEpisode is not null)
@@ -116,9 +121,8 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
         var duration = MediaHelper.GetDuration(source.Url, source.Headers);
         List<MediaSegment> segments = [];
 
-        if (Anime is not null)
+        if (Anime is not null && segmentsFactory.CreateDefault() is { } segmentsProvider)
         {
-            var segmentsProvider = segmentsFactory.Create(new Guid("5ccd59c9-7fd1-485e-b542-e4b8cfaf5655"));
             segments.AddRange(await segmentsProvider.GetSegments(Anime.MalId, SelectedEpisode.Number, duration.TotalSeconds));
         }
 

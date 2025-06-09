@@ -9,7 +9,7 @@ namespace TotoroNext.MediaEngine.Vlc;
 
 internal class HttpInterface
 {
-    public const string Password = "totoro";
+    private readonly string _password;
     private readonly string _api;
     private readonly ReplaySubject<TimeSpan> _durationChanged = new();
     private readonly ReplaySubject<TimeSpan> _timeChanged = new();
@@ -17,11 +17,12 @@ internal class HttpInterface
     public IObservable<TimeSpan> DurationChanged { get; }
     public IObservable<TimeSpan> PositionChanged { get; }
 
-    public HttpInterface(Process process)
+    public HttpInterface(Process process, string password)
     {
         var host = "127.0.0.1";
         var port = "8080";
         _api = $"http://{host}:{port}";
+        _password = password;
 
         Observable.Timer(TimeSpan.Zero, TimeSpan.FromSeconds(1))
             .Where(_ => !process.HasExited)
@@ -46,7 +47,7 @@ internal class HttpInterface
         {
             result = await _api
                 .AppendPathSegment("/requests/status.json")
-                .WithBasicAuth("", Password).GetAsync();
+                .WithBasicAuth("", _password).GetAsync();
         }
         catch { }
 
@@ -69,7 +70,7 @@ internal class HttpInterface
              .AppendPathSegment("/requets/status.json")
              .SetQueryParam("command", "seek")
              .SetQueryParam("val", timeSpan.TotalSeconds)
-             .WithBasicAuth("", Password)
+             .WithBasicAuth("", _password)
              .GetAsync();
     }
 
@@ -79,7 +80,7 @@ internal class HttpInterface
          .AppendPathSegment("/requets/status.json")
          .SetQueryParam("command", "volume")
          .SetQueryParam("val", $"{percent}%")
-         .WithBasicAuth("", Password)
+         .WithBasicAuth("", _password)
          .GetAsync();
     }
 }

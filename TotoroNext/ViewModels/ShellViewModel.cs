@@ -1,4 +1,4 @@
-namespace TotoroNext.Presentation;
+namespace TotoroNext.ViewModels;
 
 public class ShellViewModel
 {

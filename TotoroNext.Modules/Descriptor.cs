@@ -4,7 +4,8 @@ using System.Reflection;
 namespace TotoroNext.Module;
 
 [DebuggerDisplay("{Name} - {Version}")]
-public class Descriptor
+[ImplicitKeys(IsEnabled = false)]
+public record Descriptor
 {
     public required Guid Id { get; init; }
     public required string Name { get; init; }

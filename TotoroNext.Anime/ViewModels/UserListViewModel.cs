@@ -25,8 +25,8 @@ public partial class UserListViewModel : ReactiveObject, IAsyncInitializable
                              IFactory<IAnimeProvider, Guid> providerFactory,
                              [FromKeyedServices("Main")] INavigator navigator)
     {
-        _trackingService = factory.Create(new Guid("b5d31e9b-b988-44e8-8e28-348f58cf1d04"));
-        _provider = providerFactory.Create(new Guid("489576c5-2879-493b-874a-7eb14e081280"));
+        _trackingService = factory.CreateDefault();
+        _provider = providerFactory.CreateDefault();
         _navigator = navigator;
 
         _animeCache
