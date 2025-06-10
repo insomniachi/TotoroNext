@@ -77,7 +77,7 @@
                         Content="Download"
                         Visibility="{x:Bind a:Converters.InvertedBooleanToVisibility(ViewModel.IsDownloading), Mode=OneWay}" />
                     <ProgressBar IsIndeterminate="True" Visibility="{x:Bind a:Converters.BooleanToVisibility(ViewModel.IsDownloading), Mode=OneWay}" />
-                    <TextBlock Text="{x:Bind ViewModel.SelectedModule.Description, Mode=OneWay}" />
+                    <TextBlock Text="{x:Bind ViewModel.SelectedModule.Description, Mode=OneWay}" TextWrapping="WrapWholeWords" />
                 </StackPanel>
             </Grid>
         </SplitView.Pane>
