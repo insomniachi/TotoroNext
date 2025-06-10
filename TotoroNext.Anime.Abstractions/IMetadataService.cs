@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using TotoroNext.Anime.Abstractions.Models;
 
 namespace TotoroNext.Anime.Abstractions;
 
@@ -26,6 +27,7 @@ public partial class AnimeModel : ObservableObject
     public int Popularity { get; set; }
     public DateTime? NextEpisodeAt { get; set; }
     public int AiredEpisodes { get; set; }
+    public Season? Season { get; set; }
 }
 
 

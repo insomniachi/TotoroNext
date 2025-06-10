@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Reactive.Linq;
+using System.Text.RegularExpressions;
 using DynamicData;
 using DynamicData.Binding;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,8 +16,8 @@ namespace TotoroNext.Anime.ViewModels;
 
 public partial class UserListViewModel : ReactiveObject, IAsyncInitializable
 {
-    private readonly ITrackingService _trackingService;
-    private readonly IAnimeProvider _provider;
+    private readonly ITrackingService? _trackingService;
+    private readonly IAnimeProvider? _provider;
     private readonly INavigator _navigator;
     private readonly SourceCache<AnimeModel, long> _animeCache = new(x => x.Id);
     private readonly ReadOnlyObservableCollection<AnimeModel> _anime;
@@ -38,7 +39,6 @@ public partial class UserListViewModel : ReactiveObject, IAsyncInitializable
             .Bind(out _anime)
             .DisposeMany()
             .Subscribe();
-
     }
 
     public Filter Filter { get; } = new();
@@ -47,8 +47,16 @@ public partial class UserListViewModel : ReactiveObject, IAsyncInitializable
 
     public ReadOnlyObservableCollection<AnimeModel> Items => _anime;
 
+    [Reactive]
+    public partial bool IsFilterPaneOpen { get; set; }
+
     public async Task InitializeAsync()
     {
+        if(_trackingService is null)
+        {
+            return;
+        }
+
         var items = await _trackingService.GetUserList();
 
         _animeCache.Edit(x => x.AddOrUpdate(items));
@@ -57,6 +65,11 @@ public partial class UserListViewModel : ReactiveObject, IAsyncInitializable
 
     public async Task AnimeSelected(AnimeModel model)
     {
+        if (_provider is null)
+        {
+            return;
+        }
+
         if (await _provider.SearchAndSelectAsync(model) is not { } result)
         {
             return;
@@ -64,6 +77,12 @@ public partial class UserListViewModel : ReactiveObject, IAsyncInitializable
 
         _navigator.NavigateToData(new WatchViewModelNavigationParameter(result, model));
     }
+
+    [ReactiveCommand]
+    private void ToggleFilterPane() => IsFilterPaneOpen ^= true;
+
+    [ReactiveCommand] 
+    private void ClearFilters() => Filter.Clear();
 }
 
 
@@ -72,10 +91,18 @@ public partial class Filter : ReactiveObject
     public Filter()
     {
         Status = ListItemStatus.Watching;
+        Term = "";
+        Year = "";
     }
 
     [Reactive]
     public partial ListItemStatus Status { get; set; }
+
+    [Reactive]
+    public partial string Term { get; set; }
+
+    [Reactive]
+    public partial string Year { get; set; }
 
     public bool IsVisible(AnimeModel model)
     {
@@ -84,20 +111,30 @@ public partial class Filter : ReactiveObject
             return true;
         }
 
-
         var listStatusCheck = Status == ListItemStatus.Watching
             ? model.Tracking.Status is ListItemStatus.Watching or ListItemStatus.Rewatching
             : model.Tracking.Status == Status;
 
-        //var searchTextStatus = string.IsNullOrEmpty(SearchText) ||
-        //                       model.Title.Contains(SearchText, StringComparison.InvariantCultureIgnoreCase) ||
-        //                       model.AlternativeTitles.Any(x => x.Contains(SearchText, StringComparison.InvariantCultureIgnoreCase));
-        //var yearCheck = string.IsNullOrEmpty(Year) || !YearRegex().IsMatch(Year) || model.Season.Year.ToString() == Year;
+        var searchTextStatus = string.IsNullOrEmpty(Term) ||
+                               model.Title.Contains(Term, StringComparison.InvariantCultureIgnoreCase);
+
+        //var searchTextStatus = string.IsNullOrEmpty(Term) ||
+        //                       model.Title.Contains(Term, StringComparison.InvariantCultureIgnoreCase) ||
+        //                       model.AlternativeTitles.Any(x => x.Contains(Term, StringComparison.InvariantCultureIgnoreCase));
+        var yearCheck = string.IsNullOrEmpty(Year) || !YearRegex().IsMatch(Year) || model.Season?.Year.ToString() == Year;
         //var genresCheck = !Genres.Any() || Genres.All(x => model.Genres.Any(y => string.Equals(y, x, StringComparison.InvariantCultureIgnoreCase)));
         //var airingStatusCheck = AiringStatus is null || AiringStatus == model.AiringStatus;
 
-        //var isVisible = listStatusCheck && searchTextStatus && yearCheck && genresCheck && airingStatusCheck;
-        return listStatusCheck;
+        var isVisible = listStatusCheck && searchTextStatus && yearCheck /* && genresCheck && airingStatusCheck*/;
+        return isVisible;
     }
+
+    public void Clear()
+    {
+        Term = "";
+    }
+
+    [GeneratedRegex(@"(19[5-9][0-9])|(20\d{2})")]
+    private partial Regex YearRegex();
 }
 

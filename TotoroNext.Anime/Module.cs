@@ -17,7 +17,7 @@ public class Module : IModule
 
         services.AddMainNavigationViewItem<UserListPage, UserListViewModel>("My List", new SymbolIcon(Symbol.Library))
                 .AddMainNavigationViewItem<SearchProviderPage, SearchProviderViewModel>("Watch Now", new FontIcon { Glyph = "\uE7C5" })
-                .AddMainNavigationViewItem<SearchMetadataProviderPage, SearchMetadataProviderViewModel>("Search Metadata", new FontIcon { Glyph = "\uF6FA" })
+                .AddMainNavigationViewItem<SearchMetadataProviderPage, SearchMetadataProviderViewModel>("Search Metadata", new FontIcon { Glyph = "\uEDE4" })
                 .AddDataViewMap<WatchPage, WatchViewModel, WatchViewModelNavigationParameter>();
 
         services.RegisterEvent<PlaybackProgressEventArgs>();

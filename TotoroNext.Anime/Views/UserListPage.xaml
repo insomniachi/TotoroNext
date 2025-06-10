@@ -10,106 +10,140 @@
     xmlns:utu="using:Uno.Toolkit.UI"
     mc:Ignorable="d">
 
-    <Grid Margin="36" RowSpacing="16">
+    <SplitView
+        IsPaneOpen="{x:Bind ViewModel.IsFilterPaneOpen, Mode=TwoWay}"
+        OpenPaneLength="500"
+        PaneBackground="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
+        PanePlacement="Right">
+        <Grid Margin="36" RowSpacing="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+            <StackPanel
+                HorizontalAlignment="Center"
+                Orientation="Horizontal"
+                Spacing="32">
+                <utu:ChipGroup
+                    ItemsSource="{x:Bind ViewModel.AllStatus, Mode=OneWay}"
+                    SelectedItem="{x:Bind ViewModel.Filter.Status, Mode=TwoWay}"
+                    SelectionMode="Single">
+                    <utu:ChipGroup.ItemTemplate>
+                        <DataTemplate x:DataType="taa:ListItemStatus">
+                            <TextBlock
+                                Width="200"
+                                Style="{ThemeResource SubtitleTextBlockStyle}"
+                                Text="{x:Bind root:Converters.EnumToDescription((taa:ListItemStatus))}"
+                                TextAlignment="Center" />
+                        </DataTemplate>
+                    </utu:ChipGroup.ItemTemplate>
+                    <utu:ChipGroup.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </utu:ChipGroup.ItemsPanel>
+                </utu:ChipGroup>
 
-        <utu:ChipGroup
-            HorizontalAlignment="Center"
-            ItemsSource="{x:Bind ViewModel.AllStatus, Mode=OneWay}"
-            SelectedItem="{x:Bind ViewModel.Filter.Status, Mode=TwoWay}"
-            SelectionMode="Single">
-            <utu:ChipGroup.ItemTemplate>
-                <DataTemplate x:DataType="taa:ListItemStatus">
-                    <TextBlock
-                        Width="200"
-                        Style="{ThemeResource SubtitleTextBlockStyle}"
-                        Text="{x:Bind root:Converters.EnumToDescription((taa:ListItemStatus))}"
-                        TextAlignment="Center" />
-                </DataTemplate>
-            </utu:ChipGroup.ItemTemplate>
-            <utu:ChipGroup.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <StackPanel Orientation="Horizontal" />
-                </ItemsPanelTemplate>
-            </utu:ChipGroup.ItemsPanel>
-        </utu:ChipGroup>
+                <SplitButton Height="38" Command="{x:Bind ViewModel.ToggleFilterPaneCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="16">
+                        <FontIcon Glyph="&#xE71C;" />
+                        <TextBlock Text="Filter" />
+                    </StackPanel>
+                    <SplitButton.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Command="{x:Bind ViewModel.ClearFiltersCommand}" Text="Clear Filters">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE894;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyout>
+                    </SplitButton.Flyout>
+                </SplitButton>
+            </StackPanel>
 
-        <ItemsView
-            Grid.Row="1"
-            IsItemInvokedEnabled="True"
-            ItemInvoked="ItemsView_ItemInvoked"
-            ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}"
-            SelectionMode="None">
-            <ItemsView.ItemTemplate>
-                <DataTemplate x:DataType="taa:AnimeModel">
-                    <ItemContainer>
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <Grid Grid.Row="0">
-                                <Image Source="{x:Bind root:Converters.StringToImage(Image)}" Stretch="UniformToFill" />
-                                <Grid
-                                    VerticalAlignment="Top"
-                                    Background="{ThemeResource ControlOnImageFillColorDefaultBrush}"
-                                    Visibility="{x:Bind root:Converters.ObjectToVisiblity(NextEpisodeAt)}">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock
-                                        Padding="2"
-                                        HorizontalAlignment="Stretch"
-                                        FontSize="14"
-                                        FontWeight="SemiBold"
-                                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
-                                        Text="{x:Bind root:Converters.NextEpisodeAiringTime(NextEpisodeAt, AiredEpisodes), Mode=OneWay}"
-                                        TextAlignment="Center"
-                                        TextTrimming="CharacterEllipsis" />
-                                    <InfoBadge
-                                        Grid.Column="1"
-                                        Width="25"
-                                        Margin="8,0"
-                                        Background="Red"
-                                        Visibility="{x:Bind root:Converters.UnwatchedEpisodesVisiblity((taa:AnimeModel))}"
-                                        Value="{x:Bind root:Converters.GetUnwatchedEpsiodes((taa:AnimeModel))}" />
+            <ItemsView
+                Grid.Row="1"
+                IsItemInvokedEnabled="True"
+                ItemInvoked="ItemsView_ItemInvoked"
+                ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}"
+                SelectionMode="None">
+                <ItemsView.ItemTemplate>
+                    <DataTemplate x:DataType="taa:AnimeModel">
+                        <ItemContainer>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0">
+                                    <Image Source="{x:Bind root:Converters.StringToImage(Image)}" Stretch="UniformToFill" />
+                                    <Grid
+                                        VerticalAlignment="Top"
+                                        Background="{ThemeResource ControlOnImageFillColorDefaultBrush}"
+                                        Visibility="{x:Bind root:Converters.ObjectToVisiblity(NextEpisodeAt)}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock
+                                            Padding="2"
+                                            HorizontalAlignment="Stretch"
+                                            FontSize="14"
+                                            FontWeight="SemiBold"
+                                            Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                            Text="{x:Bind root:Converters.NextEpisodeAiringTime(NextEpisodeAt, AiredEpisodes), Mode=OneWay}"
+                                            TextAlignment="Center"
+                                            TextTrimming="CharacterEllipsis" />
+                                        <InfoBadge
+                                            Grid.Column="1"
+                                            Width="25"
+                                            Margin="8,0"
+                                            Background="Red"
+                                            Visibility="{x:Bind root:Converters.UnwatchedEpisodesVisiblity((taa:AnimeModel))}"
+                                            Value="{x:Bind root:Converters.GetUnwatchedEpsiodes((taa:AnimeModel))}" />
+                                    </Grid>
                                 </Grid>
-                            </Grid>
 
-                            <Border
-                                Grid.Row="1"
-                                Height="60"
-                                Padding="3"
-                                Background="{ThemeResource CardBackgroundFillColorDefault}"
-                                BorderThickness="0,4,0,0">
-                                <TextBlock
+                                <Border
+                                    Grid.Row="1"
+                                    Height="60"
                                     Padding="3"
-                                    VerticalAlignment="Center"
-                                    FontSize="15"
-                                    Text="{x:Bind Title}"
-                                    TextAlignment="Center"
-                                    TextTrimming="WordEllipsis"
-                                    TextWrapping="NoWrap"
-                                    ToolTipService.ToolTip="{x:Bind Title}" />
-                            </Border>
-                        </Grid>
-                    </ItemContainer>
-                </DataTemplate>
-            </ItemsView.ItemTemplate>
-            <ItemsView.Layout>
-                <UniformGridLayout
-                    ItemsJustification="Start"
-                    ItemsStretch="Fill"
-                    MinColumnSpacing="16"
-                    MinItemHeight="400"
-                    MinItemWidth="250"
-                    MinRowSpacing="16" />
-            </ItemsView.Layout>
-        </ItemsView>
-    </Grid>
+                                    Background="{ThemeResource CardBackgroundFillColorDefault}"
+                                    BorderThickness="0,4,0,0">
+                                    <TextBlock
+                                        Padding="3"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Center"
+                                        FontSize="15"
+                                        Text="{x:Bind Title}"
+                                        TextAlignment="Center"
+                                        TextTrimming="CharacterEllipsis"
+                                        TextWrapping="WrapWholeWords"
+                                        ToolTipService.ToolTip="{x:Bind Title}" />
+                                </Border>
+                            </Grid>
+                        </ItemContainer>
+                    </DataTemplate>
+                </ItemsView.ItemTemplate>
+                <ItemsView.Layout>
+                    <UniformGridLayout
+                        ItemsJustification="Start"
+                        ItemsStretch="Fill"
+                        MinColumnSpacing="16"
+                        MinItemHeight="400"
+                        MinItemWidth="250"
+                        MinRowSpacing="16" />
+                </ItemsView.Layout>
+            </ItemsView>
+        </Grid>
+
+        <SplitView.Pane>
+            <StackPanel Padding="16" Spacing="16">
+                <TextBlock Style="{ThemeResource TitleTextBlockStyle}" Text="Filter" />
+                <TextBox PlaceholderText="Name" Text="{x:Bind ViewModel.Filter.Term, Mode=TwoWay}" />
+                <TextBox PlaceholderText="Year" Text="{x:Bind ViewModel.Filter.Year, Mode=TwoWay}" />
+            </StackPanel>
+        </SplitView.Pane>
+    </SplitView>
 </Page>

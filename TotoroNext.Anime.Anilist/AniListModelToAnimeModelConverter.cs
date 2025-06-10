@@ -27,6 +27,7 @@ public partial class AniListModelToAnimeModelConverter
             Tracking = ConvertTracking(media.MediaListEntry),
             NextEpisodeAt = ConvertToExactTime(media.NextAiringEpisode?.TimeUntilAiring),
             AiredEpisodes = media.NextAiringEpisode?.Episode - 1 ?? 0,
+            Season = GetSeason(media.Season, media.SeasonYear),
         };
     }
 
@@ -160,6 +161,18 @@ public partial class AniListModelToAnimeModelConverter
         };
     }
 
+    public static AnimeSeason ConvertSeason(MediaSeason season)
+    {
+        return season switch
+        {
+            MediaSeason.Spring => AnimeSeason.Spring,
+            MediaSeason.Summer => AnimeSeason.Summer,
+            MediaSeason.Fall => AnimeSeason.Fall,
+            MediaSeason.Winter => AnimeSeason.Winter,
+            _ => throw new UnreachableException()
+        };
+    }
+
     private static DayOfWeek? GetBroadcastDay(FuzzyDate date)
     {
         if (date is null || date.Year is null || date.Month is null || date.Day is null)
@@ -205,5 +218,15 @@ public partial class AniListModelToAnimeModelConverter
             MediaFormat.TvShort => "TV Short",
             _ => ""
         };
+    }
+
+    private static Season? GetSeason(MediaSeason? season, int? year)
+    {
+        if (season is null || year is null)
+        {
+            return null;
+        }
+
+        return new Season(ConvertSeason(season.Value), year.Value);
     }
 }
