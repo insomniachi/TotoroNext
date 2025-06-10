@@ -132,6 +132,7 @@ public partial class Filter : ReactiveObject
     public void Clear()
     {
         Term = "";
+        Year = "";
     }
 
     [GeneratedRegex(@"(19[5-9][0-9])|(20\d{2})")]

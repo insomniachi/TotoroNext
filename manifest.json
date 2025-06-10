@@ -34,23 +34,6 @@
     ]
   },
   {
-    "Id": "d1f8c3b2-4e5f-4a6b-9c7d-8e1f2c3b4d5e",
-    "Name": "Flyleaf",
-    "Description": "",
-    "Owner": "Totoro",
-    "Categories": [ "Media Engine" ],
-    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.MediaEngine.Flyleaf/Assets/wmp.jpg",
-    "EntryPoint": "TotoroNext.MediaEngine.Flyleaf.dll",
-    "Versions": [
-      {
-        "Version": "1.0.0",
-        "Description": "Initial release",
-        "TargetVersion": "1.0.0",
-        "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.MediaEngine.Flyleaf"
-      }
-    ]
-  },
-  {
     "Id": "a5c4c1d1-4669-4423-bb77-d5285776b5c9",
     "Name": "Vlc",
     "Description": "",
@@ -81,6 +64,23 @@
         "Description": "Initial release",
         "TargetVersion": "1.0.0",
         "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.Anime.Anilist"
+      }
+    ]
+  },
+  {
+    "Id": "5ccd59c9-7fd1-485e-b542-e4b8cfaf5655",
+    "Name": "Aniskip",
+    "Description": "",
+    "Owner": "Totoro",
+    "Categories": [ "Segments" ],
+    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.Anime.Aniskip/Assets/aniskip.png",
+    "EntryPoint": "TotoroNext.Anime.Aniskip.dll",
+    "Versions": [
+      {
+        "Version": "1.0.0",
+        "Description": "Initial release",
+        "TargetVersion": "1.0.0",
+        "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.Anime.Aniskip"
       }
     ]
   }

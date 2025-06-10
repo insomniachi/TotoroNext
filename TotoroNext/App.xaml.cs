@@ -28,7 +28,7 @@ public partial class App : Application
             new Anime.Module(),
         ];
 
-#if DEBUG
+#if !DEBUG
         var store = new DebugModuleStore();
         modules.AddRange(
             [

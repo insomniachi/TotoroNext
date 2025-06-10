@@ -12,6 +12,9 @@
     <Grid Margin="36">
         <StackPanel MaxWidth="1000" HorizontalAlignment="Stretch">
             <ctk:SettingsCard Header="Selected Anime Provider">
+                <ctk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE7F4;" />
+                </ctk:SettingsCard.HeaderIcon>
                 <ComboBox
                     DisplayMemberPath="Name"
                     ItemsSource="{x:Bind ViewModel.AnimeProviders, Mode=OneWay}"
@@ -19,13 +22,19 @@
                     SelectedValuePath="Id" />
             </ctk:SettingsCard>
             <ctk:SettingsCard Header="Selected Media Player">
+                <ctk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xEA69;" />
+                </ctk:SettingsCard.HeaderIcon>
                 <ComboBox
                     DisplayMemberPath="Name"
                     ItemsSource="{x:Bind ViewModel.MediaEngines}"
                     SelectedValue="{x:Bind ViewModel.Settings.SelectedMediaEngine, Mode=TwoWay}"
                     SelectedValuePath="Id" />
             </ctk:SettingsCard>
-            <ctk:SettingsCard Header="Selected Media Player">
+            <ctk:SettingsCard Header="Selected Tracking Service">
+                <ctk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xEADF;" />
+                </ctk:SettingsCard.HeaderIcon>
                 <ComboBox
                     DisplayMemberPath="Name"
                     ItemsSource="{x:Bind ViewModel.TrackingServices, Mode=OneWay}"
@@ -33,6 +42,9 @@
                     SelectedValuePath="Id" />
             </ctk:SettingsCard>
             <ctk:SettingsCard Header="Selected Media Segments Provider">
+                <ctk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE8C6;" />
+                </ctk:SettingsCard.HeaderIcon>
                 <ComboBox
                     DisplayMemberPath="Name"
                     ItemsSource="{x:Bind ViewModel.SegmentProviders, Mode=OneWay}"

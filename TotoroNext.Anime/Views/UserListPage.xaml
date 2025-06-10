@@ -141,8 +141,8 @@
         <SplitView.Pane>
             <StackPanel Padding="16" Spacing="16">
                 <TextBlock Style="{ThemeResource TitleTextBlockStyle}" Text="Filter" />
-                <TextBox PlaceholderText="Name" Text="{x:Bind ViewModel.Filter.Term, Mode=TwoWay}" />
-                <TextBox PlaceholderText="Year" Text="{x:Bind ViewModel.Filter.Year, Mode=TwoWay}" />
+                <TextBox PlaceholderText="Name" Text="{x:Bind ViewModel.Filter.Term, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <TextBox PlaceholderText="Year" Text="{x:Bind ViewModel.Filter.Year, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             </StackPanel>
         </SplitView.Pane>
     </SplitView>
