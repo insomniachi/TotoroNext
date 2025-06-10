@@ -2,7 +2,7 @@
   {
     "Id": "489576c5-2879-493b-874a-7eb14e081280",
     "Name": "Allanime",
-    "Description": "",
+    "Description": "All Manga's goal is to provide you with the highest possible amount of daily anime episodes/manga chapters for free and without any kind of limitation. As a very dedicated website, we try to improve each month bringing new updates to improve the user experience as much as possible.",
     "Owner": "Totoro",
     "Categories": [ "Anime Provider" ],
     "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.Anime.AllAnime/Assets/hero.png",
@@ -19,7 +19,7 @@
   {
     "Id": "b8c3f0d2-1c5e-4f6a-9b7d-3f8e1c5f0d2a",
     "Name": "MPV",
-    "Description": "",
+    "Description": "MPV Media Player is a free, open-source, and cross-platform media player known for its versatility and powerful performance. It supports a wide variety of media file formats, audio and video codecs, and subtitle types, making it suitable for both casual and advanced users. MPV is particularly noted for its scripting capabilities, allowing users to customize their experience extensively.",
     "Owner": "Totoro",
     "Categories": [ "Media Engine" ],
     "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.MediaEngine.Mpv/Assets/mpv.jpeg",
@@ -36,7 +36,7 @@
   {
     "Id": "a5c4c1d1-4669-4423-bb77-d5285776b5c9",
     "Name": "Vlc",
-    "Description": "",
+    "Description": "VLC media player (previously the VideoLAN Client) is a free and open-source, portable, cross-platform media player software and streaming media server developed by the VideoLAN project.",
     "Owner": "Totoro",
     "Categories": [ "Media Engine" ],
     "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.MediaEngine.Vlc/Assets/vlc.jpeg",
@@ -53,10 +53,10 @@
   {
     "Id": "b5d31e9b-b988-44e8-8e28-348f58cf1d04",
     "Name": "Anilist",
-    "Description": "",
+    "Description": "AniList.co is an English-language website where you can follow and share manga books, anime series, movies, ONA and OVA releases. AniList.co runs alongside AniChart.net. The site is owned by the people behind the usernames Nazo and TehNut. ",
     "Owner": "Totoro",
     "Categories": [ "Metadata" ],
-    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.Anime.Anilist/Assets/vlc.jpeg",
+    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.Anime.Anilist/Assets/anilist.jpg",
     "EntryPoint": "TotoroNext.Anime.Anilist.dll",
     "Versions": [
       {
@@ -70,7 +70,7 @@
   {
     "Id": "5ccd59c9-7fd1-485e-b542-e4b8cfaf5655",
     "Name": "Aniskip",
-    "Description": "",
+    "Description": "Provides a browser extension (and 3rd party integrations in the future) to allow users to submit and vote on timestamp ranges for segments of episodes to skip.",
     "Owner": "Totoro",
     "Categories": [ "Segments" ],
     "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.Anime.Aniskip/Assets/aniskip.png",

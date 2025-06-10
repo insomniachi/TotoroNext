@@ -9,50 +9,78 @@
     xmlns:mod="using:TotoroNext.Module"
     mc:Ignorable="d">
 
-    <Grid Margin="36" RowSpacing="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <AutoSuggestBox PlaceholderText="Search" QueryIcon="Find" />
 
-        <ItemsView
-            Grid.Row="1"
-            IsItemInvokedEnabled="True"
-            ItemInvoked="ItemsView_ItemInvoked"
-            ItemsSource="{x:Bind ViewModel.Modules, Mode=OneWay}"
-            SelectionMode="None">
-            <ItemsView.ItemTemplate>
-                <DataTemplate x:DataType="mod:ModuleManifest">
-                    <ItemContainer Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
-                        <Grid Padding="8">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
+    <SplitView
+        IsPaneOpen="{x:Bind ViewModel.IsPaneOpen, Mode=TwoWay}"
+        OpenPaneLength="600"
+        PanePlacement="Right">
+        <Grid Margin="36" RowSpacing="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <AutoSuggestBox PlaceholderText="Search" QueryIcon="Find" />
 
-                            <Image
-                                Height="200"
-                                Source="{x:Bind a:Converters.StringToImage(ImageUrl)}"
-                                Stretch="Uniform" />
+            <ItemsView
+                Grid.Row="1"
+                mod:ItemsViewSelectionHelper.EnableSelectionTracking="True"
+                mod:ItemsViewSelectionHelper.SelectedItem="{x:Bind ViewModel.SelectedModule, Mode=TwoWay}"
+                ItemsSource="{x:Bind ViewModel.Modules, Mode=OneWay}"
+                SelectionMode="Single">
+                <ItemsView.ItemTemplate>
+                    <DataTemplate x:DataType="mod:ModuleManifest">
+                        <ItemContainer Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+                            <Grid Padding="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
 
-                            <StackPanel Grid.Row="1">
-                                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="{x:Bind Name}" />
-                                <TextBlock Text="{x:Bind Description}" TextWrapping="WrapWholeWords" />
-                            </StackPanel>
-                        </Grid>
-                    </ItemContainer>
-                </DataTemplate>
-            </ItemsView.ItemTemplate>
-            <ItemsView.Layout>
-                <UniformGridLayout
-                    ItemsJustification="Start"
-                    ItemsStretch="Fill"
-                    MinColumnSpacing="16"
-                    MinItemWidth="300"
-                    MinRowSpacing="16" />
-            </ItemsView.Layout>
-        </ItemsView>
+                                <Image
+                                    Height="200"
+                                    Source="{x:Bind a:Converters.StringToImage(ImageUrl)}"
+                                    Stretch="Uniform" />
 
-    </Grid>
+                                <StackPanel Grid.Row="1">
+                                    <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="{x:Bind Name}" />
+                                    <TextBlock Text="{x:Bind Description}" TextWrapping="WrapWholeWords" />
+                                </StackPanel>
+                            </Grid>
+                        </ItemContainer>
+                    </DataTemplate>
+                </ItemsView.ItemTemplate>
+                <ItemsView.Layout>
+                    <UniformGridLayout
+                        ItemsJustification="Start"
+                        ItemsStretch="Fill"
+                        MinColumnSpacing="16"
+                        MinItemWidth="300"
+                        MinRowSpacing="16" />
+                </ItemsView.Layout>
+            </ItemsView>
+        </Grid>
+
+        <SplitView.Pane>
+            <Grid Padding="16" RowSpacing="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+
+                <Image Source="{x:Bind a:Converters.StringToImage(ViewModel.SelectedModule.ImageUrl), Mode=OneWay}" Stretch="UniformToFill" />
+
+                <StackPanel Grid.Row="1" Spacing="8">
+                    <TextBlock Style="{ThemeResource SubtitleTextBlockStyle}" Text="{x:Bind ViewModel.SelectedModule.Name, Mode=OneWay}" />
+                    <Button
+                        Command="{x:Bind ViewModel.DownloadCommand}"
+                        CommandParameter="{x:Bind ViewModel.SelectedModule, Mode=OneWay}"
+                        Content="Download"
+                        Visibility="{x:Bind a:Converters.InvertedBooleanToVisibility(ViewModel.IsDownloading), Mode=OneWay}" />
+                    <ProgressBar IsIndeterminate="True" Visibility="{x:Bind a:Converters.BooleanToVisibility(ViewModel.IsDownloading), Mode=OneWay}" />
+                    <TextBlock Text="{x:Bind ViewModel.SelectedModule.Description, Mode=OneWay}" />
+                </StackPanel>
+            </Grid>
+        </SplitView.Pane>
+
+    </SplitView>
 </Page>

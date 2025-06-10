@@ -1,4 +1,5 @@
 using System.Reactive.Concurrency;
+using System.Reactive.Linq;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using TotoroNext.Module;
@@ -18,20 +19,39 @@ public partial class ModulesStoreViewModel(IModuleStore store,
         {
             Modules = await store.GetAllModules().ToListAsync();
         });
+
+        this.WhenAnyValue(x => x.SelectedModule)
+            .WhereNotNull()
+            .Subscribe(_ => IsPaneOpen = true);
     }
 
-    public async Task Download(ModuleManifest manifest)
+    [Reactive]
+    public partial ModuleManifest? SelectedModule { get; set; }
+
+    [Reactive]
+    public partial bool IsPaneOpen { get; set; }
+
+    [Reactive]
+    public partial bool IsDownloading { get; set; }
+
+
+    [ReactiveCommand(CanExecute = nameof(CanDownloadObservable))]
+    private async Task Download(ModuleManifest manifest)
     {
-        if (!CanDownload(manifest))
+        IsDownloading = true;
+        await store.DownloadModule(manifest);
+        IsDownloading = false;
+    }
+
+    private IObservable<bool> CanDownloadObservable => this.WhenAnyValue(x => x.SelectedModule).Select(CanDownload);
+
+    private bool CanDownload(ModuleManifest? manifest)
+    {
+        if (manifest is null)
         {
-            return;
+            return false;
         }
 
-        await store.DownloadModule(manifest);
-    }
-
-    private bool CanDownload(ModuleManifest manifest)
-    {
         if (descriptors.FirstOrDefault(x => x.Id == Guid.Parse(manifest.Id)) is not { } installedModule)
         {
             return true;
@@ -39,4 +59,5 @@ public partial class ModulesStoreViewModel(IModuleStore store,
 
         return Version.Parse(manifest.Versions[0].Version) > installedModule.Version;
     }
+
 }
