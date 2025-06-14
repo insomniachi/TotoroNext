@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Runtime.Loader;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Xml.Linq;
 using Flurl;
 using Path = System.IO.Path;
 
@@ -13,14 +14,6 @@ public interface IModuleStore
     Task<bool> DownloadModule(ModuleManifest manifest);
     IAsyncEnumerable<IModule> LoadModules();
 }
-
-public class DebugModuleStore : IModuleStore
-{
-    public IAsyncEnumerable<IModule> LoadModules() => AsyncEnumerable.Empty<IModule>();
-    public Task<bool> DownloadModule(ModuleManifest manifest) => Task.FromResult(false);
-    public IAsyncEnumerable<ModuleManifest> GetAllModules() => AsyncEnumerable.Empty<ModuleManifest>();
-}
-
 
 public class ModuleStore : IModuleStore
 {

@@ -12,7 +12,6 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient();
         services.AddSingleton<IComponentRegistry, ComponentRegistry>();
         services.AddSingleton<IViewRegistry, ViewRegistry>();
-        //services.AddTransient(typeof(IFactory<,>), typeof(Factory<,>));
         services.AddTransient(typeof(IEvent<>), typeof(Event<>));
         services.AddSingleton<ILocalSettingsService, LocalSettingsService>();
 
@@ -26,7 +25,7 @@ public static class ServiceCollectionExtensions
         services.AddKeyedViewMap<TView, TViewModel>(title);
         services.AddTransient(sp =>
         {
-            var facade = sp.GetRequiredKeyedService<IContentControlNavigator>(navigationViewName);
+            var navigator = sp.GetRequiredKeyedService<IContentControlNavigator>(navigationViewName);
 
             var item = new NavigationViewItem
             {
@@ -37,10 +36,10 @@ public static class ServiceCollectionExtensions
 
             item.Tapped += (_, _) =>
             {
-                facade.NavigateViewModel(typeof(TViewModel));
+                navigator.NavigateViewModel(typeof(TViewModel));
             };
 
-            facade.Navigated += (_, e) =>
+            navigator.Navigated += (_, e) =>
             {
                 item.IsSelected = e == typeof(TView);
             };

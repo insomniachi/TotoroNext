@@ -1,31 +1,42 @@
 using System.Diagnostics;
+using System.Net.Http.Json;
 using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Refit;
 
 namespace TotoroNext.Anime.Aniskip;
 
-internal interface IAniskipClient
+public interface IAniskipClient
 {
-    [Get("/v2/skip-times/{animeId}/{episodeNumber}")]
+    //[Get("/v2/skip-times/{animeId}/{episodeNumber}")]
     Task<GetSkipTimesResponseV2> GetSkipTimes(long animeId, double episodeNumber, GetSkipTimesQueryV2 query);
 
-    [Post("/v2/skip-times/{animeId}/{episodeNumber}")]
-    Task<PostCreateSkipTimeResponseV2> PostSkipTimes(long animeId, double episodeNumber, [Body] PostCreateSkipTimeRequestBodyV2 payload);
+    //[Post("/v2/skip-times/{animeId}/{episodeNumber}")]
+    //Task<PostCreateSkipTimeResponseV2> PostSkipTimes(long animeId, double episodeNumber, [Body] PostCreateSkipTimeRequestBodyV2 payload);
 
-    [Post("/v2/skip-times/vote/{skipId}")]
-    Task<PostVoteResponseV2> PostVote(Guid skipId, [Body] PostVoteRequestBodyV2 payload);
+    //[Post("/v2/skip-times/vote/{skipId}")]
+    //Task<PostVoteResponseV2> PostVote(Guid skipId, [Body] PostVoteRequestBodyV2 payload);
 }
 
-internal class PostVoteRequestBodyV2
+public class AniskipClient(IHttpClientFactory httpClientFactory) : IAniskipClient
+{
+    public async Task<GetSkipTimesResponseV2> GetSkipTimes(long animeId, double episodeNumber, GetSkipTimesQueryV2 query)
+    {
+        using var client = httpClientFactory.CreateClient(nameof(AniskipClient));
+        var types = string.Join("&", query.Types.Select(x => $"types={x.ToEnumString()}"));
+
+        return await client.GetFromJsonAsync<GetSkipTimesResponseV2>($"v2/skip-times/{animeId}/{episodeNumber}?episodeLength={query.EpisodeLength}&{types}") ?? new();
+    }
+}
+
+public class PostVoteRequestBodyV2
 {
     [JsonPropertyName("voteType")]
     [JsonConverter(typeof(JsonStringEnumConverterEx<VoteType>))]
     public VoteType VoteType { get; set; }
 }
 
-internal class PostVoteResponseV2
+public class PostVoteResponseV2
 {
     [JsonPropertyName("statusCode")]
     public int StatusCode { get; set; }
@@ -34,7 +45,7 @@ internal class PostVoteResponseV2
     public string Message { get; set; } = "";
 }
 
-internal enum VoteType
+public enum VoteType
 {
     [EnumMember(Value = "upvote")]
     Upvote,
@@ -43,7 +54,7 @@ internal enum VoteType
     Downvote
 }
 
-internal class PostCreateSkipTimeRequestBodyV2
+public class PostCreateSkipTimeRequestBodyV2
 {
     [JsonPropertyName("skipType")]
     [JsonConverter(typeof(JsonStringEnumConverterEx<SkipType>))]
@@ -66,7 +77,7 @@ internal class PostCreateSkipTimeRequestBodyV2
     public Guid SubmitterId { get; set; }
 }
 
-internal class PostCreateSkipTimeResponseV2
+public class PostCreateSkipTimeResponseV2
 {
     [JsonPropertyName("statusCode")]
     public int StatusCode { get; set; }
@@ -79,7 +90,7 @@ internal class PostCreateSkipTimeResponseV2
     public Guid SkipId { get; set; }
 }
 
-internal class GetSkipTimesResponseV2
+public class GetSkipTimesResponseV2
 {
     [JsonPropertyName("status")]
     public int StatusCode { get; set; }
@@ -94,17 +105,14 @@ internal class GetSkipTimesResponseV2
     public SkipTime[] Results { get; set; } = [];
 }
 
-internal class GetSkipTimesQueryV2
+public class GetSkipTimesQueryV2
 {
-    [AliasAs("types[]")]
-    [Query(CollectionFormat.Multi)]
     public SkipType[] Types { get; set; } = [];
 
-    [AliasAs("episodeLength")]
     public double EpisodeLength { get; set; }
 }
 
-internal class SkipTime
+public class SkipTime
 {
     [JsonPropertyName("interval")]
     public Interval Interval { get; set; } = new();
@@ -121,7 +129,7 @@ internal class SkipTime
     public double EpisodeLength { get; set; }
 }
 
-internal class Interval
+public class Interval
 {
     [JsonPropertyName("startTime")]
     public double StartTime { get; set; }
@@ -130,7 +138,7 @@ internal class Interval
     public double EndTime { get; set; }
 }
 
-internal enum SkipType
+public enum SkipType
 {
     [EnumMember(Value = "op")]
     Opening,
@@ -148,7 +156,7 @@ internal enum SkipType
     Recap
 }
 
-internal class GuidJsonConverter : JsonConverter<Guid>
+public class GuidJsonConverter : JsonConverter<Guid>
 {
     public override Guid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -162,7 +170,7 @@ internal class GuidJsonConverter : JsonConverter<Guid>
     }
 }
 
-internal class JsonStringEnumConverterEx<T> : JsonConverter<T>
+public class JsonStringEnumConverterEx<T> : JsonConverter<T>
     where T : struct, Enum
 {
     public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

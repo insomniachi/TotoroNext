@@ -28,23 +28,8 @@ public partial class App : Application
             new Anime.Module(),
         ];
 
-#if !DEBUG
+#if DEBUG
         var store = new DebugModuleStore();
-        modules.AddRange(
-            [
-                // Anime Providers
-                new Anime.AllAnime.Module(),
-
-                // Anime Tracking/Metadata
-                new Anime.Anilist.Module(),
-                
-                // Misc
-                new Anime.Aniskip.Module(),
-                
-                // Media Players
-                new MediaEngine.Mpv.Module(),
-                new MediaEngine.Vlc.Module()
-            ]);
 #else
         var store = new ModuleStore();
 #endif
@@ -170,4 +155,29 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+}
+
+
+public class DebugModuleStore : IModuleStore
+{
+    public async IAsyncEnumerable<IModule> LoadModules()
+    {
+        await Task.CompletedTask;
+
+        // Anime Providers
+        yield return new Anime.AllAnime.Module();
+
+        // Anime Tracking/Metadata
+        yield return new Anime.Anilist.Module();
+
+        // Misc
+        yield return new Anime.Aniskip.Module();
+
+        // Media Players
+        yield return new MediaEngine.Mpv.Module();
+        yield return new MediaEngine.Vlc.Module();
+    }
+
+    public Task<bool> DownloadModule(ModuleManifest manifest) => Task.FromResult(false);
+    public IAsyncEnumerable<ModuleManifest> GetAllModules() => AsyncEnumerable.Empty<ModuleManifest>();
 }

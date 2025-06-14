@@ -12,7 +12,6 @@
     <UnoFeatures>
         Hosting;
         Http;
-        HttpRefit;
         Toolkit;
         Mvvm;
     </UnoFeatures>

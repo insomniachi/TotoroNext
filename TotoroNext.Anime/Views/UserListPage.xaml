@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:root="using:TotoroNext.Anime"
     xmlns:taa="using:TotoroNext.Anime.Abstractions"
+    xmlns:uc="using:TotoroNext.Anime.UserControls"
     xmlns:utu="using:Uno.Toolkit.UI"
     mc:Ignorable="d">
 
@@ -71,58 +72,7 @@
                 <ItemsView.ItemTemplate>
                     <DataTemplate x:DataType="taa:AnimeModel">
                         <ItemContainer>
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <Grid Grid.Row="0">
-                                    <Image Source="{x:Bind root:Converters.StringToImage(Image)}" Stretch="UniformToFill" />
-                                    <Grid
-                                        VerticalAlignment="Top"
-                                        Background="{ThemeResource ControlOnImageFillColorDefaultBrush}"
-                                        Visibility="{x:Bind root:Converters.ObjectToVisiblity(NextEpisodeAt)}">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock
-                                            Padding="2"
-                                            HorizontalAlignment="Stretch"
-                                            FontSize="14"
-                                            FontWeight="SemiBold"
-                                            Foreground="{ThemeResource TextFillColorPrimaryBrush}"
-                                            Text="{x:Bind root:Converters.NextEpisodeAiringTime(NextEpisodeAt, AiredEpisodes), Mode=OneWay}"
-                                            TextAlignment="Center"
-                                            TextTrimming="CharacterEllipsis" />
-                                        <InfoBadge
-                                            Grid.Column="1"
-                                            Width="25"
-                                            Margin="8,0"
-                                            Background="Red"
-                                            Visibility="{x:Bind root:Converters.UnwatchedEpisodesVisiblity((taa:AnimeModel))}"
-                                            Value="{x:Bind root:Converters.GetUnwatchedEpsiodes((taa:AnimeModel))}" />
-                                    </Grid>
-                                </Grid>
-
-                                <Border
-                                    Grid.Row="1"
-                                    Height="60"
-                                    Padding="3"
-                                    Background="{ThemeResource CardBackgroundFillColorDefault}"
-                                    BorderThickness="0,4,0,0">
-                                    <TextBlock
-                                        Padding="3"
-                                        HorizontalAlignment="Stretch"
-                                        VerticalAlignment="Center"
-                                        FontSize="15"
-                                        Text="{x:Bind Title}"
-                                        TextAlignment="Center"
-                                        TextTrimming="CharacterEllipsis"
-                                        TextWrapping="WrapWholeWords"
-                                        ToolTipService.ToolTip="{x:Bind Title}" />
-                                </Border>
-                            </Grid>
+                            <uc:AnimeCard Anime="{x:Bind}" />
                         </ItemContainer>
                     </DataTemplate>
                 </ItemsView.ItemTemplate>

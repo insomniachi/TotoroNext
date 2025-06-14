@@ -18,9 +18,11 @@ public partial class Module : IModule
 
     public void ConfigureServices(IServiceCollection services)
     {
-        Refit.HttpClientFactoryExtensions.AddRefitClient<IAniskipClient>(services)
-            .ConfigureHttpClient(client => client.BaseAddress = new Uri("https://api.aniskip.com"));
-
+        services.AddHttpClient(nameof(AniskipClient), client =>
+        {
+            client.BaseAddress = new Uri("https://api.aniskip.com/");
+        });
+        services.AddTransient<IAniskipClient, AniskipClient>();
         services.AddTransient(_ => Descriptor);
         services.AddKeyedTransient<IMediaSegmentsProvider, MediaSegmentsProvider>(Descriptor.Id);
     }

@@ -57,16 +57,16 @@ public class FrameNavigator(IViewRegistry locator,
 
         var map = locator.FindByData(typeof(TData));
 
-        if (map is not { View: { } view, ViewModel: { } vm })
+        if (map is not { View: { } viewType, ViewModel: { } vmType })
         {
             return;
         }
 
-        var type = (Page)Activator.CreateInstance(view)!;
+        var page = (Page)Activator.CreateInstance(viewType)!;
         using var scope = serviceScopeFactory.CreateScope();
-        var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm, data);
-        type.DataContext = vmObj;
-        type.Loaded += (_, _) =>
+        var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType, data);
+        page.DataContext = vmObj;
+        page.Loaded += async (_, _) =>
         {
             if (vmObj is IInitializable { } i)
             {
@@ -74,11 +74,11 @@ public class FrameNavigator(IViewRegistry locator,
             }
             if (vmObj is IAsyncInitializable { } ia)
             {
-                Task.Run(ia.InitializeAsync);
+                await ia.InitializeAsync();
             }
         };
-        Frame.Content = type;
-        Navigated?.Invoke(this, view);
+        Frame.Content = page;
+        Navigated?.Invoke(this, viewType);
     }
 
     public void NavigateToRoute(string path)
