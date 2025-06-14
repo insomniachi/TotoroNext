@@ -172,10 +172,12 @@ public class DebugModuleStore : IModuleStore
 
         // Misc
         yield return new Anime.Aniskip.Module();
+        yield return new Discord.Module();
 
         // Media Players
         yield return new MediaEngine.Mpv.Module();
         yield return new MediaEngine.Vlc.Module();
+
     }
 
     public Task<bool> DownloadModule(ModuleManifest manifest) => Task.FromResult(false);

@@ -20,7 +20,8 @@ public class Module : IModule
                 .AddMainNavigationViewItem<SearchMetadataProviderPage, SearchMetadataProviderViewModel>("Search Metadata", new FontIcon { Glyph = "\uEDE4" })
                 .AddDataViewMap<WatchPage, WatchViewModel, WatchViewModelNavigationParameter>();
 
-        services.RegisterEvent<PlaybackProgressEventArgs>();
+        services.RegisterEvent<PlaybackProgressEventArgs>()
+                .RegisterEvent<PlaybackEndedEventArgs>();
 
         services.AddSelectionUserInteraction<SelectProviderResult, SearchResult>()
                 .AddSelectionUserInteraction<SelectAnimeResult, AnimeModel>();

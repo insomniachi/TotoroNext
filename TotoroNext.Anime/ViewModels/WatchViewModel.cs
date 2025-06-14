@@ -13,10 +13,11 @@ using TotoroNext.Module.Abstractions;
 namespace TotoroNext.Anime.ViewModels;
 
 [UsedImplicitly]
-public partial class WatchViewModel(WatchViewModelNavigationParameter navigationParameter,
+public sealed partial class WatchViewModel(WatchViewModelNavigationParameter navigationParameter,
                                     IEvent<PlaybackProgressEventArgs> playbackProgressEvent,
+                                    IEvent<PlaybackEndedEventArgs> playbackEndedEvent,
                                     IFactory<IMediaSegmentsProvider, Guid> segmentsFactory,
-                                    IFactory<IMediaPlayer, Guid> mediaPlayerFactory) : ReactiveObject, IInitializable
+                                    IFactory<IMediaPlayer, Guid> mediaPlayerFactory) : ReactiveObject, IInitializable, IDisposable
 {
     private TimeSpan _duration;
 
@@ -89,6 +90,11 @@ public partial class WatchViewModel(WatchViewModelNavigationParameter navigation
             .Subscribe();
 
         InitializePublishers();
+    }
+
+    public void Dispose()
+    {
+        playbackEndedEvent.Publish(new());
     }
 
     private void InitializePublishers()

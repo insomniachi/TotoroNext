@@ -83,5 +83,22 @@
         "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.Anime.Aniskip"
       }
     ]
+  },
+  {
+    "Id": "b3329249-3e29-4625-8211-2934dade3c37",
+    "Name": "Discord Rich Presense",
+    "Description": "Custom discord rich presense while watching",
+    "Owner": "Totoro",
+    "Categories": [ "Misc" ],
+    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.Discord/Assets/aniskip.png",
+    "EntryPoint": "TotoroNext.Discord.dll",
+    "Versions": [
+      {
+        "Version": "1.0.0",
+        "Description": "Initial release",
+        "TargetVersion": "1.0.0",
+        "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.Discord"
+      }
+    ]
   }
 ]

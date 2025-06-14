@@ -84,7 +84,7 @@ internal class AnilistMetadataService(GraphQLHttpClient client,
 
             return [.. response.Data.Page.Media.Where(FilterNsfw).Select(AniListModelToAnimeModelConverter.ConvertModel)];
         }
-        catch (Exception ex)
+        catch
         {
             return [];
         }

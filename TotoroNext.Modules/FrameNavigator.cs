@@ -29,22 +29,13 @@ public class FrameNavigator(IViewRegistry locator,
             return;
         }
 
-        var type = (Page)Activator.CreateInstance(view)!;
+        var page = (Page)Activator.CreateInstance(view)!;
         using var scope = serviceScopeFactory.CreateScope();
         var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType);
-        type.DataContext = vmObj;
-        type.Loaded += (_, _) =>
-        {
-            if (vmObj is IInitializable { } i)
-            {
-                i.Initialize();
-            }
-            if (vmObj is IAsyncInitializable { } ia)
-            {
-                Task.Run(ia.InitializeAsync);
-            }
-        };
-        Frame.Content = type;
+
+        ConvigurePage(page, vmObj);
+        
+        Frame.Content = page;
         Navigated?.Invoke(this, view);
     }
 
@@ -65,18 +56,9 @@ public class FrameNavigator(IViewRegistry locator,
         var page = (Page)Activator.CreateInstance(viewType)!;
         using var scope = serviceScopeFactory.CreateScope();
         var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType, data);
-        page.DataContext = vmObj;
-        page.Loaded += async (_, _) =>
-        {
-            if (vmObj is IInitializable { } i)
-            {
-                i.Initialize();
-            }
-            if (vmObj is IAsyncInitializable { } ia)
-            {
-                await ia.InitializeAsync();
-            }
-        };
+
+        ConvigurePage(page, vmObj);
+        
         Frame.Content = page;
         Navigated?.Invoke(this, viewType);
     }
@@ -90,22 +72,40 @@ public class FrameNavigator(IViewRegistry locator,
             return;
         }
 
-        var type = (Page)Activator.CreateInstance(view)!;
+        var page = (Page)Activator.CreateInstance(view)!;
         using var scope = serviceScopeFactory.CreateScope();
         var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm);
-        type.DataContext = vmObj;
-        type.Loaded += async (_, _) =>
+
+        ConvigurePage(page, vmObj);
+        
+        Frame.Content = page;
+        Navigated?.Invoke(this, view);
+    }
+
+    private static void ConvigurePage(Page page, object vm)
+    {
+        page.DataContext = vm;
+        page.Loaded += async (_, _) =>
         {
-            if (vmObj is IInitializable { } i)
+            if (vm is IInitializable { } i)
             {
                 i.Initialize();
             }
-            if (vmObj is IAsyncInitializable { } ia)
+            if (vm is IAsyncInitializable { } ia)
             {
                 await ia.InitializeAsync();
             }
         };
-        Frame.Content = type;
-        Navigated?.Invoke(this, view);
+        page.Unloaded += async (_, _) =>
+        {
+            if(vm is IDisposable d)
+            {
+                d.Dispose();
+            }
+            if(vm is IAsyncDisposable ad)
+            {
+                await ad.DisposeAsync();
+            }
+        };
     }
 }
