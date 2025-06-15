@@ -18,9 +18,9 @@ public class Module : IModule<Settings>
         Id = Id,
         Name = "MyAnimeList",
         Components = [ComponentTypes.Metadata, ComponentTypes.Tracking],
-        Description = "",
+        Description = "MyAnimeList, often abbreviated as MAL, is an anime and manga social networking and social cataloging application website run by volunteers. The site provides its users with a list-like system to organize and score anime and manga. It facilitates finding users who share similar tastes and provides a large database on anime and manga",
         SettingViewModel = typeof(SettingsViewModel),
-        //HeroImage = ResourceHelper.GetResource("anilist.jpg")
+        HeroImage = ResourceHelper.GetResource("mal.jpg")
     };
 
     public void ConfigureServices(IServiceCollection services)

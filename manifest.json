@@ -68,6 +68,23 @@
     ]
   },
   {
+    "Id": "e6b48ed5-4b76-4a7e-94d1-285c6dd4a125",
+    "Name": "MyAnimeList",
+    "Description": "MyAnimeList, often abbreviated as MAL, is an anime and manga social networking and social cataloging application website run by volunteers. The site provides its users with a list-like system to organize and score anime and manga. It facilitates finding users who share similar tastes and provides a large database on anime and manga",
+    "Owner": "Totoro",
+    "Categories": [ "Metadata" ],
+    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.Anime.MyAnimeList/Assets/mal.jpg",
+    "EntryPoint": "TotoroNext.Anime.Anilist.dll",
+    "Versions": [
+      {
+        "Version": "1.0.0",
+        "Description": "Initial release",
+        "TargetVersion": "1.0.0",
+        "SourceUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/Store/TotoroNext.Anime.MyAnimeList"
+      }
+    ]
+  },
+  {
     "Id": "5ccd59c9-7fd1-485e-b542-e4b8cfaf5655",
     "Name": "Aniskip",
     "Description": "Provides a browser extension (and 3rd party integrations in the future) to allow users to submit and vote on timestamp ranges for segments of episodes to skip.",
