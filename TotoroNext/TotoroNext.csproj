@@ -7,8 +7,6 @@
         <ApplicationVersion>1</ApplicationVersion>
         <ApplicationPublisher>athul</ApplicationPublisher>
         <Description>TotoroNext powered by Uno Platform.</Description>
-        <LangVersion>preview</LangVersion>
-        <Platforms>x64</Platforms>
         <UnoFeatures>
             Hosting;
             Toolkit;
@@ -20,8 +18,6 @@
             ThemeService;
             SkiaRenderer;
         </UnoFeatures>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <LangVersion>preview</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>

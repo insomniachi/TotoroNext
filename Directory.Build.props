@@ -4,6 +4,9 @@
     <Nullable>enable</Nullable>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <TargetFrameworks>net9.0-desktop;net9.0-windows10.0.26100</TargetFrameworks>
+    <Platforms>x64</Platforms>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>preview</LangVersion>
 
     <!--
       Adding NoWarn to remove build warnings

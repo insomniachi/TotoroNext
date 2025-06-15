@@ -6,10 +6,7 @@
     <GenerateLibraryLayout>true</GenerateLibraryLayout>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-      <Platforms>x64</Platforms>
       <EnableDynamicLoading>true</EnableDynamicLoading>
-      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-      <LangVersion>preview</LangVersion>
     <!--
       UnoFeatures let's you quickly add and manage implicit package references based on the features you want to use.
       https://aka.platform.uno/singleproject-features
