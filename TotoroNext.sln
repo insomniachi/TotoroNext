@@ -48,6 +48,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misc", "Misc", "{C841F5C2-8
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.Discord", "TotoroNext.Discord\TotoroNext.Discord.csproj", "{74E8EF4E-09D1-4A6E-8834-875F832CD248}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.Anime.MyAnimeList", "TotoroNext.Anime.MyAnimeList\TotoroNext.Anime.MyAnimeList.csproj", "{1E5DC42E-F078-4811-9EF2-ED2680C98E48}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -98,6 +100,10 @@ Global
 		{74E8EF4E-09D1-4A6E-8834-875F832CD248}.Debug|x64.Build.0 = Debug|x64
 		{74E8EF4E-09D1-4A6E-8834-875F832CD248}.Release|x64.ActiveCfg = Release|x64
 		{74E8EF4E-09D1-4A6E-8834-875F832CD248}.Release|x64.Build.0 = Release|x64
+		{1E5DC42E-F078-4811-9EF2-ED2680C98E48}.Debug|x64.ActiveCfg = Debug|x64
+		{1E5DC42E-F078-4811-9EF2-ED2680C98E48}.Debug|x64.Build.0 = Debug|x64
+		{1E5DC42E-F078-4811-9EF2-ED2680C98E48}.Release|x64.ActiveCfg = Release|x64
+		{1E5DC42E-F078-4811-9EF2-ED2680C98E48}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -114,6 +120,7 @@ Global
 		{79808D5D-1A08-46D6-BA28-EA2BB97FC54A} = {6994BA35-F447-D63A-138F-C94385013AFC}
 		{B0BD607F-8104-4438-92B9-D8ACB57E0841} = {6994BA35-F447-D63A-138F-C94385013AFC}
 		{74E8EF4E-09D1-4A6E-8834-875F832CD248} = {C841F5C2-8F30-5BE9-ECA6-260644CF6F9F}
+		{1E5DC42E-F078-4811-9EF2-ED2680C98E48} = {6994BA35-F447-D63A-138F-C94385013AFC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A7A67BC2-32EB-4DC4-830C-53BECA19D6AD}

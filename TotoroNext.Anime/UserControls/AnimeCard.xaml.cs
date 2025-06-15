@@ -19,4 +19,9 @@ public sealed partial class AnimeCard : UserControl
     public static readonly DependencyProperty AnimeProperty =
         DependencyProperty.Register("Anime", typeof(AnimeModel), typeof(AnimeCard), new PropertyMetadata(null));
 
+    public void UpdateBindings()
+    {
+        Bindings.Update();
+    }
+
 }

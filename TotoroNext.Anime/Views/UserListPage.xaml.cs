@@ -1,4 +1,4 @@
-using TotoroNext.Anime.Abstractions;
+using TotoroNext.Anime.UserControls;
 using TotoroNext.Anime.ViewModels;
 
 namespace TotoroNext.Anime.Views;
@@ -12,11 +12,28 @@ public sealed partial class UserListPage : Page
 
     public UserListViewModel? ViewModel => DataContext as UserListViewModel;
 
-    private async void ItemsView_ItemInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
+    private void AnimeList_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
-        if (args.InvokedItem is AnimeModel model)
+        if(args.Element is not ItemContainer container)
         {
-            await (ViewModel?.AnimeSelected(model) ?? Task.CompletedTask);
+            return;
         }
+
+        if(container.Child is not AnimeCard card)
+        {
+            return;
+        }
+
+        card.UpdateBindings();
+    }
+
+    private async void AnimeCard_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        if(sender is not AnimeCard { Anime: not null } card) 
+        {
+            return;
+        }
+
+        await (ViewModel?.AnimeSelected(card.Anime) ?? Task.CompletedTask);
     }
 }

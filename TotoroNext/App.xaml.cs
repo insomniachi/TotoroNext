@@ -169,6 +169,7 @@ public class DebugModuleStore : IModuleStore
 
         // Anime Tracking/Metadata
         yield return new Anime.Anilist.Module();
+        yield return new Anime.MyAnimeList.Module();
 
         // Misc
         yield return new Anime.Aniskip.Module();

@@ -63,29 +63,33 @@
                 </SplitButton>
             </StackPanel>
 
-            <ItemsView
-                Grid.Row="1"
-                IsItemInvokedEnabled="True"
-                ItemInvoked="ItemsView_ItemInvoked"
-                ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}"
-                SelectionMode="None">
-                <ItemsView.ItemTemplate>
-                    <DataTemplate x:DataType="taa:AnimeModel">
-                        <ItemContainer>
-                            <uc:AnimeCard Anime="{x:Bind}" />
-                        </ItemContainer>
-                    </DataTemplate>
-                </ItemsView.ItemTemplate>
-                <ItemsView.Layout>
-                    <UniformGridLayout
-                        ItemsJustification="Start"
-                        ItemsStretch="Fill"
-                        MinColumnSpacing="16"
-                        MinItemHeight="400"
-                        MinItemWidth="250"
-                        MinRowSpacing="16" />
-                </ItemsView.Layout>
-            </ItemsView>
+            <ScrollView Grid.Row="1">
+                <ItemsRepeater
+                    ElementPrepared="AnimeList_ElementPrepared"
+                    IsTapEnabled="True"
+                    ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}">
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="taa:AnimeModel">
+                            <ItemContainer>
+                                <uc:AnimeCard
+                                    Anime="{x:Bind}"
+                                    IsTapEnabled="True"
+                                    Tapped="AnimeCard_Tapped" />
+                            </ItemContainer>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                    <ItemsRepeater.Layout>
+                        <UniformGridLayout
+                            ItemsJustification="Start"
+                            ItemsStretch="Fill"
+                            MinColumnSpacing="16"
+                            MinItemHeight="400"
+                            MinItemWidth="250"
+                            MinRowSpacing="16" />
+                    </ItemsRepeater.Layout>
+                </ItemsRepeater>
+            </ScrollView>
+
         </Grid>
 
         <SplitView.Pane>

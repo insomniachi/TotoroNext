@@ -126,6 +126,7 @@ public partial class Filter : ReactiveObject
         //var airingStatusCheck = AiringStatus is null || AiringStatus == model.AiringStatus;
 
         var isVisible = listStatusCheck && searchTextStatus && yearCheck /* && genresCheck && airingStatusCheck*/;
+
         return isVisible;
     }
 

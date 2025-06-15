@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using TotoroNext.Anime.Abstractions.Models;
 
@@ -12,6 +13,7 @@ public interface IMetadataService
     Task<List<AnimeModel>> GetAiringAnimeAsync();
 }
 
+[DebuggerDisplay("{Title}")]
 public partial class AnimeModel : ObservableObject
 {
     public long Id { get; set; }
