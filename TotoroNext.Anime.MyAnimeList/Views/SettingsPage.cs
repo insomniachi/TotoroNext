@@ -14,31 +14,37 @@ public partial class SettingsPage : Page
     {
         this.DataContext<SettingsViewModel>((page, vm) =>
         {
-            page.Content(new ScrollView()
-                    .Margin(36)
-                    .HorizontalAlignment(HorizontalAlignment.Stretch)
-                    .Content(new StackPanel()
-                        .MaxWidth(1000)
+            page.Content(new SplitView()
+                    .Name(out var splitView)
+                    .PanePlacement(SplitViewPanePlacement.Right)
+                    .OpenPaneLength(600)
+                    .DisplayMode(SplitViewDisplayMode.Inline)
+                    .Content(new ScrollView()
+                        .Margin(36)
                         .HorizontalAlignment(HorizontalAlignment.Stretch)
-                        .Children(
-                        [
-                            SettingsCard("Login to your MyAnimeList account", "Authenticate", new FontIcon {Glyph = "\uE756"})
-                                .Content(new Button()
-                                    .Content("Authenticate")
-                                    .Name(out var button, b =>
-                                    {
-                                        b.Click += async(s, e) =>
+                        .Content(new StackPanel()
+                            .MaxWidth(1000)
+                            .HorizontalAlignment(HorizontalAlignment.Stretch)
+                            .Children(
+                            [
+                                SettingsCard("Login to your MyAnimeList account", "Authenticate", new FontIcon {Glyph = "\uE756"})
+                                    .Content(new Button()
+                                        .Content("Authenticate")
+                                        .Name(out var button, b =>
                                         {
-                                            await Authenticate();
-                                        };
-                                    })),
+                                            b.Click += (s, e) =>
+                                            {
+                                                splitView.IsPaneOpen = true;
+                                                splitView.Pane = GetPane(splitView);
+                                            };
+                                        })),
 
-                            SettingsCard("Include nsfw results","Include NSFW", new FontIcon {Glyph = "\uE740"})
-                                .Content(new ToggleSwitch().IsOn(x => x.Binding(() => vm.IncludeNsfw).TwoWay())),
+                                SettingsCard("Include nsfw results","Include NSFW", new FontIcon {Glyph = "\uE740"})
+                                    .Content(new ToggleSwitch().IsOn(x => x.Binding(() => vm.IncludeNsfw).TwoWay())),
 
-                            SettingsCard("Number of results returned when searching by name", "Search limit", new FontIcon{ Glyph = "\uF6FA"})
-                                .Content(new NumberBox().Value(x => x.Binding(() => vm.SearchLimit).TwoWay()))
-                        ])));
+                                SettingsCard("Number of results returned when searching by name", "Search limit", new FontIcon{ Glyph = "\uF6FA"})
+                                    .Content(new NumberBox().Value(x => x.Binding(() => vm.SearchLimit).TwoWay()))
+                            ]))));
         });
     }
 
@@ -52,16 +58,9 @@ public partial class SettingsPage : Page
         };
     }
 
-    public async Task Authenticate()
+    public Grid GetPane(SplitView splitView)
     {
-        var dialog = new ContentDialog
-        {
-            Title = "Login",
-            CloseButtonText = "Close",
-            XamlRoot = XamlRoot
-        };
-
-        var content = new Grid().Children([
+        return new Grid().Children([
                     new WebView2().Source(new Uri(MalAuthHelper.GetAuthUrl(ClientId)))
                     .Name(out var view, webview =>
                     {
@@ -81,15 +80,9 @@ public partial class SettingsPage : Page
                                 vm.Token = token;
                             }
 
-                            dialog.Hide();
+                            splitView.IsPaneOpen = false;
                         };
                     })
-                ])
-            .Height(600)
-            .Width(800);
-
-        dialog.Content = content;
-
-        await dialog.ShowAsync();
+                ]);
     }
 }
