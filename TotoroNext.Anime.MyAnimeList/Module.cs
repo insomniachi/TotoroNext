@@ -33,7 +33,6 @@ public class Module : IModule<Settings>
         services.AddKeyedTransient<IMetadataService, MyAnimeListMetadataService>(Descriptor.Id);
         services.AddKeyedTransient<ITrackingService, MyAnimeListTrackingService>(Descriptor.Id);
 
-        services.AddHostedService<MyAnimeListTrackingUpdater>();
     }
 }
 

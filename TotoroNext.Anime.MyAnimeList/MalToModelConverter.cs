@@ -5,6 +5,8 @@ namespace TotoroNext.Anime.MyAnimeList;
 
 public class MalToModelConverter
 {
+    public const string ServiceType = "MyAnimeList";
+
     public static AnimeModel ConvertModel(MalApi.Anime malModel)
     {
         var engTitle = malModel.AlternativeTitles?.English;
@@ -12,11 +14,15 @@ public class MalToModelConverter
         var model = new AnimeModel
         {
             Id = malModel.Id,
-            MalId = malModel.Id,
+            ExternalIds = new ExternalIds
+            {
+                MyAnimeList = malModel.Id
+            },
             Title = malModel.Title,
             EngTitle = string.IsNullOrEmpty(engTitle) ? malModel.Title : engTitle,
             RomajiTitle = malModel.Title,
             Image = malModel.MainPicture?.Large ?? string.Empty,
+            ServiceType = ServiceType,
         };
 
         try

@@ -33,6 +33,7 @@
 
   <ItemGroup>
     <PackageReference Include="FFMpegCore" />
+    <PackageReference Include="System.Reactive" />
   </ItemGroup>
 
 

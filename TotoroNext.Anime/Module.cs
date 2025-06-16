@@ -25,5 +25,7 @@ public class Module : IModule
 
         services.AddSelectionUserInteraction<SelectProviderResult, SearchResult>()
                 .AddSelectionUserInteraction<SelectAnimeResult, AnimeModel>();
+
+        services.AddHostedService<TrackingUpdater>();
     }
 }

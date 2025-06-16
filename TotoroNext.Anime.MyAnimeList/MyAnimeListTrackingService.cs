@@ -32,6 +32,8 @@ internal class MyAnimeListTrackingService : ITrackingService
     private readonly IMalClient _client;
     private readonly Settings _settings;
 
+    public string ServiceName { get; } = nameof(ExternalIds.MyAnimeList);
+
     public MyAnimeListTrackingService(IMalClient client, IModuleSettings<Settings> settings)
     {
         client.SetClientId(SettingsPage.ClientId);

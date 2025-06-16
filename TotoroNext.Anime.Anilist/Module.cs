@@ -46,8 +46,6 @@ public class Module : IModule<Settings>
             var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(AnilistMetadataService));
             return new GraphQLHttpClient("https://graphql.anilist.co/", new NewtonsoftJsonSerializer(), httpClient);
         });
-
-        services.AddHostedService<AnilistTrackingUpdater>();
     }
 }
 

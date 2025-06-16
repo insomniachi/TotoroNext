@@ -1,13 +1,14 @@
 using System.Reactive.Linq;
 using Microsoft.Extensions.Hosting;
 using TotoroNext.Anime.Abstractions.Models;
+using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
 using Uno.Disposables;
 
 namespace TotoroNext.Anime.Abstractions;
 
-public abstract class TrackingUpdater(ITrackingService trackingService,
-                                      IEvent<PlaybackProgressEventArgs> playbackProgressEvent) : IHostedService
+public class TrackingUpdater(IFactory<ITrackingService, Guid> factory,
+                             IEvent<PlaybackProgressEventArgs> playbackProgressEvent) : IHostedService
 {
     private readonly SerialDisposable _subscription = new();
 
@@ -16,9 +17,10 @@ public abstract class TrackingUpdater(ITrackingService trackingService,
         playbackProgressEvent.OnNext()
             .Where(e => (e.Anime.Tracking?.WatchedEpisodes ?? 0) < e.Episode.Number)
             .Where(e => e.Duration - e.Position < TimeSpan.FromMinutes(2))
+            .FirstAsync()
             .SelectMany(e =>
             {
-                if (e.Anime.Tracking is null)
+                if(e.Anime.Tracking is null)
                 {
                     e.Anime.Tracking = new Tracking
                     {
@@ -28,6 +30,7 @@ public abstract class TrackingUpdater(ITrackingService trackingService,
                 }
 
                 var tracking = e.Anime.Tracking;
+                
                 tracking.WatchedEpisodes = (int)e.Episode.Number;
 
                 if (e.Anime.TotalEpisodes == e.Episode.Number)
@@ -35,7 +38,13 @@ public abstract class TrackingUpdater(ITrackingService trackingService,
                     tracking.Status = ListItemStatus.Completed;
                 }
 
-                return trackingService.Update(e.Anime.Id, tracking);
+
+                var tasks = factory.CreateAll()
+                                   .Select(service => new Tuple<ITrackingService, long?>(service, e.Anime.ExternalIds.GetId(service.ServiceName)))
+                                   .Where(x => x.Item2 is not null)
+                                   .Select(tuple => tuple.Item1.Update(tuple.Item2!.Value, tracking));
+
+                return Task.WhenAll(tasks);
             })
             .Subscribe()
             .DisposeWith(_subscription);
@@ -54,4 +63,6 @@ public abstract class TrackingUpdater(ITrackingService trackingService,
 
         return Task.CompletedTask;
     }
+
+    protected virtual long GetId(AnimeModel anime) => anime.Id;
 }

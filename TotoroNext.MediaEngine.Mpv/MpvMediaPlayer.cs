@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO.Pipes;
+using System.Reactive;
 using System.Reactive.Subjects;
 using System.Text;
 using System.Text.Json;
@@ -15,9 +16,11 @@ internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
     private NamedPipeClientStream? _ipcStream;
     private readonly Subject<TimeSpan> _durationSubject = new();
     private readonly Subject<TimeSpan> _positionSubject = new();
+    private readonly Subject<Unit> _playbackStoped = new();
 
     public IObservable<TimeSpan> DurationChanged => _durationSubject;
     public IObservable<TimeSpan> PositionChanged => _positionSubject;
+    public IObservable<Unit> PlaybackStopped => _playbackStoped;
 
     public void Play(Media media)
     {
@@ -57,6 +60,11 @@ internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
         }
 
         _process = Process.Start(startInfo);
+
+        if(_process is not null)
+        {
+            _process.Exited += (_, _) => _playbackStoped.OnNext(Unit.Default);
+        }
 
         Task.Run(async () =>
         {

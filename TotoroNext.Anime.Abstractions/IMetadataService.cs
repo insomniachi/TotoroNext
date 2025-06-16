@@ -17,7 +17,7 @@ public interface IMetadataService
 public partial class AnimeModel : ObservableObject
 {
     public long Id { get; set; }
-    public long MalId { get; set; }
+    public ExternalIds ExternalIds { get; set; } = new();
     public string Image { get; set; } = "";
     public string Title { get; set; } = "";
     public string EngTitle { get; set; } = "";
@@ -30,6 +30,24 @@ public partial class AnimeModel : ObservableObject
     public DateTime? NextEpisodeAt { get; set; }
     public int AiredEpisodes { get; set; }
     public Season? Season { get; set; }
+    public string? ServiceType { get; init; }
+
+}
+
+public class ExternalIds
+{
+    public long? MyAnimeList { get; set; }
+    public long? Anilist { get; set; }
+
+    public long? GetId(string serviceType)
+    {
+        if(GetType().GetProperties().FirstOrDefault(x => x.Name.Equals(serviceType, StringComparison.OrdinalIgnoreCase)) is not { } property)
+        {
+            return null;
+        }
+
+        return (long?)property.GetValue(this);
+    }
 }
 
 
@@ -41,6 +59,19 @@ public class Tracking
     public DateTime? StartDate { get; set; }
     public DateTime? FinishDate { get; set; }
     public DateTime? UpdatedAt { get; set; }
+
+    public Tracking Clone()
+    {
+        return new()
+        {
+            StartDate = StartDate,
+            Score = Score,
+            WatchedEpisodes = WatchedEpisodes,
+            Status = Status,
+            FinishDate = FinishDate,
+            UpdatedAt = UpdatedAt,
+        };
+    }
 }
 
 

@@ -7,6 +7,8 @@ namespace TotoroNext.Anime.Anilist;
 
 public partial class AniListModelToAnimeModelConverter
 {
+    public const string ServiceType = "Anilist";
+
     [GeneratedRegex(@"(</?i>)|(<br>)")]
     private static partial Regex DescriptionCleanRegex();
 
@@ -18,7 +20,11 @@ public partial class AniListModelToAnimeModelConverter
             EngTitle = media.Title.English ?? media.Title.Romaji ?? string.Empty,
             RomajiTitle = media.Title.Romaji ?? media.Title.English ?? string.Empty,
             Id = media.Id ?? 0,
-            MalId = media.IdMal ?? 0,
+            ExternalIds = new ExternalIds
+            {
+                Anilist = media.Id,
+                MyAnimeList = media.IdMal
+            },
             Image = media.CoverImage.Large,
             TotalEpisodes = media.Episodes,
             AiringStatus = ConvertStatus(media.Status),
@@ -28,6 +34,7 @@ public partial class AniListModelToAnimeModelConverter
             NextEpisodeAt = ConvertToExactTime(media.NextAiringEpisode?.TimeUntilAiring),
             AiredEpisodes = media.NextAiringEpisode?.Episode - 1 ?? 0,
             Season = GetSeason(media.Season, media.SeasonYear),
+            ServiceType = ServiceType,
         };
     }
 
@@ -48,6 +55,7 @@ public partial class AniListModelToAnimeModelConverter
                 Image = x.CoverImage.Large,
                 Tracking = ConvertTracking(x.MediaListEntry),
                 AiringStatus = ConvertStatus(x.Status),
+                ServiceType = ServiceType,
             })
             .ToArray();
     }

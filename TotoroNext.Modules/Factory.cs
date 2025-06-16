@@ -9,7 +9,11 @@ public interface IFactory<TService, TId>
 {
     TService Create(TId id);
 
-    TService? CreateDefault();
+    TService CreateDefault();
+
+    IEnumerable<TService> CreateAll();
+
+    bool CanCreate();
 }
 
 public class Factory<TService, TId>(IServiceScopeFactory serviceScopeFactory,
@@ -28,7 +32,7 @@ public class Factory<TService, TId>(IServiceScopeFactory serviceScopeFactory,
         return scope.ServiceProvider.GetRequiredKeyedService<TService>(id);
     }
 
-    public TService? CreateDefault()
+    public TService CreateDefault()
     {
         using var scope = serviceScopeFactory.CreateScope();
 
@@ -40,7 +44,15 @@ public class Factory<TService, TId>(IServiceScopeFactory serviceScopeFactory,
         }
         else
         {
-            return scope.ServiceProvider.GetRequiredKeyedService<TService>(key);
+            return scope.ServiceProvider.GetKeyedService<TService>(key) ?? scope.ServiceProvider.GetKeyedServices<TService>(KeyedService.AnyKey).First();
         }
     }
+
+    public IEnumerable<TService> CreateAll()
+    {
+        using var scope = serviceScopeFactory.CreateScope();
+        return scope.ServiceProvider.GetKeyedServices<TService>(KeyedService.AnyKey);
+    }
+
+    public bool CanCreate() => CreateAll().Any();
 }

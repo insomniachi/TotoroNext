@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reactive;
 using System.Reactive.Subjects;
 using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.Module.Abstractions;
@@ -12,11 +13,13 @@ internal class VlcMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
     private readonly Settings _settings = settings.Value;
     private readonly Subject<TimeSpan> _durationSubject = new();
     private readonly Subject<TimeSpan> _positionSubject = new();
+    private readonly Subject<Unit> _playbackStoppedSubject = new();
     private HttpInterface? _webInterface;
     private CompositeDisposable? _disposable;
 
     public IObservable<TimeSpan> DurationChanged => _durationSubject;
     public IObservable<TimeSpan> PositionChanged => _positionSubject;
+    public IObservable<Unit> PlaybackStopped => _playbackStoppedSubject;
 
     public void Play(Media media)
     {
@@ -64,6 +67,7 @@ internal class VlcMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
 
         _process = new Process() { StartInfo = startInfo };
         _process.Start();
+        _process.Exited += (_, _) => _playbackStoppedSubject.OnNext(Unit.Default);
 
         _webInterface = new HttpInterface(_process, password);
         _webInterface.DurationChanged.Subscribe(_positionSubject.OnNext).DisposeWith(_disposable);

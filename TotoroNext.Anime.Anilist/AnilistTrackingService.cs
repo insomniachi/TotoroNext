@@ -5,6 +5,8 @@ namespace TotoroNext.Anime.Anilist;
 
 internal class AnilistTrackingService(GraphQLHttpClient client) : ITrackingService
 {
+    public string ServiceName { get; } = nameof(ExternalIds.Anilist);
+
     public async Task<List<AnimeModel>> GetUserList()
     {
         var userName = await FetchUserName();

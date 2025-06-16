@@ -112,6 +112,10 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
         MediaPlayer
             .DurationChanged
             .Subscribe(duration => _duration = duration);
+
+        MediaPlayer
+            .PlaybackStopped
+            .Subscribe(_ => playbackEndedEvent.Publish(new()));
     }
 
     private async Task Play(VideoSource source)
@@ -127,9 +131,9 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
         var duration = MediaHelper.GetDuration(source.Url, source.Headers);
         List<MediaSegment> segments = [];
 
-        if (Anime is not null && segmentsFactory.CreateDefault() is { } segmentsProvider)
+        if (Anime is { ExternalIds.MyAnimeList: not null } && segmentsFactory.CreateDefault() is { } segmentsProvider)
         {
-            segments.AddRange(await segmentsProvider.GetSegments(Anime.MalId, SelectedEpisode.Number, duration.TotalSeconds));
+            segments.AddRange(await segmentsProvider.GetSegments(Anime.ExternalIds.MyAnimeList.Value, SelectedEpisode.Number, duration.TotalSeconds));
         }
 
         var metadata = new MediaMetadata(title, source.Headers, segments);
