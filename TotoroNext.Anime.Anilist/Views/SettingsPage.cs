@@ -26,7 +26,7 @@ public partial class SettingsPage : Microsoft.UI.Xaml.Controls.Page
                             SettingsCard("Login to your anilist account", "Authenticate", new FontIcon {Glyph = "\uE756"})
                             .Content(new Button()
                                 .Content("Authenticate")
-                                .Name(out var button, b =>
+                                .Name(out Button _, b =>
                                 {
                                     b.Click += (s, e) =>
                                     {
@@ -59,9 +59,9 @@ public partial class SettingsPage : Microsoft.UI.Xaml.Controls.Page
     {
         return new Grid().Children([
             new WebView2().Source(new Uri("https://anilist.co/api/v2/oauth/authorize?client_id=10588&response_type=token"))
-            .Name(out var view, webview =>
+            .Name(out WebView2 _, webview =>
             {
-                webview.NavigationCompleted += (s, e) =>
+                webview.NavigationCompleted += (s, _) =>
                 {
                     var url = s.Source.ToString();
                     if(!url.Contains("access_token"))

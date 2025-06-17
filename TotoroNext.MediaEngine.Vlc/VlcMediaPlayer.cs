@@ -67,6 +67,7 @@ internal class VlcMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
 
         _process = new Process() { StartInfo = startInfo };
         _process.Start();
+        _process.EnableRaisingEvents = true;
         _process.Exited += (_, _) => _playbackStoppedSubject.OnNext(Unit.Default);
 
         _webInterface = new HttpInterface(_process, password);

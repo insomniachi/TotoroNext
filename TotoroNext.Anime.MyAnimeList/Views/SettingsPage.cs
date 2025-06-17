@@ -30,7 +30,7 @@ public partial class SettingsPage : Page
                                 SettingsCard("Login to your MyAnimeList account", "Authenticate", new FontIcon {Glyph = "\uE756"})
                                     .Content(new Button()
                                         .Content("Authenticate")
-                                        .Name(out var button, b =>
+                                        .Name(out Button _, b =>
                                         {
                                             b.Click += (s, e) =>
                                             {
@@ -62,9 +62,9 @@ public partial class SettingsPage : Page
     {
         return new Grid().Children([
                     new WebView2().Source(new Uri(MalAuthHelper.GetAuthUrl(ClientId)))
-                    .Name(out var view, webview =>
+                    .Name(out WebView2 _, webview =>
                     {
-                        webview.NavigationCompleted += async (s, e) =>
+                        webview.NavigationCompleted += async (s, _) =>
                         {
                             var url = s.Source.ToString();
                             if(!url.StartsWith(_redirectUrl))

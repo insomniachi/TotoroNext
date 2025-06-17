@@ -63,6 +63,7 @@ internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
 
         if(_process is not null)
         {
+            _process.EnableRaisingEvents = true;
             _process.Exited += (_, _) => _playbackStoped.OnNext(Unit.Default);
         }
 

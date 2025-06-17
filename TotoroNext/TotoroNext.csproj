@@ -17,6 +17,7 @@
             Localization;
             ThemeService;
             SkiaRenderer;
+            WebView;
         </UnoFeatures>
     </PropertyGroup>
 
