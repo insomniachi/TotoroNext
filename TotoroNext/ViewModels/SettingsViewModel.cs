@@ -36,7 +36,7 @@ public partial class SettingsModel : ReactiveObject
 }
 
 
-public partial class SettingsViewModel(IEnumerable<Descriptor> modules) : ReactiveObject, IInitializable
+public partial class SettingsViewModel : ReactiveObject, IInitializable
 {
     private readonly JsonSerializerOptions _options = new()
     {
@@ -44,14 +44,24 @@ public partial class SettingsViewModel(IEnumerable<Descriptor> modules) : Reacti
     };
     private readonly string _filePath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TotoroNext", "settings.json");
 
-    public List<Descriptor> MediaEngines { get; } = [.. modules.Where(x => x.Components.Contains(ComponentTypes.MediaEngine))];
-    public List<Descriptor> AnimeProviders { get; } = [.. modules.Where(x => x.Components.Contains(ComponentTypes.AnimeProvider))];
-    public List<Descriptor> TrackingServices { get; } = [.. modules.Where(x => x.Components.Contains(ComponentTypes.Tracking))];
-    public List<Descriptor> SegmentProviders { get; } = [.. modules.Where(x => x.Components.Contains(ComponentTypes.MediaSegments))];
+    public SettingsViewModel(IEnumerable<Descriptor> modules)
+    {
+        var allModules = modules.ToList();
+        
+        MediaEngines = [.. allModules.Where(x => x.Components.Contains(ComponentTypes.MediaEngine))];
+        AnimeProviders = [..allModules.Where(x => x.Components.Contains(ComponentTypes.AnimeProvider))];
+        TrackingServices = [.. allModules.Where(x => x.Components.Contains(ComponentTypes.Tracking))];
+        SegmentProviders = [.. allModules.Where(x => x.Components.Contains(ComponentTypes.MediaSegments))];
+    }
+
+    public List<Descriptor> MediaEngines { get; } 
+    public List<Descriptor> AnimeProviders { get; } 
+    public List<Descriptor> TrackingServices { get; } 
+    public List<Descriptor> SegmentProviders { get; } 
 
 
     [Reactive]
-    public SettingsModel Settings { get; set; } = null!;
+    public SettingsModel? Settings { get; set; }
 
     public void Initialize()
     {
