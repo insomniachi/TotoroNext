@@ -3,7 +3,6 @@ using System.Text.RegularExpressions;
 using Flurl.Http;
 using HtmlAgilityPack;
 using HtmlAgilityPack.CssSelectors.NetCore;
-using Totoro.Plugins.Anime.AnimePahe;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Abstractions.Models;
 using Uno.Logging;
@@ -75,23 +74,23 @@ public partial class AnimeProvider(IHttpClientFactory httpClientFactory) : IAnim
         
         var releaseId = IdRegex().Match(doc.Text).Groups[1].Value;
         var page = await GetSessionPage(client, releaseId, 1);
-        var totalPages = (int)Math.Ceiling(page.total / page.per_page);
+        var totalPages = (int)Math.Ceiling(page.Total / page.Perpage);
 
         foreach (var pageNumber in Enumerable.Range(1, totalPages))
         {
             if (pageNumber == 1)
             {
-                foreach (var ep in page.data)
+                foreach (var ep in page.Data)
                 {
-                    yield return new Episode(this, releaseId, ep.session, (float)ep.episode);
+                    yield return new Episode(this, releaseId, ep.Session, (float)ep.Episode, ep.Title);
                 }
             }
             else
             {
                 page = await GetSessionPage(client, releaseId, pageNumber);
-                foreach (var ep in page.data)
+                foreach (var ep in page.Data)
                 {
-                    yield return new Episode(this, releaseId, ep.session, (float)ep.episode);
+                    yield return new Episode(this, releaseId, ep.Session, (float)ep.Episode, ep.Title);
                 }
             }
         }
@@ -114,9 +113,7 @@ public partial class AnimeProvider(IHttpClientFactory httpClientFactory) : IAnim
     
     [GeneratedRegex("let id = \"(.+?)\"", RegexOptions.Compiled)]
     private static partial Regex IdRegex();
-    
-    [GeneratedRegex(@"<a href=""(?<url>.+?)"" .+? class=""dropdown-item"">.+? (?<resolution>\d+)p.+?</a>")]
-    private static partial Regex StreamsRegex();
+
     
     private static async Task<AnimePaheEpisodePage> GetSessionPage(FlurlClient client, string releaseId, int page)
     {
