@@ -52,6 +52,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.Anime.MyAnimeLis
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "List", "List", "{80558BE4-4823-A087-2744-E24CE7B955B1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotoroNext.Anime.AnimePahe", "TotoroNext.Anime.AnimePahe\TotoroNext.Anime.AnimePahe.csproj", "{B84C699B-9003-4555-AE87-58D9E3C031A5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -106,6 +108,10 @@ Global
 		{1E5DC42E-F078-4811-9EF2-ED2680C98E48}.Debug|x64.Build.0 = Debug|x64
 		{1E5DC42E-F078-4811-9EF2-ED2680C98E48}.Release|x64.ActiveCfg = Release|x64
 		{1E5DC42E-F078-4811-9EF2-ED2680C98E48}.Release|x64.Build.0 = Release|x64
+		{B84C699B-9003-4555-AE87-58D9E3C031A5}.Debug|x64.ActiveCfg = Debug|x64
+		{B84C699B-9003-4555-AE87-58D9E3C031A5}.Debug|x64.Build.0 = Debug|x64
+		{B84C699B-9003-4555-AE87-58D9E3C031A5}.Release|x64.ActiveCfg = Release|x64
+		{B84C699B-9003-4555-AE87-58D9E3C031A5}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -124,6 +130,7 @@ Global
 		{74E8EF4E-09D1-4A6E-8834-875F832CD248} = {C841F5C2-8F30-5BE9-ECA6-260644CF6F9F}
 		{1E5DC42E-F078-4811-9EF2-ED2680C98E48} = {80558BE4-4823-A087-2744-E24CE7B955B1}
 		{80558BE4-4823-A087-2744-E24CE7B955B1} = {6994BA35-F447-D63A-138F-C94385013AFC}
+		{B84C699B-9003-4555-AE87-58D9E3C031A5} = {19A7823A-C34F-A853-1DEC-E551CC4B3B45}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A7A67BC2-32EB-4DC4-830C-53BECA19D6AD}
