@@ -17,7 +17,7 @@ public partial class AnimeProvider(IHttpClientFactory httpClientFactory) : IAnim
     {
         using var client = GetClient();
         
-        var json = await client.Request()
+         var json = await client.Request()
             .AppendPathSegment("api")
             .SetQueryParams(new
             {

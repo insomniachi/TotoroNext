@@ -100,7 +100,7 @@ public partial class App : Application
                     {
                         var vm = sp.GetRequiredService<SettingsViewModel>();
                         vm.Initialize();
-                        return vm.Settings;
+                        return vm.Settings ?? new();
                     });
                 })
             );

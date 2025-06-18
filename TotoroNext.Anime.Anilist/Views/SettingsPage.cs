@@ -30,8 +30,8 @@ public partial class SettingsPage : Microsoft.UI.Xaml.Controls.Page
                                 {
                                     b.Click += (s, e) =>
                                     {
-                                        splitView.IsPaneOpen = true;
-                                        splitView.Pane = GetPane(splitView);
+                                            splitView.IsPaneOpen = true;
+                                            splitView.Pane = GetPane(splitView);
                                     };
                                 })),
 
