@@ -32,7 +32,7 @@ public partial class MainViewModel : ReactiveObject
 
     public void NavigateToDefault()
     {
-        NavigationFacade.NavigateToRoute("My List");
+        NavigationFacade.NavigateToRoute("My Modules");
     }
 
     public string? Title { get; }

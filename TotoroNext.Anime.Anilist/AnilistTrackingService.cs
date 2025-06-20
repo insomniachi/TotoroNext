@@ -9,7 +9,15 @@ internal class AnilistTrackingService(GraphQLHttpClient client) : ITrackingServi
 
     public async Task<List<AnimeModel>> GetUserList()
     {
-        var userName = await FetchUserName();
+        string? userName;
+        try
+        {
+            userName = await FetchUserName();
+        }
+        catch
+        {
+            return [];
+        }
 
         if (string.IsNullOrEmpty(userName))
         {

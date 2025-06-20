@@ -18,7 +18,12 @@
     },
     "TotoroNext (Desktop)": {
       "commandName": "Project",
-      "compatibleTargetFramework": "desktop"
+      "compatibleTargetFramework": "desktop",
+      "environmentVariables": {
+        "DISPLAY": ":0",
+        "GDK_GL": "gles",
+        "GDK_BACKEND": "x11"
+      }
     },
     "TotoroNext (Desktop WSL2)": {
       "commandName": "WSL2",
