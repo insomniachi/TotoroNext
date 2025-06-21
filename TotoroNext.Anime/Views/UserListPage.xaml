@@ -68,6 +68,9 @@
                     ElementPrepared="AnimeList_ElementPrepared"
                     IsTapEnabled="True"
                     ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}">
+                    <ItemsRepeater.ItemTransitionProvider>
+                        <LinedFlowLayoutItemCollectionTransitionProvider />
+                    </ItemsRepeater.ItemTransitionProvider>
                     <ItemsRepeater.ItemTemplate>
                         <DataTemplate x:DataType="taa:AnimeModel">
                             <ItemContainer>
