@@ -60,6 +60,9 @@
         <Page Update="Views\SettingsPage.xaml">
             <Generator>MSBuild:Compile</Generator>
         </Page>
+        <Page Update="Views\ModuleDetailsView.xaml">
+            <Generator>MSBuild:Compile</Generator>
+        </Page>
     </ItemGroup>
 
 </Project>

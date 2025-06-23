@@ -28,7 +28,7 @@ public partial class App : Application
             new Anime.Module(),
         ];
 
-#if DEBUG
+#if !DEBUG
         var store = new DebugModuleStore();
 #else
         var store = new ModuleStore();
@@ -95,7 +95,9 @@ public partial class App : Application
                             .RegisterEvent<NavigateToRouteRequest>()
                             .RegisterEvent<NavigateToDataRequest>();
 
-                    services.AddNavigationViewItem<ModulesPage, ModulesViewModel>("My Modules", new FontIcon { Glyph = "\uED35" }, new NavigationViewItemTag { IsFooterItem = true });
+                    services.AddDataViewMap<ModuleDetailsView, ModuleDetailsViewModel, ModuleManifest>();
+
+                    services.AddFooterNavigationViewItem<ModulesPage, ModulesViewModel>("My Modules", new FontIcon { Glyph = "\uED35" });
                     services.AddNavigationViewItem<ModulesStorePage, ModulesStoreViewModel>("Store", new FontIcon { Glyph = "\uEA40" });
                     services.AddTransient<ViewMap>(_ => new ViewMap<SettingsPage, SettingsViewModel>());
                     services.AddSingleton<SettingsViewModel>();

@@ -1,4 +1,3 @@
-using CommunityToolkit.WinUI;
 using Microsoft.Extensions.DependencyInjection;
 using TotoroNext.Module.Abstractions;
 using Uno.UI.Extensions;
@@ -28,63 +27,89 @@ public class ControlNavigator(UIElement host,
     
     public UIElement Control { get; } = host;
 
-    public void NavigateToData(object data)
+    public bool NavigateToData(object data)
     {
-        if (data is null)
+        try
         {
-            return;
+            if (data is null)
+            {
+                return false;
+            }
+
+            var map = locator.FindByData(data.GetType());
+
+            if (map is not { View: { } viewType, ViewModel: { } vmType })
+            {
+                return false;
+            }
+
+            var page = (FrameworkElement)Activator.CreateInstance(viewType)!;
+            using var scope = serviceScopeFactory.CreateScope();
+            var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType, data);
+
+            ConfigurePage(page, vmObj);
+            Navigate(page);
+            Navigated?.Invoke(this, viewType);
+            return true;
         }
-
-        var map = locator.FindByData(data.GetType());
-
-        if (map is not { View: { } viewType, ViewModel: { } vmType })
+        catch
         {
-            return;
+            return false;
         }
-
-        var page = (FrameworkElement)Activator.CreateInstance(viewType)!;
-        using var scope = serviceScopeFactory.CreateScope();
-        var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType, data);
-
-        ConfigurePage(page, vmObj);
-        Navigate(page);
-        Navigated?.Invoke(this, viewType);
     }
 
-    public void NavigateToRoute(string path)
+    public bool NavigateToRoute(string path)
     {
-        var map = locator.FindByKey(path);
-
-        if (map is not { View: { } view, ViewModel: { } vm })
+        try
         {
-            return;
+            var map = locator.FindByKey(path);
+
+            if (map is not { View: { } view, ViewModel: { } vm })
+            {
+                return false;
+            }
+
+            var page = (FrameworkElement)Activator.CreateInstance(view)!;
+            using var scope = serviceScopeFactory.CreateScope();
+            var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm);
+
+            ConfigurePage(page, vmObj);
+            Navigate(page);
+            Navigated?.Invoke(this, view);
+
+            return true;
         }
-
-        var page = (FrameworkElement)Activator.CreateInstance(view)!;
-        using var scope = serviceScopeFactory.CreateScope();
-        var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm);
-
-        ConfigurePage(page, vmObj);
-        Navigate(page);
-        Navigated?.Invoke(this, view);
+        catch
+        {
+            return true;
+        }
     }
 
-    public void NavigateViewModel(Type vmType)
+    public bool NavigateViewModel(Type vmType)
     {
-        var map = locator.FindByViewModel(vmType);
-
-        if (map is not { View: { } view })
+        try
         {
-            return;
+            var map = locator.FindByViewModel(vmType);
+
+            if (map is not { View: { } view })
+            {
+                return false;
+            }
+
+            var page = (FrameworkElement)Activator.CreateInstance(view)!;
+            using var scope = serviceScopeFactory.CreateScope();
+            var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType);
+
+            ConfigurePage(page, vmObj);
+            Navigate(page);
+            Navigated?.Invoke(this, view);
+
+            return true;
         }
-
-        var page = (FrameworkElement)Activator.CreateInstance(view)!;
-        using var scope = serviceScopeFactory.CreateScope();
-        var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType);
-
-        ConfigurePage(page, vmObj);
-        Navigate(page);
-        Navigated?.Invoke(this, view);
+        catch
+        {
+            return false;
+        }
     }
 
     private void Navigate(FrameworkElement page)

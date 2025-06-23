@@ -107,7 +107,7 @@
     "Description": "Custom discord rich presense while watching",
     "Owner": "Totoro",
     "Categories": [ "Misc" ],
-    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.Discord/Assets/aniskip.png",
+    "ImageUrl": "https://raw.githubusercontent.com/insomniachi/TotoroNext/refs/heads/master/TotoroNext.Discord/Assets/discord-logo.jpg",
     "EntryPoint": "TotoroNext.Discord.dll",
     "Versions": [
       {

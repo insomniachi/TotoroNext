@@ -48,6 +48,15 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    public static IServiceCollection AddFooterNavigationViewItem<TView, TViewModel>(this IServiceCollection services, string title, IconElement icon, NavigationViewItemTag? tag = null)
+        where TView : class, new()
+        where TViewModel : class
+    {
+        tag ??= new();
+        tag.IsFooterItem = true;
+        return AddNavigationViewItem<TView, TViewModel>(services, title, icon, tag);
+    }
+
     public static IServiceCollection RegisterEvent<TArgs>(this IServiceCollection services) => services.AddSingleton<Subject<TArgs>>();
 
     public static IServiceCollection AddModuleSettings<TData>(this IServiceCollection services, IModule<TData> module)

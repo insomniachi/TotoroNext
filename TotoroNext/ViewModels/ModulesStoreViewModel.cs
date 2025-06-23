@@ -8,7 +8,7 @@ using TotoroNext.Module.Abstractions;
 namespace TotoroNext.Presentation;
 
 public partial class ModulesStoreViewModel(IModuleStore store,
-                                           IEnumerable<Descriptor> descriptors) : ReactiveObject, IInitializable
+                                           IEnumerable<Descriptor> descriptors) : ReactiveObject, IInitializable, IPaneNavigatable
 {
     [Reactive]
     public partial List<ModuleManifest> Modules { get; set; }
@@ -22,14 +22,11 @@ public partial class ModulesStoreViewModel(IModuleStore store,
 
         this.WhenAnyValue(x => x.SelectedModule)
             .WhereNotNull()
-            .Subscribe(_ => IsPaneOpen = true);
+            .Subscribe(manifest => PaneNavigator.NavigateToData(manifest));
     }
 
     [Reactive]
     public partial ModuleManifest? SelectedModule { get; set; }
-
-    [Reactive]
-    public partial bool IsPaneOpen { get; set; }
 
     [Reactive]
     public partial bool IsDownloading { get; set; }
@@ -44,6 +41,8 @@ public partial class ModulesStoreViewModel(IModuleStore store,
     }
 
     private IObservable<bool> CanDownloadObservable => this.WhenAnyValue(x => x.SelectedModule).Select(CanDownload);
+
+    public INavigator PaneNavigator { get; set; } = null!;
 
     private bool CanDownload(ModuleManifest? manifest)
     {

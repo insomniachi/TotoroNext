@@ -11,8 +11,8 @@
 
 
     <SplitView
-        IsPaneOpen="{x:Bind ViewModel.IsPaneOpen, Mode=TwoWay}"
         OpenPaneLength="600"
+        PaneBackground="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
         PanePlacement="Right">
         <Grid Margin="36" RowSpacing="16">
             <Grid.RowDefinitions>
@@ -30,7 +30,7 @@
                 <ItemsView.ItemTemplate>
                     <DataTemplate x:DataType="mod:ModuleManifest">
                         <ItemContainer Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
-                            <Grid Padding="8">
+                            <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
@@ -41,9 +41,16 @@
                                     Source="{x:Bind a:Converters.StringToImage(ImageUrl)}"
                                     Stretch="Uniform" />
 
-                                <StackPanel Grid.Row="1">
+                                <StackPanel
+                                    Grid.Row="1"
+                                    Padding="8"
+                                    Background="{ThemeResource SolidBackgroundFillColorBaseAltBrush}">
                                     <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="{x:Bind Name}" />
-                                    <TextBlock Text="{x:Bind Description}" TextWrapping="WrapWholeWords" />
+                                    <TextBlock
+                                        Height="50"
+                                        Text="{x:Bind Description}"
+                                        TextTrimming="WordEllipsis"
+                                        TextWrapping="WrapWholeWords" />
                                 </StackPanel>
                             </Grid>
                         </ItemContainer>
@@ -59,28 +66,5 @@
                 </ItemsView.Layout>
             </ItemsView>
         </Grid>
-
-        <SplitView.Pane>
-            <Grid Padding="16" RowSpacing="8">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition />
-                </Grid.RowDefinitions>
-
-                <Image Source="{x:Bind a:Converters.StringToImage(ViewModel.SelectedModule.ImageUrl), Mode=OneWay}" Stretch="UniformToFill" />
-
-                <StackPanel Grid.Row="1" Spacing="8">
-                    <TextBlock Style="{ThemeResource SubtitleTextBlockStyle}" Text="{x:Bind ViewModel.SelectedModule.Name, Mode=OneWay}" />
-                    <Button
-                        Command="{x:Bind ViewModel.DownloadCommand}"
-                        CommandParameter="{x:Bind ViewModel.SelectedModule, Mode=OneWay}"
-                        Content="Download"
-                        Visibility="{x:Bind a:Converters.InvertedBooleanToVisibility(ViewModel.IsDownloading), Mode=OneWay}" />
-                    <ProgressBar IsIndeterminate="True" Visibility="{x:Bind a:Converters.BooleanToVisibility(ViewModel.IsDownloading), Mode=OneWay}" />
-                    <TextBlock Text="{x:Bind ViewModel.SelectedModule.Description, Mode=OneWay}" TextWrapping="WrapWholeWords" />
-                </StackPanel>
-            </Grid>
-        </SplitView.Pane>
-
     </SplitView>
 </Page>

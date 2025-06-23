@@ -3,9 +3,9 @@ namespace TotoroNext.Module.Abstractions;
 public interface INavigator
 {
     event EventHandler<Type>? Navigated;
-    void NavigateViewModel(Type vmType);
-    void NavigateToData(object data);
-    void NavigateToRoute(string path);
+    bool NavigateViewModel(Type vmType);
+    bool NavigateToData(object data);
+    bool NavigateToRoute(string path);
 }
 
 public interface INavigatorHost

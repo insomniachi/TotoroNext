@@ -14,8 +14,8 @@ $baseOutput2 = "Temp/$projectPath/net9.0-desktop"
 $storePath = "Store/$projectPath"
 
 # Publish the project
-msbuild $csproj /r /t:Publish /p:Configuration=Debug /p:PublishDir="../$baseOutput1" /p:TargetFramework=net9.0-windows10.0.26100
-msbuild $csproj /r /t:Publish /p:Configuration=Debug /p:PublishDir="../$baseOutput2" /p:TargetFramework=net9.0-desktop
+msbuild $csproj /r /t:Publish /p:Configuration=Release /p:PublishDir="../$baseOutput1" /p:TargetFramework=net9.0-windows10.0.26100
+msbuild $csproj /r /t:Publish /p:Configuration=Release /p:PublishDir="../$baseOutput2" /p:TargetFramework=net9.0-desktop
 
 # Remove unnecessary files
 Get-ChildItem -Path $baseOutput1 -File | Where-Object { $_.Name -match "Microsoft|Uno|WinRT|Skia" } | Remove-Item -Force
