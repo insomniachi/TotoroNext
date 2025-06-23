@@ -12,7 +12,7 @@ namespace TotoroNext.Anime.ViewModels;
 
 public partial class SearchMetadataProviderViewModel(IFactory<IMetadataService, Guid> factory,
                                                      IFactory<IAnimeProvider, Guid> providerFactory,
-                                                     [FromKeyedServices("Main")] INavigator navigator) : ReactiveObject, IInitializable
+                                                     IEvent<NavigateToDataRequest> dataNavRequest) : ReactiveObject, IInitializable
 {
     private readonly IMetadataService? _metadataService = factory.CreateDefault();
     private readonly IAnimeProvider? _provider = providerFactory.CreateDefault();
@@ -47,6 +47,6 @@ public partial class SearchMetadataProviderViewModel(IFactory<IMetadataService, 
             return;
         }
 
-        navigator.NavigateToData(new WatchViewModelNavigationParameter(result, model));
+        dataNavRequest.Publish(new(new WatchViewModelNavigationParameter(result, model)));
     }
 }

@@ -12,7 +12,6 @@
     mc:Ignorable="d">
 
     <SplitView
-        IsPaneOpen="{x:Bind ViewModel.IsFilterPaneOpen, Mode=TwoWay}"
         OpenPaneLength="500"
         PaneBackground="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
         PanePlacement="Right">
@@ -94,13 +93,5 @@
             </ScrollView>
 
         </Grid>
-
-        <SplitView.Pane>
-            <StackPanel Padding="16" Spacing="16">
-                <TextBlock Style="{ThemeResource TitleTextBlockStyle}" Text="Filter" />
-                <TextBox PlaceholderText="Name" Text="{x:Bind ViewModel.Filter.Term, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <TextBox PlaceholderText="Year" Text="{x:Bind ViewModel.Filter.Year, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            </StackPanel>
-        </SplitView.Pane>
     </SplitView>
 </Page>

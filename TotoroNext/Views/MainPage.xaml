@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:TotoroNext.Presentation"
+    xmlns:mod="using:TotoroNext.Module"
     xmlns:win="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Required">
@@ -38,7 +39,8 @@
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 HorizontalContentAlignment="Stretch"
-                VerticalContentAlignment="Stretch">
+                VerticalContentAlignment="Stretch"
+                mod:NavigationExtensions.IsAttached="True">
                 <ContentControl.ContentTransitions>
                     <TransitionCollection>
                         <EntranceThemeTransition />

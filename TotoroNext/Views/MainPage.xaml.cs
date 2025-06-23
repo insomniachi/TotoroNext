@@ -1,3 +1,5 @@
+using ReactiveUI;
+using TotoroNext.Module;
 using TotoroNext.ViewModels;
 
 namespace TotoroNext.Presentation;
@@ -22,16 +24,37 @@ public sealed partial class MainPage : Page
     {
         if (DataContext is MainViewModel vm)
         {
-            vm.NavigationFacade.Frame = NavFrame;
-            vm.NavigateToDefault();
-
             NavView.ItemInvoked += (_, e) =>
             {
                 if(e.IsSettingsInvoked)
                 {
-                    vm.NavigationFacade.NavigateViewModel(typeof(SettingsViewModel));
+                    vm.Navigator?.NavigateViewModel(typeof(SettingsViewModel));
                 }
             };
+
+            vm.WhenAnyValue(x => x.Navigator)
+              .WhereNotNull()
+              .Subscribe(navigator =>
+              {
+                  navigator.Navigated += (s, e) =>
+                  {
+                      if (e is { } view)
+                      {
+                          NavView.SelectedItem = NavView.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(x =>
+                          {
+                              if(x.Tag is not NavigationViewItemTag tag)
+                              {
+                                  return false;
+                              }
+
+                              return tag.ViewType == view;
+                          });
+                      }
+                  };
+                  navigator.NavigateToRoute("My List");
+                  NavView.UpdateLayout();
+
+              });
         }
     }
 

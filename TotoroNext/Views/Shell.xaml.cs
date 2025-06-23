@@ -1,4 +1,4 @@
-﻿namespace TotoroNext.Presentation;
+namespace TotoroNext.Presentation;
 
 public sealed partial class Shell : UserControl, IContentControlProvider
 {

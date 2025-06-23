@@ -15,7 +15,7 @@ namespace TotoroNext.Anime.ViewModels;
 [UsedImplicitly]
 public partial class SearchProviderViewModel(IFactory<IAnimeProvider, Guid> factory,
                                              IFactory<IMetadataService, Guid> metaDataFactory,
-                                             [FromKeyedServices("Main")] INavigator navigator) : ReactiveObject, IInitializable
+                                             IEvent<NavigateToDataRequest> dataNavRequest) : ReactiveObject, IInitializable
 {
     private readonly IAnimeProvider? _provider = factory.CreateDefault();
     private readonly IMetadataService? _metadataService = metaDataFactory.CreateDefault();
@@ -42,12 +42,12 @@ public partial class SearchProviderViewModel(IFactory<IAnimeProvider, Guid> fact
     {
         if(_metadataService is null)
         {
-            navigator.NavigateToData(new WatchViewModelNavigationParameter(result));
+            dataNavRequest.Publish(new(new WatchViewModelNavigationParameter(result)));
         }
         else
         {
             var anime = await _metadataService.SearchAndSelectAsync(result);
-            navigator.NavigateToData(new WatchViewModelNavigationParameter(result, anime));
+            dataNavRequest.Publish(new(new WatchViewModelNavigationParameter(result, anime)));
         }
     }
 }

@@ -15,10 +15,11 @@ public class Module : IModule
     public void ConfigureServices(IServiceCollection services)
     {
 
-        services.AddMainNavigationViewItem<UserListPage, UserListViewModel>("My List", new SymbolIcon(Symbol.Library))
-                .AddMainNavigationViewItem<SearchProviderPage, SearchProviderViewModel>("Watch Now", new FontIcon { Glyph = "\uE7C5" })
-                .AddMainNavigationViewItem<SearchMetadataProviderPage, SearchMetadataProviderViewModel>("Search Metadata", new FontIcon { Glyph = "\uEDE4" })
-                .AddDataViewMap<WatchPage, WatchViewModel, WatchViewModelNavigationParameter>();
+        services.AddNavigationViewItem<UserListPage, UserListViewModel>("My List", new SymbolIcon(Symbol.Library))
+                .AddNavigationViewItem<SearchProviderPage, SearchProviderViewModel>("Watch Now", new FontIcon { Glyph = "\uE7C5" })
+                .AddNavigationViewItem<SearchMetadataProviderPage, SearchMetadataProviderViewModel>("Search Metadata", new FontIcon { Glyph = "\uEDE4" })
+                .AddDataViewMap<WatchPage, WatchViewModel, WatchViewModelNavigationParameter>()
+                .AddDataViewMap<UserListFilterView, UserListFilterViewModel, UserListFilter>();
 
         services.RegisterEvent<PlaybackProgressEventArgs>()
                 .RegisterEvent<PlaybackEndedEventArgs>();

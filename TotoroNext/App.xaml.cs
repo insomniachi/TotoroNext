@@ -67,7 +67,6 @@ public partial class App : Application
                     services.AddSingleton<IModuleStore>(store);
                     services.AddCoreServices();
                     services.AddAnimeServices();
-                    services.AddNavigationView("Main");
                     services.AddTransient(sp =>
                     {
                         var openPicker = new FileOpenPicker();
@@ -92,8 +91,12 @@ public partial class App : Application
                             .RegisterFactory<IAnimeProvider>(nameof(SettingsModel.SelectedAnimeProvider))
                             .RegisterFactory<IMediaSegmentsProvider>(nameof(SettingsModel.SelectedSegmentsProvider));
 
-                    services.AddMainNavigationViewItem<ModulesPage, ModulesViewModel>("My Modules", new FontIcon { Glyph = "\uED35" }, true);
-                    services.AddMainNavigationViewItem<ModulesStorePage, ModulesStoreViewModel>("Store", new FontIcon { Glyph = "\uEA40" });
+                    services.RegisterEvent<NavigateToViewModelRequest>()
+                            .RegisterEvent<NavigateToRouteRequest>()
+                            .RegisterEvent<NavigateToDataRequest>();
+
+                    services.AddNavigationViewItem<ModulesPage, ModulesViewModel>("My Modules", new FontIcon { Glyph = "\uED35" }, new NavigationViewItemTag { IsFooterItem = true });
+                    services.AddNavigationViewItem<ModulesStorePage, ModulesStoreViewModel>("Store", new FontIcon { Glyph = "\uEA40" });
                     services.AddTransient<ViewMap>(_ => new ViewMap<SettingsPage, SettingsViewModel>());
                     services.AddSingleton<SettingsViewModel>();
                     services.AddTransient(sp =>

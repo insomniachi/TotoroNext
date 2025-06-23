@@ -18,14 +18,17 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddNavigationViewItem<TView, TViewModel>(this IServiceCollection services, string navigationViewName, string title, IconElement icon, object? tag = null)
+    public static IServiceCollection AddNavigationViewItem<TView, TViewModel>(this IServiceCollection services, string title, IconElement icon, NavigationViewItemTag? tag = null)
         where TView : class, new()
         where TViewModel : class
     {
+        tag ??= new();
+        tag.ViewType ??= typeof(TView);
+
         services.AddKeyedViewMap<TView, TViewModel>(title);
         services.AddTransient(sp =>
         {
-            var navigator = sp.GetRequiredKeyedService<IContentControlNavigator>(navigationViewName);
+            var navigator = sp.GetRequiredService<IEvent<NavigateToViewModelRequest>>();
 
             var item = new NavigationViewItem
             {
@@ -36,12 +39,7 @@ public static class ServiceCollectionExtensions
 
             item.Tapped += (_, _) =>
             {
-                navigator.NavigateViewModel(typeof(TViewModel));
-            };
-
-            navigator.Navigated += (_, e) =>
-            {
-                item.IsSelected = e == typeof(TView);
+                navigator.Publish(new(typeof(TViewModel)));
             };
 
             return item;
@@ -50,26 +48,12 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddMainNavigationViewItem<TView, TViewModel>(this IServiceCollection services, string title, IconElement icon, bool isFooterItem = false)
-        where TView : class, new()
-        where TViewModel : class
-    {
-        return services.AddNavigationViewItem<TView, TViewModel>("Main", title, icon, isFooterItem);
-    }
-
     public static IServiceCollection RegisterEvent<TArgs>(this IServiceCollection services) => services.AddSingleton<Subject<TArgs>>();
 
     public static IServiceCollection AddModuleSettings<TData>(this IServiceCollection services, IModule<TData> module)
         where TData : class, new()
     {
         return services.AddSingleton<IModuleSettings<TData>>(_ => new ModuleSettings<TData>(module.Descriptor));
-    }
-
-    public static IServiceCollection AddNavigationView(this IServiceCollection services, string key)
-    {
-        services.AddKeyedSingleton<IContentControlNavigator, FrameNavigator>(key);
-        services.AddKeyedSingleton<INavigator>(key, (sp, k) => sp.GetRequiredKeyedService<IContentControlNavigator>(k));
-        return services;
     }
 
     public static IServiceCollection AddViewMap<TView, TViewModel>(this IServiceCollection services)
@@ -107,4 +91,10 @@ public static class ServiceCollectionExtensions
     {
         return services.AddTransient<IUserInteraction<List<TType>, TType>, TImpl>();
     }
+}
+
+public class NavigationViewItemTag
+{
+    public bool IsFooterItem { get; set; }
+    public Type? ViewType { get; set; }
 }

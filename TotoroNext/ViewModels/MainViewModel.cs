@@ -1,10 +1,12 @@
+using System.Reactive.Linq;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Presentation;
 
-public partial class MainViewModel : ReactiveObject
+public partial class MainViewModel : ReactiveObject, INavigatorHost
 {
 
     [Reactive]
@@ -13,26 +15,25 @@ public partial class MainViewModel : ReactiveObject
     public IList<NavigationViewItem> MenuItems { get; }
     public IList<NavigationViewItem> FooterItems { get; }
 
-    public IContentControlNavigator NavigationFacade { get; }
+    [Reactive]
+    public partial INavigator? Navigator { get; set; }
 
-    public MainViewModel(
-        IStringLocalizer localizer,
-        IOptions<AppConfig> appInfo,
-        [FromKeyedServices("Main")] IContentControlNavigator navigationFacade,
-        IEnumerable<NavigationViewItem> navigationViewItems)
+    public MainViewModel(IStringLocalizer localizer,
+                         IOptions<AppConfig> appInfo,
+                         IEnumerable<NavigationViewItem> navigationViewItems,
+                         IEvent<NavigateToViewModelRequest> viewNavRequest,
+                         IEvent<NavigateToDataRequest> dataNavRequest)
     {
-        NavigationFacade = navigationFacade;
-
-        MenuItems = [.. navigationViewItems.Where(x => x.Tag is false)];
-        FooterItems = [.. navigationViewItems.Where(x => x.Tag is true)];
+        MenuItems = [.. navigationViewItems.Where(x => x.Tag is NavigationViewItemTag { IsFooterItem: false })];
+        FooterItems = [.. navigationViewItems.Where(x => x.Tag is NavigationViewItemTag { IsFooterItem: true })];
         Title = "Main";
         Title += $" - {localizer["ApplicationName"]}";
         Title += $" - {appInfo?.Value?.Environment}";
-    }
 
-    public void NavigateToDefault()
-    {
-        NavigationFacade.NavigateToRoute("My List");
+        viewNavRequest.OnNext()
+            .Subscribe(req => Navigator?.NavigateViewModel(req.Type));
+        dataNavRequest.OnNext()
+            .Subscribe(req => Navigator?.NavigateToData(req.Data));
     }
 
     public string? Title { get; }

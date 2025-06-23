@@ -5,7 +5,7 @@ using TotoroNext.Module.Abstractions;
 namespace TotoroNext.Presentation;
 
 public partial class ModulesViewModel(IEnumerable<Descriptor> modules,
-                                      [FromKeyedServices("Main")] IContentControlNavigator navigator) : ReactiveObject
+                                      IEvent<NavigateToViewModelRequest> request) : ReactiveObject
 {
     public List<Descriptor> Descriptors { get; } = [.. modules];
 
@@ -16,6 +16,6 @@ public partial class ModulesViewModel(IEnumerable<Descriptor> modules,
             return;
         }
 
-        navigator.NavigateViewModel(vmType);
+        request.Publish(new NavigateToViewModelRequest(vmType));
     }
 }
