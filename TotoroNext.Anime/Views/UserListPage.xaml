@@ -12,7 +12,7 @@
     mc:Ignorable="d">
 
     <SplitView
-        OpenPaneLength="500"
+        OpenPaneLength="750"
         PaneBackground="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
         PanePlacement="Right">
         <Grid Margin="36" RowSpacing="16">

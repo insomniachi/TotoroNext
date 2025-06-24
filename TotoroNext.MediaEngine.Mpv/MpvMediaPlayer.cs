@@ -67,42 +67,71 @@ internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
             _process.Exited += (_, _) => _playbackStoped.OnNext(Unit.Default);
         }
 
-        Task.Run(async () =>
-        {
-            while (!File.Exists(pipePath))
-            {
-                await Task.Delay(500);
-            }
-
-            await IpcLoop(pipeName);
-        });
+        Task.Run(() => IpcLoop(pipeName));
     }
 
-    private async Task IpcLoop(string pipeName)
-    {
-        using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-        _ipcStream = pipe;
-        await pipe.ConnectAsync();
+	private async Task IpcLoop(string pipeName)
+	{
+		try
+		{
+            await Task.Delay(TimeSpan.FromSeconds(5));
+			using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+			_ipcStream = pipe;
 
-        // Observe properties
-        await SendIpcCommand(pipe, new { command = new object[] { "observe_property", 1, "duration" } });
-        await SendIpcCommand(pipe, new { command = new object[] { "observe_property", 2, "time-pos" } });
+			// Retry until connected or process exits
+			while (!await TryConnectPipeAsync(pipe))
+			{
+				if (_process is { HasExited: true })
+				{
+					_playbackStoped.OnNext(Unit.Default);
+					return;
+				}
 
-        using var reader = new StreamReader(pipe, Encoding.UTF8);
+				await Task.Delay(500);
+			}
 
-        while (pipe.IsConnected)
-        {
-            var line = await reader.ReadLineAsync();
-            if (!string.IsNullOrWhiteSpace(line))
-            {
-                HandleIpcMessage(line);
-            }
-            else
-            {
-                await Task.Delay(100);
-            }
-        }
-    }
+			// Observe properties
+			await SendIpcCommand(pipe, new { command = new object[] { "observe_property", 1, "duration" } });
+			await SendIpcCommand(pipe, new { command = new object[] { "observe_property", 2, "time-pos" } });
+
+			using var reader = new StreamReader(pipe, Encoding.UTF8);
+
+			while (pipe.IsConnected)
+			{
+				var line = await reader.ReadLineAsync();
+				if (!string.IsNullOrWhiteSpace(line))
+				{
+					HandleIpcMessage(line);
+				}
+				else
+				{
+					await Task.Delay(100);
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine($"[MpvMediaPlayer] IPC connection failed: {ex.Message}");
+			_playbackStoped.OnNext(Unit.Default);
+		}
+	}
+
+	private static async Task<bool> TryConnectPipeAsync(NamedPipeClientStream pipe)
+	{
+		try
+		{
+			await pipe.ConnectAsync(1000); // 1 second timeout per attempt
+			return pipe.IsConnected;
+		}
+		catch (TimeoutException)
+		{
+			return false;
+		}
+		catch (IOException)
+		{
+			return false;
+		}
+	}
 
     private static async Task SendIpcCommand(NamedPipeClientStream pipe, object command)
     {

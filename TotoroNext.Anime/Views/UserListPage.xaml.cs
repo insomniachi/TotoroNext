@@ -27,13 +27,14 @@ public sealed partial class UserListPage : Page
         card.UpdateBindings();
     }
 
-    private async void AnimeCard_Tapped(object sender, TappedRoutedEventArgs e)
+    private void AnimeCard_Tapped(object sender, TappedRoutedEventArgs e)
     {
         if(sender is not AnimeCard { Anime: not null } card) 
         {
             return;
         }
 
-        await (ViewModel?.AnimeSelected(card.Anime) ?? Task.CompletedTask);
+        ViewModel?.AnimeSelected(card.Anime);
+        //await (ViewModel?.AnimeSelected(card.Anime) ?? Task.CompletedTask);
     }
 }

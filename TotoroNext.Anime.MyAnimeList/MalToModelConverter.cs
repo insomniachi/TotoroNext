@@ -23,6 +23,7 @@ public class MalToModelConverter
             RomajiTitle = malModel.Title,
             Image = malModel.MainPicture?.Large ?? string.Empty,
             ServiceType = ServiceType,
+            Description = malModel.Synopsis ?? string.Empty,
         };
 
         try

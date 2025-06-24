@@ -1,8 +1,8 @@
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
 using JetBrains.Annotations;
 using ReactiveUI;
-using ReactiveUI.SourceGenerators;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.Anime.ViewModels.Parameters;
@@ -17,67 +17,74 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
                                     IEvent<PlaybackProgressEventArgs> playbackProgressEvent,
                                     IEvent<PlaybackEndedEventArgs> playbackEndedEvent,
                                     IFactory<IMediaSegmentsProvider, Guid> segmentsFactory,
-                                    IFactory<IMediaPlayer, Guid> mediaPlayerFactory) : ReactiveObject, IInitializable, IDisposable
+                                    IFactory<IMediaPlayer, Guid> mediaPlayerFactory) : ObservableObject, IInitializable, IDisposable
 {
     private TimeSpan _duration;
 
     public IMediaPlayer? MediaPlayer { get; } = mediaPlayerFactory.CreateDefault();
 
-    [Reactive]
+    [ObservableProperty]
     public partial SearchResult ProviderResult { get; set; }
 
-    [Reactive]
+    [ObservableProperty]
     public partial AnimeModel? Anime { get; set; }
 
-    [Reactive]
+    [ObservableProperty]
     public partial Episode? SelectedEpisode { get; set; }
 
-    [Reactive]
+    [ObservableProperty]
     public partial VideoServer SelectedServer { get; set; }
 
-    [Reactive]
+    [ObservableProperty]
     public partial VideoSource SelectedSource { get; set; }
 
-    [ObservableAsProperty(PropertyName = "Servers")]
-    private IObservable<List<VideoServer>> ServersObservable() =>
-        this.WhenAnyValue(x => x.SelectedEpisode)
-            .WhereNotNull()
-            .SelectMany(ep => ep.GetServersAsync().ToListAsync().AsTask())
-            .ObserveOn(RxApp.MainThreadScheduler);
+    [ObservableProperty]
+    public partial List<Episode>? Episodes { get; set; } = [];
 
-    [ObservableAsProperty(PropertyName = "Sources")]
-    private IObservable<List<VideoSource>> StreamObservable() =>
-        this.WhenAnyValue(x => x.SelectedServer)
-            .WhereNotNull()
-            .SelectMany(server => server.Extract().ToListAsync().AsTask())
-            .ObserveOn(RxApp.MainThreadScheduler);
+    [ObservableProperty]
+    public partial List<VideoServer> Servers { get; set; } = [];
 
-    [ObservableAsProperty(PropertyName = "Episodes")]
-    private IObservable<List<Episode>> EpisodesObservable() =>
-        this.WhenAnyValue(x => x.ProviderResult)
-            .WhereNotNull()
-            .SelectMany(anime => anime.GetEpisodes().ToListAsync().AsTask())
-            .ObserveOn(RxApp.MainThreadScheduler);
+    [ObservableProperty]
+    public partial List<VideoSource> Sources { get; set; } = [];
 
     public void Initialize()
     {
-        InitializeOAPH();
+        (ProviderResult, Anime, Episodes, SelectedEpisode, bool continueWatching) = navigationParameter;
 
-        (ProviderResult, Anime) = navigationParameter;
-
-        this.WhenAnyValue(x => x.Episodes)
+        this.WhenAnyValue(x => x.ProviderResult)
             .WhereNotNull()
+            .Where(_ => Episodes is { Count: 0 })
+            .SelectMany(anime => anime.GetEpisodes().ToListAsync().AsTask())
+            .ObserveOn(RxApp.MainThreadScheduler);
+
+        if (continueWatching)
+        {
+            this.WhenAnyValue(x => x.Episodes)
+                .WhereNotNull()
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(eps =>
+                {
+                    var watched = (Anime?.Tracking?.WatchedEpisodes ?? 0) + 1;
+                    SelectedEpisode = eps.FirstOrDefault(x => x.Number == watched);
+                });
+        }
+
+        this.WhenAnyValue(x => x.SelectedEpisode)
+            .WhereNotNull()
+            .SelectMany(ep => ep.GetServersAsync().ToListAsync().AsTask())
             .ObserveOn(RxApp.MainThreadScheduler)
-            .Subscribe(eps =>
-            {
-                var watched = (Anime?.Tracking?.WatchedEpisodes ?? 0) + 1;
-                SelectedEpisode = eps.FirstOrDefault(x => x.Number == watched);
-            });
+            .Subscribe(servers => Servers = servers);
 
         this.WhenAnyValue(x => x.Servers)
             .Where(x => x is { Count: > 0 })
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(x => SelectedServer = x.First());
+
+        this.WhenAnyValue(x => x.SelectedServer)
+            .WhereNotNull()
+            .SelectMany(server => server.Extract().ToListAsync().AsTask())
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(sources => Sources = sources);
 
         this.WhenAnyValue(x => x.Sources)
             .Where(x => x is { Count: 1 })

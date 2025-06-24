@@ -35,6 +35,7 @@ public partial class AniListModelToAnimeModelConverter
             AiredEpisodes = media.NextAiringEpisode?.Episode - 1 ?? 0,
             Season = GetSeason(media.Season, media.SeasonYear),
             ServiceType = ServiceType,
+            Description = DescriptionCleanRegex().Replace(media.Description ?? string.Empty, string.Empty),
         };
     }
 

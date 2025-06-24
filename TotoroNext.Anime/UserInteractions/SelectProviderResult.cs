@@ -91,3 +91,42 @@ internal class SelectAnimeResult(XamlRoot xamlRoot) : IUserInteraction<List<Anim
             : null;
     }
 }
+
+
+internal class SelectServerResult(XamlRoot xamlRoot) : IUserInteraction<List<VideoServer>, VideoServer>
+{
+    public async Task<VideoServer?> GetValue(List<VideoServer> input)
+    {
+        var dialog = new ContentDialog
+        {
+            Title = "Select Server",
+            CloseButtonText = "Close",
+            PrimaryButtonText = "Select",
+            DefaultButton = ContentDialogButton.Primary,
+            Content = new ListView()
+            .ItemsSource(input)
+            .Name(out var listView)
+            .SelectionMode(ListViewSelectionMode.Single)
+            .ItemTemplate<VideoServer>(item =>
+                new Grid()
+                .Margin(8)
+                .ColumnDefinitions("Auto,*")
+                .ColumnSpacing(8)
+                .Children(
+                [
+                    new TextBlock()
+                    .Text(() => item.Name)
+                    .VerticalAlignment(VerticalAlignment.Center)
+                    .TextWrapping(TextWrapping.WrapWholeWords)
+                    .Grid(column: 1)
+                ])),
+            XamlRoot = xamlRoot
+        };
+
+        var result = await dialog.ShowAsync();
+
+        return result is ContentDialogResult.Primary
+            ? listView.SelectedItem as VideoServer
+            : null;
+    }
+}

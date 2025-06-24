@@ -64,19 +64,21 @@ public partial class UserListViewModel : ReactiveObject, IAsyncInitializable, IP
         Filter.RaisePropertyChanged(nameof(Filter.Status));
     }
 
-    public async Task AnimeSelected(AnimeModel model)
+    public void AnimeSelected(AnimeModel model)
     {
-        if (_provider is null)
-        {
-            return;
-        }
+        PaneNavigator.NavigateToData(model);
 
-        if (await _provider.SearchAndSelectAsync(model) is not { } result)
-        {
-            return;
-        }
+        //if (_provider is null)
+        //{
+        //    return;
+        //}
 
-        _navigateToData.Publish(new NavigateToDataRequest(new WatchViewModelNavigationParameter(result, model)));
+        //if (await _provider.SearchAndSelectAsync(model) is not { } result)
+        //{
+        //    return;
+        //}
+
+        //_navigateToData.Publish(new NavigateToDataRequest(new WatchViewModelNavigationParameter(result, model)));
     }
 
     [ReactiveCommand]

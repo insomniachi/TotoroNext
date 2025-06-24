@@ -31,6 +31,7 @@ public partial class AnimeModel : ObservableObject
     public int AiredEpisodes { get; set; }
     public Season? Season { get; set; }
     public string? ServiceType { get; init; }
+    public string Description { get; set; } = "";
 
 }
 
