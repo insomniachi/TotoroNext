@@ -59,8 +59,13 @@ public class ResourceHelper
 {
     public static string GetResource(string name)
     {
+#if DEBUG
+		return new Uri($"{Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location ?? "") ?? "",
+		                Assembly.GetCallingAssembly().GetName().Name ?? "",
+		                "Assets",
+		                name)}").AbsoluteUri;
 
-#if WINDOWS
+#elif WINDOWS
         return new Uri($"{Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "TotoroNext",
                 "Modules",
@@ -78,5 +83,5 @@ public class ResourceHelper
                 "Assets",
                 name)}").AbsoluteUri;
 #endif
-    }
+	}
 }

@@ -11,8 +11,8 @@ public class Module : IModule
     {
         Id = new Guid("25332fbc-aed7-4599-a076-40c6fae7ec2b"),
         Name = "Anime Pahe",
-        Description = "AllAnime's goal is to provide you with the highest possible amount of daily anime episodes/manga chapters for free and without any kind of limitation.",
-        HeroImage = ResourceHelper.GetResource("hero.png"),
+        Description = "AnimePahe is an encode \"group\" (me and my lovely bot), was founded in July 2014 by I, me and myself.\r\nWe encode on going anime, completed anime and anime movie.",
+        HeroImage = ResourceHelper.GetResource("pahe.jpg"),
         Components = [ComponentTypes.AnimeProvider]
     };
     

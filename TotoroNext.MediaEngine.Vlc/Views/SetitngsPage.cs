@@ -1,5 +1,6 @@
 using CommunityToolkit.WinUI.Controls;
 using TotoroNext.MediaEngine.Vlc.ViewModels;
+using TotoroNext.Module;
 
 namespace TotoroNext.MediaEngine.Vlc.Views;
 
@@ -17,6 +18,7 @@ public partial class SettingsPage : Page
                         .HorizontalAlignment(HorizontalAlignment.Stretch)
                         .Children(
                         [
+                            new Image().Source(ResourceHelper.GetResource("vlc.jpeg")).Stretch(Stretch.Uniform),
                             SettingsCard("Command used to launch vlc from Terminal", "Command", new FontIcon {Glyph = "\uE756"})
                                 .Content(new StackPanel()
                                 .Orientation(Orientation.Horizontal)
@@ -25,7 +27,10 @@ public partial class SettingsPage : Page
                                 [
                                     new TextBlock()
                                     .VerticalAlignment(VerticalAlignment.Center)
-                                    .Text(x => x.Binding(() => vm.Command).OneWay()),
+                                    .Text(x => x.Binding(() => vm.Command).OneWay())
+                                    .Width(200)
+                                    .TextTrimming(TextTrimming.CharacterEllipsis)
+                                    .ToolTipService(b => b.ToolTip(() => vm.Command)),
 
                                     new Button()
                                     .Content("Browse")

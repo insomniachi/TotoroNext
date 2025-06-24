@@ -28,7 +28,7 @@ public partial class App : Application
             new Anime.Module(),
         ];
 
-#if !DEBUG
+#if DEBUG
         var store = new DebugModuleStore();
 #else
         var store = new ModuleStore();
@@ -163,6 +163,7 @@ public static class ServiceCollectionExtensions
 }
 
 
+#if DEBUG
 public class DebugModuleStore : IModuleStore
 {
     public async IAsyncEnumerable<IModule> LoadModules()
@@ -190,3 +191,4 @@ public class DebugModuleStore : IModuleStore
     public Task<bool> DownloadModule(ModuleManifest manifest) => Task.FromResult(false);
     public IAsyncEnumerable<ModuleManifest> GetAllModules() => AsyncEnumerable.Empty<ModuleManifest>();
 }
+#endif

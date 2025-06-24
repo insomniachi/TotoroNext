@@ -5,9 +5,10 @@ using TotoroNext.Module.Abstractions;
 namespace TotoroNext.Presentation;
 
 public partial class ModulesViewModel(IEnumerable<Descriptor> modules,
-                                      IEvent<NavigateToViewModelRequest> request) : ReactiveObject
+                                      IEvent<NavigateToViewModelRequest> request) : ReactiveObject, IPaneNavigatable
 {
     public List<Descriptor> Descriptors { get; } = [.. modules];
+    public INavigator PaneNavigator { get; set; } = null!;
 
     public void NavigateToSettings(Descriptor descriptor)
     {
@@ -16,6 +17,6 @@ public partial class ModulesViewModel(IEnumerable<Descriptor> modules,
             return;
         }
 
-        request.Publish(new NavigateToViewModelRequest(vmType));
+        PaneNavigator.NavigateViewModel(vmType);
     }
 }

@@ -1,6 +1,7 @@
 using System.Web;
 using CommunityToolkit.WinUI.Controls;
 using TotoroNext.Anime.Anilist.ViewModels;
+using TotoroNext.Module;
 
 namespace TotoroNext.Anime.Anilist.Views;
 
@@ -23,6 +24,7 @@ public partial class SettingsPage : Microsoft.UI.Xaml.Controls.Page
                         .HorizontalAlignment(HorizontalAlignment.Stretch)
                         .Children(
                         [
+                            new Image().Source(ResourceHelper.GetResource("anilist.jpg")).Stretch(Stretch.Uniform),
                             SettingsCard("Login to your anilist account", "Authenticate", new FontIcon {Glyph = "\uE756"})
                             .Content(new Button()
                                 .Content("Authenticate")

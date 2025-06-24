@@ -2,6 +2,7 @@ using System.Web;
 using CommunityToolkit.WinUI.Controls;
 using MalApi;
 using TotoroNext.Anime.MyAnimeList.ViewModels;
+using TotoroNext.Module;
 
 namespace TotoroNext.Anime.MyAnimeList.Views;
 
@@ -27,6 +28,7 @@ public partial class SettingsPage : Page
                             .HorizontalAlignment(HorizontalAlignment.Stretch)
                             .Children(
                             [
+                                new Image().Source(ResourceHelper.GetResource("mal.jpg")).Stretch(Stretch.Uniform),
                                 SettingsCard("Login to your MyAnimeList account", "Authenticate", new FontIcon {Glyph = "\uE756"})
                                     .Content(new Button()
                                         .Content("Authenticate")

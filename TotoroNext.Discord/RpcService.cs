@@ -6,16 +6,19 @@ using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Discord;
 
-internal class RpcService(IEvent<PlaybackProgressEventArgs> playbackProgressEvent,
+internal class RpcService(IModuleSettings<Settings> settings, 
+                          IEvent<PlaybackProgressEventArgs> playbackProgressEvent,
                           IEvent<PlaybackEndedEventArgs> plabackEndedEvent) : IHostedService
 {
     private readonly DiscordRpcClient _client = new("997177919052984622");
+    private readonly Settings _settings = settings.Value;
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
         var initialized = _client.Initialize();
         
         playbackProgressEvent.OnNext()
+            .Where(_ => _settings.IsEnabled)
             .Where((e, idx) => idx % 20 == 0)
             .Subscribe(e =>
             {
@@ -45,6 +48,7 @@ internal class RpcService(IEvent<PlaybackProgressEventArgs> playbackProgressEven
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
+        _client.Deinitialize();
         return Task.CompletedTask;
     }
 }

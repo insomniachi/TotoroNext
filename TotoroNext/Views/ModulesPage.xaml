@@ -9,50 +9,61 @@
     xmlns:mod="using:TotoroNext.Module"
     mc:Ignorable="d">
 
-    <Grid Margin="36" RowSpacing="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <AutoSuggestBox PlaceholderText="Search" QueryIcon="Find" />
+    <SplitView
+        OpenPaneLength="600"
+        PaneBackground="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
+        PanePlacement="Right">
+        <Grid Margin="36" RowSpacing="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <AutoSuggestBox PlaceholderText="Search" QueryIcon="Find" />
 
-        <ItemsView
-            Grid.Row="1"
-            IsItemInvokedEnabled="True"
-            ItemInvoked="ItemsView_ItemInvoked"
-            ItemsSource="{x:Bind ViewModel.Descriptors, Mode=OneWay}"
-            SelectionMode="None">
-            <ItemsView.ItemTemplate>
-                <DataTemplate x:DataType="mod:Descriptor">
-                    <ItemContainer Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
-                        <Grid Padding="8">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
+            <ItemsView
+                Grid.Row="1"
+                IsItemInvokedEnabled="True"
+                ItemInvoked="ItemsView_ItemInvoked"
+                ItemsSource="{x:Bind ViewModel.Descriptors, Mode=OneWay}"
+                SelectionMode="None">
+                <ItemsView.ItemTemplate>
+                    <DataTemplate x:DataType="mod:Descriptor">
+                        <ItemContainer Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
 
-                            <Image
-                                Height="200"
-                                Source="{x:Bind c:Converters.StringToImage(HeroImage)}"
-                                Stretch="Uniform" />
+                                <Image
+                                    Height="200"
+                                    Source="{x:Bind c:Converters.StringToImage(HeroImage)}"
+                                    Stretch="Uniform" />
 
-                            <StackPanel Grid.Row="1">
-                                <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="{x:Bind Name}" />
-                                <TextBlock Text="{x:Bind Description}" TextWrapping="WrapWholeWords" />
-                            </StackPanel>
-                        </Grid>
-                    </ItemContainer>
-                </DataTemplate>
-            </ItemsView.ItemTemplate>
-            <ItemsView.Layout>
-                <UniformGridLayout
-                    ItemsJustification="Start"
-                    ItemsStretch="Fill"
-                    MinColumnSpacing="16"
-                    MinItemWidth="300"
-                    MinRowSpacing="16" />
-            </ItemsView.Layout>
-        </ItemsView>
-
-    </Grid>
+                                <StackPanel
+                                    Grid.Row="1"
+                                    Padding="8"
+                                    Background="{ThemeResource SolidBackgroundFillColorBaseAltBrush}">
+                                    <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="{x:Bind Name}" />
+                                    <TextBlock
+                                        Height="50"
+                                        Text="{x:Bind Description}"
+                                        TextTrimming="WordEllipsis"
+                                        TextWrapping="WrapWholeWords" />
+                                </StackPanel>
+                            </Grid>
+                        </ItemContainer>
+                    </DataTemplate>
+                </ItemsView.ItemTemplate>
+                <ItemsView.Layout>
+                    <UniformGridLayout
+                        ItemsJustification="Start"
+                        ItemsStretch="Fill"
+                        MinColumnSpacing="16"
+                        MinItemWidth="300"
+                        MinRowSpacing="16" />
+                </ItemsView.Layout>
+            </ItemsView>
+        </Grid>
+    </SplitView>
 </Page>

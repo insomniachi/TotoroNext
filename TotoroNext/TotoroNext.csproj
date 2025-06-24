@@ -1,4 +1,4 @@
-<Project Sdk="Uno.Sdk">
+﻿<Project Sdk="Uno.Sdk">
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <UnoSingleProject>true</UnoSingleProject>
@@ -17,7 +17,6 @@
             Localization;
             ThemeService;
             SkiaRenderer;
-            WebView;
         </UnoFeatures>
     </PropertyGroup>
 
@@ -32,22 +31,22 @@
     </ItemGroup>
 
   <!-- Modules -->
-    <ItemGroup>
-
+	<ItemGroup>
+		<ProjectReference Include="..\TotoroNext.Anime\TotoroNext.Anime.csproj" />
+	</ItemGroup>
+	
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
         <ProjectReference Include="..\TotoroNext.Anime.AllAnime\TotoroNext.Anime.AllAnime.csproj" />
         <ProjectReference Include="..\TotoroNext.Anime.AnimePahe\TotoroNext.Anime.AnimePahe.csproj" />
 
         <ProjectReference Include="..\TotoroNext.Anime.Anilist\TotoroNext.Anime.Anilist.csproj" />
         <ProjectReference Include="..\TotoroNext.Anime.MyAnimeList\TotoroNext.Anime.MyAnimeList.csproj" />
 
-        <ProjectReference Include="..\TotoroNext.Anime\TotoroNext.Anime.csproj" />
-
         <ProjectReference Include="..\TotoroNext.Anime.Aniskip\TotoroNext.Anime.Aniskip.csproj" />
         <ProjectReference Include="..\TotoroNext.Discord\TotoroNext.Discord.csproj" />
 
         <ProjectReference Include="..\TotoroNext.MediaEngine.Vlc\TotoroNext.MediaEngine.Vlc.csproj" />
         <ProjectReference Include="..\TotoroNext.MediaEngine.Mpv\TotoroNext.MediaEngine.Mpv.csproj" />
-
     </ItemGroup>
 
     <ItemGroup>
