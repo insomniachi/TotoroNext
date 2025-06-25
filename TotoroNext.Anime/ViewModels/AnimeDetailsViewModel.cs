@@ -21,12 +21,14 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
     public partial AnimeModel Anime { get; set; } = anime;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ContinueWatchingCommand))]
     public partial List<EpisodeInfo> Episodes { get; set; } = [];
 
     [ObservableProperty]
     public partial ListItemStatus Status { get; set; } = anime.Tracking!.Status!.Value;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ContinueWatchingCommand))]
     public partial double Progress { get; set; } = anime.Tracking!.WatchedEpisodes!.Value;
 
     [ObservableProperty]
@@ -37,6 +39,7 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
 
     [ObservableProperty]
     public partial DateTimeOffset? FinishDate { get; set; } = anime.Tracking!.FinishDate;
+
 
     public ListItemStatus[] Statuses { get; } = [.. Enum.GetValues<ListItemStatus>()];
 
@@ -51,7 +54,7 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
     {
         var searchResult = await _provider.SearchAndSelectAsync(Anime);
 
-        if(searchResult is null)
+        if (searchResult is null)
         {
             return;
         }
@@ -59,11 +62,38 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
         var episodes = await searchResult.GetEpisodes().ToListAsync();
         var selectedEpisode = episodes.FirstOrDefault(x => (int)x.Number == episode.EpisodeNumber);
 
-        if(selectedEpisode is null)
+        if (selectedEpisode is null)
         {
             return;
         }
 
         dataNavRequest.Publish(new(new WatchViewModelNavigationParameter(searchResult, Anime, episodes, selectedEpisode, false)));
+    }
+
+    [RelayCommand(CanExecute = nameof(CanContinueWatching))]
+    private async Task ContinueWatching()
+    {
+        if (Anime is { Tracking.WatchedEpisodes: 0 or null })
+        {
+            await WatchEpisode(Episodes.First());
+            return;
+        }
+
+        await WatchEpisode(Episodes.First(x => x.EpisodeNumber == Anime.Tracking!.WatchedEpisodes!.Value + 1));
+    }
+
+    private bool CanContinueWatching()
+    {
+        if(Episodes is null or { Count : 0 })
+        {
+            return false;
+        }
+
+        if(Progress is not > 0)
+        {
+            return true;
+        }
+
+        return Progress < Episodes.Max(x => x.EpisodeNumber);
     }
 }

@@ -32,12 +32,7 @@ public class TrackingUpdater(IFactory<ITrackingService, Guid> factory,
                 var tracking = e.Anime.Tracking;
                 
                 tracking.WatchedEpisodes = (int)e.Episode.Number;
-
-                if (e.Anime.TotalEpisodes == e.Episode.Number)
-                {
-                    tracking.Status = ListItemStatus.Completed;
-                }
-
+                tracking.Status = e.Anime.TotalEpisodes == e.Episode.Number ? ListItemStatus.Completed : ListItemStatus.Watching;
 
                 var tasks = factory.CreateAll()
                                    .Select(service => new Tuple<ITrackingService, long?>(service, e.Anime.ExternalIds.GetId(service.ServiceName)))

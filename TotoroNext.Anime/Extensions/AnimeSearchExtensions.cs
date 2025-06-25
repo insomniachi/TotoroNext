@@ -27,7 +27,7 @@ internal static class AnimeSearchExtensions
         }
         else
         {
-            return await Container.Services.GetRequiredService<IUserInteraction<List<SearchResult>, SearchResult>>().GetValue(results);
+            return await Container.Services.GetRequiredService<ISelectionUserInteraction<SearchResult>>().GetValue(results);
         }
     }
 
@@ -46,7 +46,7 @@ internal static class AnimeSearchExtensions
         }
         else
         {
-            return await Container.Services.GetRequiredService<IUserInteraction<List<AnimeModel>, AnimeModel>>().GetValue(results);
+            return await Container.Services.GetRequiredService<ISelectionUserInteraction<AnimeModel>>().GetValue(results);
         }
     }
 
@@ -59,7 +59,7 @@ internal static class AnimeSearchExtensions
             return null;
         }
 
-        return await Container.Services.GetRequiredService<IUserInteraction<List<VideoServer>, VideoServer>>().GetValue(servers);
+        return await Container.Services.GetRequiredService<ISelectionUserInteraction<VideoServer>>().GetValue(servers);
     }
 
     internal static async Task<List<EpisodeInfo>> GetEpisodes(this AnimeModel anime)

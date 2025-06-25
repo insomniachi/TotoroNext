@@ -116,6 +116,10 @@ public class ControlNavigator(UIElement host,
     {
         if (Control is SplitView sv)
         {
+            if(NavigationExtensions.GetPaneWidth(page) is { } width)
+            {
+                sv.OpenPaneLength = width;
+            }
             sv.IsPaneOpen = true;
             sv.Pane = page;
         }
@@ -196,4 +200,19 @@ public static class NavigationExtensions
             }
         };
     }
+
+
+    public static double? GetPaneWidth(DependencyObject obj)
+    {
+        return (double?)obj.GetValue(PaneWidthProperty);
+    }
+
+    public static void SetPaneWidth(DependencyObject obj, double? value)
+    {
+        obj.SetValue(PaneWidthProperty, value);
+    }
+
+    public static readonly DependencyProperty PaneWidthProperty =
+        DependencyProperty.RegisterAttached("PaneWidth", typeof(double?), typeof(NavigationExtensions), new PropertyMetadata(null));
+
 }

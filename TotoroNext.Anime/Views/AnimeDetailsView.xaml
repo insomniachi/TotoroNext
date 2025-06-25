@@ -4,15 +4,17 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ctk="using:CommunityToolkit.WinUI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="using:TotoroNext.Anime.Views"
+    xmlns:local="using:TotoroNext.Anime"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:mod="using:TotoroNext.Module"
     xmlns:taa="using:TotoroNext.Anime.Abstractions.Models"
     xmlns:utu="using:Uno.Toolkit.UI"
     d:DesignHeight="300"
     d:DesignWidth="400"
+    mod:NavigationExtensions.PaneWidth="750"
     mc:Ignorable="d">
 
-    <Grid Padding="16">
+    <Grid Padding="16" RowSpacing="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition MaxHeight="435" />
@@ -20,7 +22,7 @@
             <RowDefinition />
         </Grid.RowDefinitions>
         <TextBlock
-            Margin="0,0,0,16"
+            Margin="0,0,0,8"
             Style="{ThemeResource TitleTextBlockStyle}"
             Text="{x:Bind ViewModel.Anime.Title}" />
 
@@ -43,6 +45,7 @@
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -112,8 +115,21 @@
                     Grid.Column="1"
                     SelectedDate="{x:Bind ViewModel.FinishDate, Mode=TwoWay}" />
 
-                <ScrollView
+                <Button
+                    x:Name="ContinueWatchingButton"
                     Grid.Row="5"
+                    Grid.ColumnSpan="2"
+                    HorizontalAlignment="Center"
+                    Command="{x:Bind ViewModel.ContinueWatchingCommand}"
+                    Visibility="{x:Bind local:Converters.BooleanToVisibility(ContinueWatchingButton.IsEnabled), Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <SymbolIcon Symbol="Play" />
+                        <TextBlock Text="Watch" />
+                    </StackPanel>
+                </Button>
+
+                <ScrollView
+                    Grid.Row="6"
                     Grid.ColumnSpan="2"
                     Margin="0,8,0,0"
                     HorizontalScrollMode="Disabled">
@@ -124,7 +140,11 @@
         </Grid>
 
         <SelectorBar x:Name="Pivot" Grid.Row="2">
-            <SelectorBarItem IsSelected="True" Text="Watch" />
+            <SelectorBarItem
+                FontSize="25"
+                FontWeight="SemiLight"
+                IsSelected="True"
+                Text="Episodes" />
         </SelectorBar>
 
         <ctk:SwitchPresenter Grid.Row="3" Value="{x:Bind Pivot.SelectedItem.Text}">
@@ -136,19 +156,14 @@
                     SelectionMode="None">
                     <ItemsView.ItemTemplate>
                         <DataTemplate x:DataType="taa:EpisodeInfo">
-                            <ItemContainer Background="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}">
+                            <ItemContainer Height="160" Background="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
 
-                                    <ctk:ConstrainedBox AspectRatio="16:9">
-                                        <Image
-                                            Width="200"
-                                            Source="{x:Bind Image}"
-                                            Stretch="UniformToFill" />
-                                    </ctk:ConstrainedBox>
+                                    <Image Source="{x:Bind Image}" Stretch="Uniform" />
 
                                     <Grid Grid.Column="1" Padding="10">
                                         <Grid.RowDefinitions>

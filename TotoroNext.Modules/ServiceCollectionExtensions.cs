@@ -96,9 +96,9 @@ public static class ServiceCollectionExtensions
     }
 
     public static IServiceCollection AddSelectionUserInteraction<TImpl, TType>(this IServiceCollection services)
-        where TImpl : class, IUserInteraction<List<TType>, TType>
+        where TImpl : class, ISelectionUserInteraction<TType>
     {
-        return services.AddTransient<IUserInteraction<List<TType>, TType>, TImpl>();
+        return services.AddTransient<ISelectionUserInteraction<TType>, TImpl>();
     }
 }
 

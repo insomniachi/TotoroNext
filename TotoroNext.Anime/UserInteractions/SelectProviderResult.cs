@@ -4,7 +4,7 @@ using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Anime.UserInteractions;
 
-internal class SelectProviderResult(XamlRoot xamlRoot) : IUserInteraction<List<SearchResult>, SearchResult>
+internal class SelectProviderResult(XamlRoot xamlRoot) : ISelectionUserInteraction<SearchResult>
 {
     public async Task<SearchResult?> GetValue(List<SearchResult> input)
     {
@@ -48,7 +48,7 @@ internal class SelectProviderResult(XamlRoot xamlRoot) : IUserInteraction<List<S
     }
 }
 
-internal class SelectAnimeResult(XamlRoot xamlRoot) : IUserInteraction<List<AnimeModel>, AnimeModel>
+internal class SelectAnimeResult(XamlRoot xamlRoot) : ISelectionUserInteraction<AnimeModel>
 {
     public async Task<AnimeModel?> GetValue(List<AnimeModel> input)
     {
@@ -93,7 +93,7 @@ internal class SelectAnimeResult(XamlRoot xamlRoot) : IUserInteraction<List<Anim
 }
 
 
-internal class SelectServerResult(XamlRoot xamlRoot) : IUserInteraction<List<VideoServer>, VideoServer>
+internal class SelectServerResult(XamlRoot xamlRoot) : ISelectionUserInteraction<VideoServer>
 {
     public async Task<VideoServer?> GetValue(List<VideoServer> input)
     {
