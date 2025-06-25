@@ -59,29 +59,38 @@ internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
             startInfo.ArgumentList.Add($"--chapters-file={file}");
         }
 
-        _process = Process.Start(startInfo);
-
-        if(_process is not null)
+        _process = new Process
         {
-            _process.EnableRaisingEvents = true;
-            _process.Exited += (_, _) => _playbackStoped.OnNext(Unit.Default);
-        }
+            StartInfo = startInfo,
+            EnableRaisingEvents = true
+        };
+        _process.Exited += (_, _) => _playbackStoped.OnNext(Unit.Default);
 
-        Task.Run(() => IpcLoop(pipeName));
+        Task.Run(() => IpcLoop(_process, pipeName));
     }
 
-	private async Task IpcLoop(string pipeName)
+	private async Task IpcLoop(Process process, string pipeName)
 	{
+		NamedPipeClientStream? pipe = null;
 		try
 		{
-            await Task.Delay(TimeSpan.FromSeconds(5));
-			using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+			pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
 			_ipcStream = pipe;
+			
+            process.Exited += (_, _) =>
+            {
+                try
+                {
+                    pipe?.Dispose();
+                }
+                catch {}
+            };
 
+            process.Start();
 			// Retry until connected or process exits
 			while (!await TryConnectPipeAsync(pipe))
 			{
-				if (_process is { HasExited: true })
+				if (process is { HasExited: true })
 				{
 					_playbackStoped.OnNext(Unit.Default);
 					return;
@@ -90,10 +99,6 @@ internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
 				await Task.Delay(500);
 			}
 
-			// Observe properties
-			await SendIpcCommand(pipe, new { command = new object[] { "observe_property", 1, "duration" } });
-			await SendIpcCommand(pipe, new { command = new object[] { "observe_property", 2, "time-pos" } });
-
 			using var reader = new StreamReader(pipe, Encoding.UTF8);
 
 			while (pipe.IsConnected)
@@ -101,7 +106,7 @@ internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
 				var line = await reader.ReadLineAsync();
 				if (!string.IsNullOrWhiteSpace(line))
 				{
-					HandleIpcMessage(line);
+					await HandleIpcMessage(pipe, line);
 				}
 				else
 				{
@@ -113,6 +118,10 @@ internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
 		{
 			Debug.WriteLine($"[MpvMediaPlayer] IPC connection failed: {ex.Message}");
 			_playbackStoped.OnNext(Unit.Default);
+		}
+		finally
+		{
+			pipe?.Dispose();
 		}
 	}
 
@@ -141,21 +150,32 @@ internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
         await pipe.FlushAsync();
     }
 
-    private void HandleIpcMessage(string json)
+    private async Task HandleIpcMessage(NamedPipeClientStream pipe, string json)
     {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
-        if (root.TryGetProperty("event", out var evt) && evt.GetString() == "property-change")
+        if (root.TryGetProperty("event", out var evt))
         {
-            var name = root.GetProperty("name").GetString();
-            var data = root.GetProperty("data");
-            if (name == "duration" && data.ValueKind == JsonValueKind.Number)
+            var eventType = evt.GetString();
+
+            if (eventType == "property-change")
             {
-                _durationSubject.OnNext(TimeSpan.FromSeconds(data.GetDouble()));
+                var name = root.GetProperty("name").GetString();
+                var data = root.GetProperty("data");
+                if (name == "duration" && data.ValueKind == JsonValueKind.Number)
+                {
+                    _durationSubject.OnNext(TimeSpan.FromSeconds(data.GetDouble()));
+                }
+                else if (name == "time-pos" && data.ValueKind == JsonValueKind.Number)
+                {
+                    _positionSubject.OnNext(TimeSpan.FromSeconds(data.GetDouble()));
+                }
             }
-            else if (name == "time-pos" && data.ValueKind == JsonValueKind.Number)
+            else if(eventType == "file-loaded")
             {
-                _positionSubject.OnNext(TimeSpan.FromSeconds(data.GetDouble()));
+                // Observe properties
+                await SendIpcCommand(pipe, new { command = new object[] { "observe_property", 1, "duration" } });
+                await SendIpcCommand(pipe, new { command = new object[] { "observe_property", 2, "time-pos" } });
             }
         }
     }
