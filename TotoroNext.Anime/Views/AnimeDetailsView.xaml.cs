@@ -14,10 +14,6 @@ public sealed partial class AnimeDetailsView : UserControl
 
     public AnimeDetailsViewModel? ViewModel => DataContext as AnimeDetailsViewModel;
 
-    private void SelectorBar_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
-    {
-
-    }
 
     private void ItemsView_ItemInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
     {

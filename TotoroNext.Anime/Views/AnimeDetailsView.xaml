@@ -147,8 +147,8 @@
                 Text="Episodes" />
         </SelectorBar>
 
-        <ctk:SwitchPresenter Grid.Row="3" Value="{x:Bind Pivot.SelectedItem.Text}">
-            <ctk:Case IsDefault="True" Value="Watch">
+        <ctk:SwitchPresenter Grid.Row="3" Value="{x:Bind Pivot.SelectedItem.Text, Mode=OneWay}">
+            <ctk:Case Value="Episodes">
                 <ItemsView
                     IsItemInvokedEnabled="True"
                     ItemInvoked="ItemsView_ItemInvoked"
@@ -206,6 +206,7 @@
                     </ItemsView.Layout>
                 </ItemsView>
             </ctk:Case>
+            <ctk:Case IsDefault="True" />
         </ctk:SwitchPresenter>
 
     </Grid>
