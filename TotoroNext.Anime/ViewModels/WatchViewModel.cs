@@ -135,12 +135,12 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
         IEnumerable<string?> parts = [ProviderResult.Title, $"Episode {SelectedEpisode.Number}", source.Title];
         var title = string.Join(" - ", parts.Where(x => !string.IsNullOrEmpty(x)));
 
-        var duration = MediaHelper.GetDuration(source.Url, source.Headers);
+        _duration = MediaHelper.GetDuration(source.Url, source.Headers);
         List<MediaSegment> segments = [];
 
         if (Anime is { ExternalIds.MyAnimeList: not null } && segmentsFactory.CreateDefault() is { } segmentsProvider)
         {
-            segments.AddRange(await segmentsProvider.GetSegments(Anime.ExternalIds.MyAnimeList.Value, SelectedEpisode.Number, duration.TotalSeconds));
+            segments.AddRange(await segmentsProvider.GetSegments(Anime.ExternalIds.MyAnimeList.Value, SelectedEpisode.Number, _duration.TotalSeconds));
         }
 
         var metadata = new MediaMetadata(title, source.Headers, segments);

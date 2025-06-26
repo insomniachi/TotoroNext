@@ -21,6 +21,11 @@ internal static class AnimeSearchExtensions
             return null;
         }
 
+        if(results.Count == 1)
+        {
+            return results[0];
+        }
+
         if (results.FirstOrDefault(x => string.Equals(x.Title, model.Title, StringComparison.OrdinalIgnoreCase)) is { } result)
         {
             return result;
@@ -40,6 +45,11 @@ internal static class AnimeSearchExtensions
             return null;
         }
 
+        if (results.Count == 1)
+        {
+            return results[0];
+        }
+
         if (results.FirstOrDefault(x => string.Equals(x.Title, model.Title, StringComparison.OrdinalIgnoreCase)) is { } result)
         {
             return result;
@@ -57,6 +67,11 @@ internal static class AnimeSearchExtensions
         if (servers is not { Count : > 0})
         {
             return null;
+        }
+
+        if(servers.Count == 1)
+        {
+            return servers[0];
         }
 
         return await Container.Services.GetRequiredService<ISelectionUserInteraction<VideoServer>>().GetValue(servers);

@@ -1,5 +1,7 @@
+using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ReactiveUI;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.Anime.Extensions;
@@ -12,6 +14,7 @@ namespace TotoroNext.Anime.ViewModels;
 public partial class AnimeDetailsViewModel(AnimeModel anime,
                                            IFactory<IMetadataService, Guid> metaFactory,
                                            IFactory<IAnimeProvider, Guid> providerFactory,
+                                           IFactory<ITrackingService, Guid> trackerFactory,
                                            IEvent<NavigateToDataRequest> dataNavRequest) : ObservableObject, IAsyncInitializable
 {
     private readonly IMetadataService _metadataService = metaFactory.CreateDefault();
@@ -47,6 +50,27 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
     {
         Anime = await _metadataService.GetAnimeAsync(Anime.Id) ?? Anime;
         Episodes = await Anime.GetEpisodes();
+
+        this.WhenAnyValue(x => x.Status, x => x.Progress, x => x.Score, x => x.StartDate, x => x.FinishDate)
+            .Skip(1)
+            .Select(x => new Tracking 
+            {
+                Status = x.Item1,
+                WatchedEpisodes = (int)x.Item2,
+                Score = (int)x.Item3,
+                StartDate = x.Item4?.DateTime,
+                FinishDate = x.Item5?.DateTime
+            })
+            .SelectMany(tracking =>
+            {
+                var tasks = trackerFactory.CreateAll()
+                                          .Select(tracker => new ValueTuple<ITrackingService, long?>(tracker, Anime.ExternalIds.GetId(tracker.ServiceName)))
+                                          .Where(x => x.Item2 is not null)
+                                          .Select(x => x.Item1.Update(x.Item2!.Value, tracking));
+
+                return Task.WhenAll(tasks);
+            })
+            .Subscribe();
     }
 
     [RelayCommand]
