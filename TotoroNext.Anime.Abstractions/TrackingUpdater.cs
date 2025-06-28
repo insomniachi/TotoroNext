@@ -17,7 +17,6 @@ public class TrackingUpdater(IFactory<ITrackingService, Guid> factory,
         playbackProgressEvent.OnNext()
             .Where(e => (e.Anime.Tracking?.WatchedEpisodes ?? 0) < e.Episode.Number)
             .Where(e => e.Duration - e.Position < TimeSpan.FromMinutes(2))
-            .FirstAsync()
             .SelectMany(e =>
             {
                 if(e.Anime.Tracking is null)
