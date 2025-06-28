@@ -5,9 +5,11 @@
     xmlns:ctk="using:CommunityToolkit.WinUI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:TotoroNext.Anime"
+    xmlns:m="using:TotoroNext.Anime.Abstractions"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:mod="using:TotoroNext.Module"
     xmlns:taa="using:TotoroNext.Anime.Abstractions.Models"
+    xmlns:uc="using:TotoroNext.Anime.UserControls"
     xmlns:utu="using:Uno.Toolkit.UI"
     d:DesignHeight="300"
     d:DesignWidth="400"
@@ -140,11 +142,14 @@
         </Grid>
 
         <SelectorBar x:Name="Pivot" Grid.Row="2">
-            <SelectorBarItem
-                FontSize="25"
-                FontWeight="SemiLight"
-                IsSelected="True"
-                Text="Episodes" />
+            <SelectorBar.Resources>
+                <Style TargetType="SelectorBarItem">
+                    <Setter Property="FontSize" Value="25" />
+                    <Setter Property="FontWeight" Value="SemiLight" />
+                </Style>
+            </SelectorBar.Resources>
+            <SelectorBarItem IsSelected="True" Text="Episodes" />
+            <SelectorBarItem Text="Related" />
         </SelectorBar>
 
         <ctk:SwitchPresenter Grid.Row="3" Value="{x:Bind Pivot.SelectedItem.Text, Mode=OneWay}">
@@ -217,6 +222,27 @@
                     </ItemsView.ItemTemplate>
                     <ItemsView.Layout>
                         <StackLayout Spacing="8" />
+                    </ItemsView.Layout>
+                </ItemsView>
+            </ctk:Case>
+            <ctk:Case Value="Related">
+                <ItemsView ItemsSource="{x:Bind ViewModel.Anime.Related, Mode=OneWay}">
+                    <ItemsView.ItemTemplate>
+                        <DataTemplate x:DataType="m:AnimeModel">
+                            <ItemContainer>
+                                <uc:AnimeCard Anime="{x:Bind}" />
+                            </ItemContainer>
+                        </DataTemplate>
+                    </ItemsView.ItemTemplate>
+                    <ItemsView.Layout>
+                        <UniformGridLayout
+                            ItemsJustification="Start"
+                            ItemsStretch="Fill"
+                            MaximumRowsOrColumns="3"
+                            MinColumnSpacing="16"
+                            MinItemHeight="300"
+                            MinItemWidth="125"
+                            MinRowSpacing="16" />
                     </ItemsView.Layout>
                 </ItemsView>
             </ctk:Case>

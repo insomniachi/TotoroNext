@@ -46,9 +46,6 @@ public partial class UserListViewModel : ReactiveObject, IAsyncInitializable, IP
 
     public ReadOnlyObservableCollection<AnimeModel> Items => _anime;
 
-    [Reactive]
-    public partial bool IsFilterPaneOpen { get; set; }
-
     public INavigator PaneNavigator { get; set; } = null!;
 
     public async Task InitializeAsync()
@@ -64,21 +61,21 @@ public partial class UserListViewModel : ReactiveObject, IAsyncInitializable, IP
         Filter.RaisePropertyChanged(nameof(Filter.Status));
     }
 
-    public void AnimeSelected(AnimeModel model)
+    public async Task NavigateToWatch(AnimeModel anime)
     {
-        PaneNavigator.NavigateToData(model);
+        if(_provider is null)
+        {
+            return;
+        }
 
-        //if (_provider is null)
-        //{
-        //    return;
-        //}
+        var result = await _provider.SearchAndSelectAsync(anime);
 
-        //if (await _provider.SearchAndSelectAsync(model) is not { } result)
-        //{
-        //    return;
-        //}
+        if (result is null)
+        {
+            return;
+        }
 
-        //_navigateToData.Publish(new NavigateToDataRequest(new WatchViewModelNavigationParameter(result, model)));
+        _navigateToData.Publish(new(new WatchViewModelNavigationParameter(result, anime)));
     }
 
     [ReactiveCommand]

@@ -45,4 +45,26 @@ public static class MediaHelper
 
         return TimeSpan.Zero;
     }
+
+    public static IEnumerable<MediaSegment> MakeContiguousSegments(this List<MediaSegment> segments, TimeSpan mediaLength)
+    {
+        var newSegments = new List<MediaSegment>();
+        for (var i = 0; i < segments.Count - 1; i++)
+        {
+            var current = segments[i];
+            var next = segments[i+1];
+            if (current.End != next.Start)
+            {
+                newSegments.Add(new MediaSegment(MediaSectionType.Content, current.End, next.Start));
+            }
+        }
+        var last = segments.Last();
+        if (last.End < mediaLength)
+        {
+            newSegments.Add(new MediaSegment(MediaSectionType.Content, last.End, mediaLength));
+        }
+        segments.AddRange(newSegments);
+        
+        return segments.OrderBy(x => x.Start);
+    }
 }

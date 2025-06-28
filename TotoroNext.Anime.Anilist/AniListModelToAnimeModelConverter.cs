@@ -36,6 +36,7 @@ public partial class AniListModelToAnimeModelConverter
             Season = GetSeason(media.Season, media.SeasonYear),
             ServiceType = ServiceType,
             Description = DescriptionCleanRegex().Replace(media.Description ?? string.Empty, string.Empty),
+            Related = ConvertSimple(media.Relations?.Nodes ?? [])
         };
     }
 
@@ -46,7 +47,7 @@ public partial class AniListModelToAnimeModelConverter
             return [];
         }
 
-        return media.Where(x => x.Type == MediaType.Anime)
+        return [.. media.Where(x => x.Type == MediaType.Anime)
             .Select(x => new AnimeModel
             {
                 Title = x.Title.Romaji ?? x.Title.English ?? string.Empty,
@@ -57,8 +58,7 @@ public partial class AniListModelToAnimeModelConverter
                 Tracking = ConvertTracking(x.MediaListEntry),
                 AiringStatus = ConvertStatus(x.Status),
                 ServiceType = ServiceType,
-            })
-            .ToArray();
+            })];
     }
 
     public static AiringStatus ConvertStatus(MediaStatus? status)

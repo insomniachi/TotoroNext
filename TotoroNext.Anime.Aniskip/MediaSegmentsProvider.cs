@@ -20,22 +20,25 @@ internal class MediaSegmentsProvider(IAniskipClient client) : IMediaSegmentsProv
                 return [];
             }
 
-            var segments = result.Results.OrderBy(x => x.Interval.StartTime).Select(x => new MediaSegment(ConvertType(x.SkipType),
-                                                                   TimeSpan.FromSeconds(x.Interval.StartTime),
-                                                                   TimeSpan.FromSeconds(x.Interval.EndTime))).ToList();
+            var segments = result.Results
+                                 .OrderBy(x => x.Interval.StartTime)
+                                 .Select(CreateMediaSegment).ToList();
 
-            var last = segments.Last();
-            if (last.End.TotalSeconds < mediaLength)
-            {
-                segments.Add(new MediaSegment(MediaSectionType.Content, last.End, TimeSpan.FromSeconds(mediaLength)));
-            }
-
-            return segments;
+            return [ ..segments.MakeContiguousSegments(TimeSpan.FromSeconds(mediaLength))];
         }
         catch
         {
             return [];
         }
+    }
+
+    private static MediaSegment CreateMediaSegment(SkipTime skipTime)
+    {
+        return new MediaSegment(
+            ConvertType(skipTime.SkipType),
+            TimeSpan.FromSeconds(skipTime.Interval.StartTime),
+            TimeSpan.FromSeconds(skipTime.Interval.EndTime)
+        );
     }
 
     private static MediaSectionType ConvertType(SkipType skipType)

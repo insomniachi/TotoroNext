@@ -1,13 +1,41 @@
+using System.Reactive;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using System.Reactive.Threading.Tasks;
+using ReactiveUI;
+using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.UserControls;
 using TotoroNext.Anime.ViewModels;
+using Uno.Toolkit.UI;
 
 namespace TotoroNext.Anime.Views;
 
 public sealed partial class UserListPage : Page
 {
+    private readonly Subject<(int Count, AnimeModel Anime)> _tappedSubject = new();
+    private int _tappedCount;
+
     public UserListPage()
     {
         InitializeComponent();
+
+        _tappedSubject
+            .Throttle(TimeSpan.FromMilliseconds(500))
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .SelectMany(x =>
+            {
+                // double tap
+                if(x.Count % 2 == 0)
+                {
+                    ViewModel?.PaneNavigator.NavigateToData(x.Anime);
+                    return Observable.Return(Unit.Default);
+                }
+                else // single tap
+                {
+                    return (ViewModel?.NavigateToWatch(x.Anime) ?? Task.CompletedTask).ToObservable();
+                }
+            })
+            .Subscribe(_ => _tappedCount = 0);
     }
 
     public UserListViewModel? ViewModel => DataContext as UserListViewModel;
@@ -29,12 +57,21 @@ public sealed partial class UserListPage : Page
 
     private void AnimeCard_Tapped(object sender, TappedRoutedEventArgs e)
     {
-        if(sender is not AnimeCard { Anime: not null } card) 
+        if (sender is not AnimeCard { Anime: not null } card)
         {
             return;
         }
 
-        ViewModel?.AnimeSelected(card.Anime);
-        //await (ViewModel?.AnimeSelected(card.Anime) ?? Task.CompletedTask);
+        _tappedSubject.OnNext(new(++_tappedCount, card.Anime));
+    }
+
+    private void AnimeCard_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        if (sender is not AnimeCard { Anime: not null } card)
+        {
+            return;
+        }
+
+        _tappedSubject.OnNext(new(++_tappedCount, card.Anime));
     }
 }
