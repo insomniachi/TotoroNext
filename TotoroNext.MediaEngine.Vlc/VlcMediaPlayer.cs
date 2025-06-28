@@ -21,7 +21,7 @@ internal class VlcMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
     public IObservable<TimeSpan> PositionChanged => _positionSubject;
     public IObservable<Unit> PlaybackStopped => _playbackStoppedSubject;
 
-    public void Play(Media media)
+    public void Play(Media media, TimeSpan startPosition)
     {
         if(_disposable is null)
         {
@@ -65,10 +65,14 @@ internal class VlcMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
             startInfo.ArgumentList.Add($"--http-referrer={referer}");
         }
 
-        _process = new Process() { StartInfo = startInfo };
-        _process.Start();
-        _process.EnableRaisingEvents = true;
+        if (startPosition > TimeSpan.Zero)
+        {
+            startInfo.ArgumentList.Add($"--start-time={startPosition.TotalSeconds}");
+        }
+
+        _process = new Process() { StartInfo = startInfo, EnableRaisingEvents = true };
         _process.Exited += (_, _) => _playbackStoppedSubject.OnNext(Unit.Default);
+        _process.Start();
 
         _webInterface = new HttpInterface(_process, password);
         _webInterface.DurationChanged.Subscribe(_positionSubject.OnNext).DisposeWith(_disposable);

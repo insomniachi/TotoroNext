@@ -53,9 +53,10 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
 
         this.WhenAnyValue(x => x.ProviderResult)
             .WhereNotNull()
-            .Where(_ => Episodes is { Count: 0 })
+            .Where(_ => Episodes is { Count: 0 } or null)
             .SelectMany(anime => anime.GetEpisodes().ToListAsync().AsTask())
-            .ObserveOn(RxApp.MainThreadScheduler);
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(e => Episodes = e);
 
         if (continueWatching)
         {
@@ -145,6 +146,6 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
 
         var metadata = new MediaMetadata(title, source.Headers, segments);
 
-        MediaPlayer.Play(new Media(source.Url, metadata));
+        MediaPlayer.Play(new Media(source.Url, metadata), SelectedEpisode.StartPosition);
     }
 }

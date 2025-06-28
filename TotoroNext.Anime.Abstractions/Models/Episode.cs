@@ -11,6 +11,7 @@ public class Episode(IAnimeProvider provider, string showId, string id, float nu
     public float Number { get; } = number;
     public string Name { get; } = name;
     public Uri? Image { get; } = image;
+    public TimeSpan StartPosition { get; set; } = TimeSpan.Zero;
 
     public IAsyncEnumerable<VideoServer> GetServersAsync() => _provider.GetServersAsync(ShowId, Id);
 }
@@ -43,6 +44,9 @@ public class EpisodeInfo
 
     [JsonPropertyName("airDateUtc")]
     public DateTime? AirDateUtc { get; set; }
+
+    [JsonIgnore]
+    public ProgressInfo? Progress { get; set; }
 }
 
 public class Titles

@@ -14,6 +14,8 @@ public class Module : IModule
 {
     public void ConfigureServices(IServiceCollection services)
     {
+        services.AddSingleton<IPlaybackProgressService, PlaybackProgressTrackingService>();
+
         // main navigation
         services.AddNavigationViewItem<UserListPage, UserListViewModel>("My List", new SymbolIcon(Symbol.Library))
                 .AddNavigationViewItem<SearchProviderPage, SearchProviderViewModel>("Watch Now", new FontIcon { Glyph = "\uE7C5" })
@@ -33,6 +35,6 @@ public class Module : IModule
                 .AddSelectionUserInteraction<SelectServerResult, VideoServer>();
 
         services.AddHostedService<TrackingUpdater>()
-                .AddHostedService<PlaybackProgressTrackingService>();
+                .AddHostedService(sp => sp.GetRequiredService<IPlaybackProgressService>());
     }
 }

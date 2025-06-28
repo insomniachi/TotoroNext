@@ -12,6 +12,7 @@ using TotoroNext.Module.Abstractions;
 namespace TotoroNext.Anime.ViewModels;
 
 public partial class AnimeDetailsViewModel(AnimeModel anime,
+                                           IPlaybackProgressService playbackProgressService,
                                            IFactory<IMetadataService, Guid> metaFactory,
                                            IFactory<IAnimeProvider, Guid> providerFactory,
                                            IFactory<ITrackingService, Guid> trackerFactory,
@@ -52,7 +53,7 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
     public async Task InitializeAsync()
     {
         Anime = await _metadataService.GetAnimeAsync(Anime.Id) ?? Anime;
-        Episodes = await Anime.GetEpisodes();
+        await UpdateEpisodes();
 
         this.WhenAnyValue(x => x.Status, x => x.Progress, x => x.Score, x => x.StartDate, x => x.FinishDate)
             .Skip(1)
@@ -80,6 +81,22 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
             .Subscribe(_ => SelectedEpisode = GetNextUp());
     }
 
+    private async Task UpdateEpisodes()
+    {
+        var eps = await Anime.GetEpisodes();
+        var progress = playbackProgressService.GetProgress(Anime.Id);
+
+        foreach (var item in progress)
+        {
+            if(eps.FirstOrDefault(x => x.EpisodeNumber == item.Key) is { } ep)
+            {
+                ep.Progress = item.Value;
+            }
+        }
+
+        Episodes = eps;
+    }
+
     [RelayCommand]
     private async Task WatchEpisode(EpisodeInfo episode)
     {
@@ -98,7 +115,16 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
             return;
         }
 
-        dataNavRequest.Publish(new(new WatchViewModelNavigationParameter(searchResult, Anime, episodes, selectedEpisode, false)));
+        if(episode.Progress is { } info)
+        {
+            selectedEpisode.StartPosition = TimeSpan.FromSeconds(info.Position);
+        }
+
+        dataNavRequest.Publish(new(new WatchViewModelNavigationParameter(searchResult,
+                                                                                              Anime,
+                                                                                              episodes,
+                                                                                              selectedEpisode,
+                                                                                              false)));
     }
 
     [RelayCommand(CanExecute = nameof(CanContinueWatching))]

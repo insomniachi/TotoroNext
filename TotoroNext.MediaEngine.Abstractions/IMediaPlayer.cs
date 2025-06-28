@@ -4,7 +4,7 @@ namespace TotoroNext.MediaEngine.Abstractions;
 
 public interface IMediaPlayer
 {
-    void Play(Media media);
+    void Play(Media media, TimeSpan startPosition);
     IObservable<TimeSpan> DurationChanged { get; }
     IObservable<TimeSpan> PositionChanged { get; }
     IObservable<Unit> PlaybackStopped { get; }

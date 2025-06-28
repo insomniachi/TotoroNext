@@ -69,6 +69,8 @@ public static class Converters
 
     public static Visibility InvertedBooleanToVisibility(bool value) => value is false ? Visibility.Visible : Visibility.Collapsed;
 
+    public static Visibility VisibleIfGreatherThanZero(double? value) => value is > 0 ? Visibility.Visible : Visibility.Collapsed;
+
     public static int GetUnwatchedEpsiodes(AnimeModel anime)
     {
         if (anime is null)

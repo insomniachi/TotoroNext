@@ -22,7 +22,7 @@ internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
     public IObservable<TimeSpan> PositionChanged => _positionSubject;
     public IObservable<Unit> PlaybackStopped => _playbackStoped;
 
-    public void Play(Media media)
+    public void Play(Media media, TimeSpan startPosition)
     {
         _process?.Kill();
         _ipcStream?.Dispose();
@@ -41,6 +41,11 @@ internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
                 $"--input-ipc-server={pipePath}"
             },
         };
+
+        if(startPosition.TotalSeconds > 0)
+        {
+            startInfo.ArgumentList.Add($"--start={startPosition.TotalSeconds}");
+        }
 
         if (_settings.LaunchFullScreen)
         {

@@ -165,7 +165,19 @@
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
 
-                                    <Image Source="{x:Bind Image}" Stretch="Uniform" />
+                                    <Grid>
+                                        <Image Source="{x:Bind Image}" Stretch="Uniform" />
+                                        <ProgressBar
+                                            Grid.Row="3"
+                                            Margin="8"
+                                            HorizontalAlignment="Stretch"
+                                            VerticalAlignment="Bottom"
+                                            Foreground="Green"
+                                            Maximum="{x:Bind Progress.Total}"
+                                            Visibility="{x:Bind local:Converters.ObjectToVisiblity(Progress)}"
+                                            Value="{x:Bind Progress.Position}" />
+                                    </Grid>
+
 
                                     <Grid Grid.Column="1" Padding="10">
                                         <Grid.RowDefinitions>
