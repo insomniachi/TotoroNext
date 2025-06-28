@@ -13,13 +13,4 @@ public sealed partial class AnimeDetailsView : UserControl
     }
 
     public AnimeDetailsViewModel? ViewModel => DataContext as AnimeDetailsViewModel;
-
-
-    private void ItemsView_ItemInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
-    {
-        if(args.InvokedItem is EpisodeInfo { } ep && ViewModel is { } vm)
-        {
-            vm.WatchEpisodeCommand.Execute(ep);
-        }
-    }
 }

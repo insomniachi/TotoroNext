@@ -28,6 +28,9 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
     public partial List<EpisodeInfo> Episodes { get; set; } = [];
 
     [ObservableProperty]
+    public partial EpisodeInfo? SelectedEpisode { get; set; }
+
+    [ObservableProperty]
     public partial ListItemStatus Status { get; set; } = anime.Tracking!.Status!.Value;
 
     [ObservableProperty]
@@ -71,6 +74,10 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
                 return Task.WhenAll(tasks);
             })
             .Subscribe();
+
+        this.WhenAnyValue(x => x.Episodes)
+            .Where(x => x is { Count: > 0 })
+            .Subscribe(_ => SelectedEpisode = GetNextUp());
     }
 
     [RelayCommand]
@@ -97,13 +104,12 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
     [RelayCommand(CanExecute = nameof(CanContinueWatching))]
     private async Task ContinueWatching()
     {
-        if (Anime is { Tracking.WatchedEpisodes: 0 or null })
+        if(GetNextUp() is not { } ep)
         {
-            await WatchEpisode(Episodes.First());
             return;
         }
 
-        await WatchEpisode(Episodes.First(x => x.EpisodeNumber == Anime.Tracking!.WatchedEpisodes!.Value + 1));
+        await WatchEpisode(ep);
     }
 
     private bool CanContinueWatching()
@@ -119,5 +125,15 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
         }
 
         return Progress < Episodes.Max(x => x.EpisodeNumber);
+    }
+
+    private EpisodeInfo? GetNextUp()
+    {
+        if (Anime is { Tracking.WatchedEpisodes: 0 or null })
+        {
+            return Episodes.FirstOrDefault();
+        }
+
+        return Episodes.FirstOrDefault(x => x.EpisodeNumber == Anime.Tracking!.WatchedEpisodes!.Value + 1);
     }
 }

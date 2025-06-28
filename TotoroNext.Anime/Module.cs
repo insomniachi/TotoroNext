@@ -25,12 +25,14 @@ public class Module : IModule
                 .AddDataViewMap<UserListFilterView, UserListFilterViewModel, UserListFilter>();
 
         services.RegisterEvent<PlaybackProgressEventArgs>()
-                .RegisterEvent<PlaybackEndedEventArgs>();
+                .RegisterEvent<PlaybackEndedEventArgs>()
+                .RegisterEvent<TrackingUpdateEventArgs>();
 
         services.AddSelectionUserInteraction<SelectProviderResult, SearchResult>()
                 .AddSelectionUserInteraction<SelectAnimeResult, AnimeModel>()
                 .AddSelectionUserInteraction<SelectServerResult, VideoServer>();
 
-        services.AddHostedService<TrackingUpdater>();
+        services.AddHostedService<TrackingUpdater>()
+                .AddHostedService<PlaybackProgressTrackingService>();
     }
 }

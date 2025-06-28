@@ -8,7 +8,8 @@ using Uno.Disposables;
 namespace TotoroNext.Anime.Abstractions;
 
 public class TrackingUpdater(IFactory<ITrackingService, Guid> factory,
-                             IEvent<PlaybackProgressEventArgs> playbackProgressEvent) : IHostedService
+                             IEvent<PlaybackProgressEventArgs> playbackProgressEvent,
+                             IEvent<TrackingUpdateEventArgs> trackingUpdated) : IHostedService
 {
     private readonly SerialDisposable _subscription = new();
 
@@ -37,6 +38,8 @@ public class TrackingUpdater(IFactory<ITrackingService, Guid> factory,
                                    .Select(service => new Tuple<ITrackingService, long?>(service, e.Anime.ExternalIds.GetId(service.ServiceName)))
                                    .Where(x => x.Item2 is not null)
                                    .Select(tuple => tuple.Item1.Update(tuple.Item2!.Value, tracking));
+
+                trackingUpdated.Publish(new TrackingUpdateEventArgs(e.Anime, e.Episode));
 
                 return Task.WhenAll(tasks);
             })

@@ -143,6 +143,26 @@ public partial class App : Application
 #endif
 
         await FFBinaries.DownloadLatest();
+        HandleSuspend();
+    }
+
+
+    private void HandleSuspend()
+    {
+        if(Host is null)
+        {
+            return;
+        }
+
+        if (MainWindow is null)
+        {
+            return;
+        }
+
+        MainWindow.Closed += async (_, _) =>
+        {
+            await Host.StopAsync();
+        };
     }
 }
 

@@ -150,10 +150,12 @@
         <ctk:SwitchPresenter Grid.Row="3" Value="{x:Bind Pivot.SelectedItem.Text, Mode=OneWay}">
             <ctk:Case Value="Episodes">
                 <ItemsView
+                    mod:ItemsViewSelectionHelper.Command="{x:Bind ViewModel.WatchEpisodeCommand}"
+                    mod:ItemsViewSelectionHelper.EnableSelectionTracking="True"
+                    mod:ItemsViewSelectionHelper.SelectedItem="{x:Bind ViewModel.SelectedEpisode, Mode=TwoWay}"
                     IsItemInvokedEnabled="True"
-                    ItemInvoked="ItemsView_ItemInvoked"
                     ItemsSource="{x:Bind ViewModel.Episodes, Mode=OneWay}"
-                    SelectionMode="None">
+                    SelectionMode="Single">
                     <ItemsView.ItemTemplate>
                         <DataTemplate x:DataType="taa:EpisodeInfo">
                             <ItemContainer Height="160" Background="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}">
