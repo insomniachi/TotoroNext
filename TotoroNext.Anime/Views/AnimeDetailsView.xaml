@@ -52,7 +52,6 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
@@ -117,21 +116,8 @@
                     Grid.Column="1"
                     SelectedDate="{x:Bind ViewModel.FinishDate, Mode=TwoWay}" />
 
-                <Button
-                    x:Name="ContinueWatchingButton"
-                    Grid.Row="5"
-                    Grid.ColumnSpan="2"
-                    HorizontalAlignment="Center"
-                    Command="{x:Bind ViewModel.ContinueWatchingCommand}"
-                    Visibility="{x:Bind local:Converters.BooleanToVisibility(ContinueWatchingButton.IsEnabled), Mode=OneWay}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <SymbolIcon Symbol="Play" />
-                        <TextBlock Text="Watch" />
-                    </StackPanel>
-                </Button>
-
                 <ScrollView
-                    Grid.Row="6"
+                    Grid.Row="5"
                     Grid.ColumnSpan="2"
                     Margin="0,8,0,0"
                     HorizontalScrollMode="Disabled">
@@ -141,7 +127,10 @@
             </Grid>
         </Grid>
 
-        <SelectorBar x:Name="Pivot" Grid.Row="2">
+        <SelectorBar
+            x:Name="Pivot"
+            Grid.Row="2"
+            SelectionChanged="Pivot_SelectionChanged">
             <SelectorBar.Resources>
                 <Style TargetType="SelectorBarItem">
                     <Setter Property="FontSize" Value="25" />
@@ -150,104 +139,21 @@
             </SelectorBar.Resources>
             <SelectorBarItem IsSelected="True" Text="Episodes" />
             <SelectorBarItem Text="Related" />
+            <SelectorBarItem Text="Recommended" />
         </SelectorBar>
 
-        <ctk:SwitchPresenter Grid.Row="3" Value="{x:Bind Pivot.SelectedItem.Text, Mode=OneWay}">
-            <ctk:Case Value="Episodes">
-                <ItemsView
-                    mod:ItemsViewSelectionHelper.Command="{x:Bind ViewModel.WatchEpisodeCommand}"
-                    mod:ItemsViewSelectionHelper.EnableSelectionTracking="True"
-                    mod:ItemsViewSelectionHelper.SelectedItem="{x:Bind ViewModel.SelectedEpisode, Mode=TwoWay}"
-                    IsItemInvokedEnabled="True"
-                    ItemsSource="{x:Bind ViewModel.Episodes, Mode=OneWay}"
-                    SelectionMode="Single">
-                    <ItemsView.ItemTemplate>
-                        <DataTemplate x:DataType="taa:EpisodeInfo">
-                            <ItemContainer Height="160" Background="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <Grid>
-                                        <Image Source="{x:Bind Image}" Stretch="Uniform" />
-                                        <ProgressBar
-                                            Grid.Row="3"
-                                            Margin="8"
-                                            HorizontalAlignment="Stretch"
-                                            VerticalAlignment="Bottom"
-                                            Foreground="Green"
-                                            Maximum="{x:Bind Progress.Total}"
-                                            Visibility="{x:Bind local:Converters.ObjectToVisiblity(Progress)}"
-                                            Value="{x:Bind Progress.Position}" />
-                                    </Grid>
-
-
-                                    <Grid Grid.Column="1" Padding="10">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="*" />
-                                        </Grid.RowDefinitions>
-                                        <TextBlock Margin="0,0,0,8" Style="{ThemeResource SubtitleTextBlockStyle}">
-                                            <Run Foreground="{ThemeResource TextFillColorTertiaryBrush}" Text="Episode" />
-                                            <Run Foreground="{ThemeResource TextFillColorTertiaryBrush}" Text="{x:Bind EpisodeNumber}" />
-                                            <Run Foreground="{ThemeResource TextFillColorTertiaryBrush}" Text=":" />
-                                            <Run Text="{x:Bind Titles.English}" />
-                                        </TextBlock>
-                                        <StackPanel
-                                            Grid.Row="1"
-                                            Margin="0,0,0,8"
-                                            Orientation="Horizontal"
-                                            Spacing="5">
-                                            <SymbolIcon Symbol="CalendarDay" />
-                                            <TextBlock Margin="0,0,16,0" Text="{x:Bind AirDate}" />
-                                            <SymbolIcon Symbol="Clock" />
-                                            <TextBlock>
-                                                <Run Text="{x:Bind Runtime}" />
-                                                <Run Text="Min" />
-                                            </TextBlock>
-                                        </StackPanel>
-                                        <ScrollView Grid.Row="2">
-                                            <TextBlock
-                                                Style="{ThemeResource BodyTextBlockStyle}"
-                                                Text="{x:Bind Overview}"
-                                                TextWrapping="WrapWholeWords" />
-                                        </ScrollView>
-                                    </Grid>
-                                </Grid>
-                            </ItemContainer>
-                        </DataTemplate>
-                    </ItemsView.ItemTemplate>
-                    <ItemsView.Layout>
-                        <StackLayout Spacing="8" />
-                    </ItemsView.Layout>
-                </ItemsView>
-            </ctk:Case>
-            <ctk:Case Value="Related">
-                <ItemsView ItemsSource="{x:Bind ViewModel.Anime.Related, Mode=OneWay}">
-                    <ItemsView.ItemTemplate>
-                        <DataTemplate x:DataType="m:AnimeModel">
-                            <ItemContainer>
-                                <uc:AnimeCard Anime="{x:Bind}" />
-                            </ItemContainer>
-                        </DataTemplate>
-                    </ItemsView.ItemTemplate>
-                    <ItemsView.Layout>
-                        <UniformGridLayout
-                            ItemsJustification="Start"
-                            ItemsStretch="Fill"
-                            MaximumRowsOrColumns="3"
-                            MinColumnSpacing="16"
-                            MinItemHeight="300"
-                            MinItemWidth="125"
-                            MinRowSpacing="16" />
-                    </ItemsView.Layout>
-                </ItemsView>
-            </ctk:Case>
-            <ctk:Case IsDefault="True" />
-        </ctk:SwitchPresenter>
+        <ContentControl
+            x:Name="DetailsContentControl"
+            Grid.Row="3"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            HorizontalContentAlignment="Stretch"
+            VerticalContentAlignment="Stretch"
+            mod:NavigationExtensions.IsAttached="True">
+            <ContentControl.ContentTransitions>
+                <TransitionCollection />
+            </ContentControl.ContentTransitions>
+        </ContentControl>
 
     </Grid>
 </UserControl>

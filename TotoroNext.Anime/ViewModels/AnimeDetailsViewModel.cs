@@ -1,22 +1,17 @@
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using ReactiveUI;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Abstractions.Models;
-using TotoroNext.Anime.Extensions;
-using TotoroNext.Anime.ViewModels.Parameters;
 using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Anime.ViewModels;
 
 public partial class AnimeDetailsViewModel(AnimeModel anime,
-                                           IPlaybackProgressService playbackProgressService,
                                            IFactory<IMetadataService, Guid> metaFactory,
                                            IFactory<IAnimeProvider, Guid> providerFactory,
-                                           IFactory<ITrackingService, Guid> trackerFactory,
-                                           IEvent<NavigateToDataRequest> dataNavRequest) : ObservableObject, IAsyncInitializable
+                                           IFactory<ITrackingService, Guid> trackerFactory) : ObservableObject, IAsyncInitializable, INavigatorHost
 {
     private readonly IMetadataService _metadataService = metaFactory.CreateDefault();
     private readonly IAnimeProvider _provider = providerFactory.CreateDefault();
@@ -25,17 +20,9 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
     public partial AnimeModel Anime { get; set; } = anime;
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ContinueWatchingCommand))]
-    public partial List<EpisodeInfo> Episodes { get; set; } = [];
-
-    [ObservableProperty]
-    public partial EpisodeInfo? SelectedEpisode { get; set; }
-
-    [ObservableProperty]
     public partial ListItemStatus Status { get; set; } = anime.Tracking!.Status!.Value;
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ContinueWatchingCommand))]
     public partial double Progress { get; set; } = anime.Tracking!.WatchedEpisodes!.Value;
 
     [ObservableProperty]
@@ -47,13 +34,16 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
     [ObservableProperty]
     public partial DateTimeOffset? FinishDate { get; set; } = anime.Tracking!.FinishDate;
 
+    [ObservableProperty]
+    public partial LoadableAction InitializeAction { get; set; }
 
     public ListItemStatus[] Statuses { get; } = [.. Enum.GetValues<ListItemStatus>()];
+
+    public INavigator? Navigator { get; set; }
 
     public async Task InitializeAsync()
     {
         Anime = await _metadataService.GetAnimeAsync(Anime.Id) ?? Anime;
-        await UpdateEpisodes();
 
         this.WhenAnyValue(x => x.Status, x => x.Progress, x => x.Score, x => x.StartDate, x => x.FinishDate)
             .Skip(1)
@@ -75,91 +65,5 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
                 return Task.WhenAll(tasks);
             })
             .Subscribe();
-
-        this.WhenAnyValue(x => x.Episodes)
-            .Where(x => x is { Count: > 0 })
-            .Subscribe(_ => SelectedEpisode = GetNextUp());
-    }
-
-    private async Task UpdateEpisodes()
-    {
-        var eps = await Anime.GetEpisodes();
-        var progress = playbackProgressService.GetProgress(Anime.Id);
-
-        foreach (var item in progress)
-        {
-            if(eps.FirstOrDefault(x => x.EpisodeNumber == item.Key) is { } ep)
-            {
-                ep.Progress = item.Value;
-            }
-        }
-
-        Episodes = eps;
-    }
-
-    [RelayCommand]
-    private async Task WatchEpisode(EpisodeInfo episode)
-    {
-        var searchResult = await _provider.SearchAndSelectAsync(Anime);
-
-        if (searchResult is null)
-        {
-            return;
-        }
-
-        var episodes = await searchResult.GetEpisodes().ToListAsync();
-        var selectedEpisode = episodes.FirstOrDefault(x => (int)x.Number == episode.EpisodeNumber);
-
-        if (selectedEpisode is null)
-        {
-            return;
-        }
-
-        if(episode.Progress is { } info)
-        {
-            selectedEpisode.StartPosition = TimeSpan.FromSeconds(info.Position);
-        }
-
-        dataNavRequest.Publish(new(new WatchViewModelNavigationParameter(searchResult,
-                                                                                              Anime,
-                                                                                              episodes,
-                                                                                              selectedEpisode,
-                                                                                              false)));
-    }
-
-    [RelayCommand(CanExecute = nameof(CanContinueWatching))]
-    private async Task ContinueWatching()
-    {
-        if(GetNextUp() is not { } ep)
-        {
-            return;
-        }
-
-        await WatchEpisode(ep);
-    }
-
-    private bool CanContinueWatching()
-    {
-        if(Episodes is null or { Count : 0 })
-        {
-            return false;
-        }
-
-        if(Progress is not > 0)
-        {
-            return true;
-        }
-
-        return Progress < Episodes.Max(x => x.EpisodeNumber);
-    }
-
-    private EpisodeInfo? GetNextUp()
-    {
-        if (Anime is { Tracking.WatchedEpisodes: 0 or null })
-        {
-            return Episodes.FirstOrDefault();
-        }
-
-        return Episodes.FirstOrDefault(x => x.EpisodeNumber == Anime.Tracking!.WatchedEpisodes!.Value + 1);
     }
 }

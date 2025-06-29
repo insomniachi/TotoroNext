@@ -16,7 +16,6 @@
         x:Name="SplitView"
         DisplayMode="Inline"
         OpenPaneLength="750"
-        PaneBackground="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
         PanePlacement="Right">
         <Grid Margin="36" RowSpacing="16">
             <Grid.RowDefinitions>
@@ -76,33 +75,39 @@
                 </SplitButton>
             </StackPanel>
 
-            <ScrollView Grid.Row="1">
-                <ItemsRepeater ElementPrepared="AnimeList_ElementPrepared" ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}">
-                    <ItemsRepeater.ItemTransitionProvider>
-                        <LinedFlowLayoutItemCollectionTransitionProvider />
-                    </ItemsRepeater.ItemTransitionProvider>
-                    <ItemsRepeater.ItemTemplate>
-                        <DataTemplate x:DataType="taa:AnimeModel">
-                            <ItemContainer>
-                                <uc:AnimeCard
-                                    Anime="{x:Bind}"
-                                    DoubleTapped="AnimeCard_DoubleTapped"
-                                    IsDoubleTapEnabled="True"
-                                    IsTapEnabled="True"
-                                    Tapped="AnimeCard_Tapped" />
-                            </ItemContainer>
-                        </DataTemplate>
-                    </ItemsRepeater.ItemTemplate>
-                    <ItemsRepeater.Layout>
-                        <UniformGridLayout
-                            ItemsJustification="Start"
-                            ItemsStretch="Fill"
-                            MinColumnSpacing="16"
-                            MinItemHeight="400"
-                            MinItemWidth="250"
-                            MinRowSpacing="16" />
-                    </ItemsRepeater.Layout>
-                </ItemsRepeater>
+            <ScrollView
+                Grid.Row="1"
+                Background="Transparent"
+                Tapped="Rectangle_Tapped">
+                <Grid>
+                    <Rectangle Fill="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    <ItemsRepeater ElementPrepared="AnimeList_ElementPrepared" ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}">
+                        <ItemsRepeater.ItemTransitionProvider>
+                            <LinedFlowLayoutItemCollectionTransitionProvider />
+                        </ItemsRepeater.ItemTransitionProvider>
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="taa:AnimeModel">
+                                <ItemContainer>
+                                    <uc:AnimeCard
+                                        Anime="{x:Bind}"
+                                        DoubleTapped="AnimeCard_DoubleTapped"
+                                        IsDoubleTapEnabled="True"
+                                        IsTapEnabled="True"
+                                        Tapped="AnimeCard_Tapped" />
+                                </ItemContainer>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                        <ItemsRepeater.Layout>
+                            <UniformGridLayout
+                                ItemsJustification="Start"
+                                ItemsStretch="Fill"
+                                MinColumnSpacing="16"
+                                MinItemHeight="400"
+                                MinItemWidth="250"
+                                MinRowSpacing="16" />
+                        </ItemsRepeater.Layout>
+                    </ItemsRepeater>
+                </Grid>
             </ScrollView>
 
         </Grid>

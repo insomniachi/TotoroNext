@@ -37,7 +37,14 @@ public static class Converters
             return null;
         }
 
-        return new BitmapImage(new Uri(uri));
+        try
+        {
+            return new BitmapImage(new Uri(uri));
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public static Guid ToGuid(string guid) => Guid.Parse(guid);

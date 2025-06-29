@@ -6,7 +6,6 @@ using ReactiveUI;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.UserControls;
 using TotoroNext.Anime.ViewModels;
-using Uno.Toolkit.UI;
 
 namespace TotoroNext.Anime.Views;
 
@@ -57,6 +56,11 @@ public sealed partial class UserListPage : Page
 
     private void AnimeCard_Tapped(object sender, TappedRoutedEventArgs e)
     {
+        if (SplitView.IsPaneOpen)
+        {
+            return;
+        }
+
         if (sender is not AnimeCard { Anime: not null } card)
         {
             return;
@@ -67,11 +71,25 @@ public sealed partial class UserListPage : Page
 
     private void AnimeCard_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
     {
+        if(SplitView.IsPaneOpen)
+        {
+            return;
+        }
+
         if (sender is not AnimeCard { Anime: not null } card)
         {
             return;
         }
 
         _tappedSubject.OnNext(new(++_tappedCount, card.Anime));
+    }
+
+    private void Rectangle_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        if(SplitView.IsPaneOpen)
+        {
+            SplitView.IsPaneOpen = false;
+            e.Handled = true;
+        }
     }
 }

@@ -14,8 +14,16 @@
     <Grid>
         <StackPanel Padding="16" Spacing="16">
             <TextBlock Style="{ThemeResource TitleTextBlockStyle}" Text="Filter" />
-            <TextBox PlaceholderText="Name" Text="{x:Bind ViewModel.Filter.Term, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBox PlaceholderText="Year" Text="{x:Bind ViewModel.Filter.Year, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <AutoSuggestBox PlaceholderText="Name" Text="{x:Bind ViewModel.Filter.Term, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
+                <AutoSuggestBox.QueryIcon>
+                    <FontIcon Glyph="&#xE8AC;" />
+                </AutoSuggestBox.QueryIcon>
+            </AutoSuggestBox>
+            <AutoSuggestBox PlaceholderText="Year" Text="{x:Bind ViewModel.Filter.Year, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                <AutoSuggestBox.QueryIcon>
+                    <FontIcon Glyph="&#xE787;" />
+                </AutoSuggestBox.QueryIcon>
+            </AutoSuggestBox>
         </StackPanel>
     </Grid>
 </UserControl>

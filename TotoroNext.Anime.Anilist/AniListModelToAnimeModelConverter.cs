@@ -36,7 +36,8 @@ public partial class AniListModelToAnimeModelConverter
             Season = GetSeason(media.Season, media.SeasonYear),
             ServiceType = ServiceType,
             Description = DescriptionCleanRegex().Replace(media.Description ?? string.Empty, string.Empty),
-            Related = ConvertSimple(media.Relations?.Nodes ?? [])
+            Related = ConvertSimple(media.Relations?.Nodes ?? []),
+            Recommended = ConvertSimple(media.Recommendations?.Nodes.Select(x => x.MediaRecommendation).Where(x => x.Type == MediaType.Anime) ?? [])
         };
     }
 

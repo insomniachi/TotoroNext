@@ -32,8 +32,8 @@ public partial class AnimeModel : ObservableObject
     public Season? Season { get; set; }
     public string? ServiceType { get; init; }
     public string Description { get; set; } = "";
-    public IEnumerable<AnimeModel> Related { get; set; } = Enumerable.Empty<AnimeModel>();
-
+    public IEnumerable<AnimeModel> Related { get; set; } = [];
+    public IEnumerable<AnimeModel> Recommended { get; set; } = [];
 }
 
 public class ExternalIds

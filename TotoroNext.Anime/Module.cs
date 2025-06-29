@@ -24,7 +24,9 @@ public class Module : IModule
 
         // Pane navigation
         services.AddDataViewMap<AnimeDetailsView, AnimeDetailsViewModel, AnimeModel>()
-                .AddDataViewMap<UserListFilterView, UserListFilterViewModel, UserListFilter>();
+                .AddDataViewMap<UserListFilterView, UserListFilterViewModel, UserListFilter>()
+                .AddDataViewMap<AnimeEpisodesListView, AnimeEpisodesListViewModel, EpisodesListViewModelNagivationParameters>()
+                .AddDataViewMap<AnimeGridView, AnimeGridViewModel, List<AnimeModel>>();
 
         services.RegisterEvent<PlaybackProgressEventArgs>()
                 .RegisterEvent<PlaybackEndedEventArgs>()
