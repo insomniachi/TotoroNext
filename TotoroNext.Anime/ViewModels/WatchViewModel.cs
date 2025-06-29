@@ -14,14 +14,14 @@ namespace TotoroNext.Anime.ViewModels;
 
 [UsedImplicitly]
 public sealed partial class WatchViewModel(WatchViewModelNavigationParameter navigationParameter,
-                                    IEvent<PlaybackProgressEventArgs> playbackProgressEvent,
-                                    IEvent<PlaybackEndedEventArgs> playbackEndedEvent,
-                                    IFactory<IMediaSegmentsProvider, Guid> segmentsFactory,
-                                    IFactory<IMediaPlayer, Guid> mediaPlayerFactory) : ObservableObject, IInitializable, IDisposable
+                                           IEvent<PlaybackProgressEventArgs> playbackProgressEvent,
+                                           IEvent<PlaybackEndedEventArgs> playbackEndedEvent,
+                                           IFactory<IMediaSegmentsProvider, Guid> segmentsFactory,
+                                           IFactory<IMediaPlayer, Guid> mediaPlayerFactory) : ObservableObject, IInitializable, IDisposable
 {
     private TimeSpan _duration;
 
-    public IMediaPlayer? MediaPlayer { get; } = mediaPlayerFactory.CreateDefault();
+    public IMediaPlayer MediaPlayer { get; } = mediaPlayerFactory.CreateDefault();
 
     [ObservableProperty]
     public partial SearchResult ProviderResult { get; set; }
@@ -107,11 +107,6 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
 
     private void InitializePublishers()
     {
-        if(MediaPlayer is null)
-        {
-            return;
-        }
-
         MediaPlayer
             .PositionChanged
             .Where(_ => Anime is not null && SelectedEpisode is not null)
@@ -123,7 +118,17 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
 
         MediaPlayer
             .PlaybackStopped
-            .Subscribe(_ => playbackEndedEvent.Publish(new()));
+            .Do(_ => playbackEndedEvent.Publish(new()))
+            .Where(_ => SelectedEpisode is not null && Episodes is not null)
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Do(_ =>
+            {
+                if (SelectedEpisode!.IsCompleted)
+                {
+                    SelectedEpisode = Episodes!.FirstOrDefault(x => x.Number > SelectedEpisode!.Number);
+                }
+            })
+            .Subscribe();
     }
 
     private async Task Play(VideoSource source)

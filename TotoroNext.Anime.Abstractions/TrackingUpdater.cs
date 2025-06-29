@@ -29,6 +29,7 @@ public class TrackingUpdater(IFactory<ITrackingService, Guid> factory,
                     };
                 }
 
+                e.Episode.IsCompleted = true;
                 var tracking = e.Anime.Tracking;
                 
                 tracking.WatchedEpisodes = (int)e.Episode.Number;
