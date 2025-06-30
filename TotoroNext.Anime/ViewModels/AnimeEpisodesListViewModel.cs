@@ -92,6 +92,6 @@ public partial class AnimeEpisodesListViewModel(EpisodesListViewModelNagivationP
             return Episodes.FirstOrDefault();
         }
 
-        return Episodes.FirstOrDefault(x => x.EpisodeNumber == Anime.Tracking!.WatchedEpisodes!.Value + 1);
+        return Episodes.FirstOrDefault(x => x.EpisodeNumber == (Anime.Tracking?.WatchedEpisodes ?? 0) + 1);
     }
 }
