@@ -18,6 +18,7 @@
             ThemeService;
             SkiaRenderer;
             WebView;
+            Material;
         </UnoFeatures>
     </PropertyGroup>
 

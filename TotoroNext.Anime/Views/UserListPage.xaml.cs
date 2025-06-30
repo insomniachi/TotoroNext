@@ -11,30 +11,9 @@ namespace TotoroNext.Anime.Views;
 
 public sealed partial class UserListPage : Page
 {
-    private readonly Subject<(int Count, AnimeModel Anime)> _tappedSubject = new();
-    private int _tappedCount;
-
     public UserListPage()
     {
         InitializeComponent();
-
-        _tappedSubject
-            .Throttle(TimeSpan.FromMilliseconds(500))
-            .ObserveOn(RxApp.MainThreadScheduler)
-            .SelectMany(x =>
-            {
-                // double tap
-                if(x.Count % 2 == 0)
-                {
-                    ViewModel?.PaneNavigator.NavigateToData(x.Anime);
-                    return Observable.Return(Unit.Default);
-                }
-                else // single tap
-                {
-                    return (ViewModel?.NavigateToWatch(x.Anime) ?? Task.CompletedTask).ToObservable();
-                }
-            })
-            .Subscribe(_ => _tappedCount = 0);
     }
 
     public UserListViewModel? ViewModel => DataContext as UserListViewModel;
@@ -54,7 +33,7 @@ public sealed partial class UserListPage : Page
         card.UpdateBindings();
     }
 
-    private void AnimeCard_Tapped(object sender, TappedRoutedEventArgs e)
+    private async void AnimeCard_Tapped(object sender, TappedRoutedEventArgs e)
     {
         if (SplitView.IsPaneOpen)
         {
@@ -66,30 +45,26 @@ public sealed partial class UserListPage : Page
             return;
         }
 
-        _tappedSubject.OnNext(new(++_tappedCount, card.Anime));
+        await (ViewModel?.NavigateToWatch(card.Anime) ?? Task.CompletedTask);
     }
 
-    private void AnimeCard_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    private void AnimeCard_RightTapped(object sender, RightTappedRoutedEventArgs e)
     {
-        if(SplitView.IsPaneOpen)
-        {
-            return;
-        }
-
         if (sender is not AnimeCard { Anime: not null } card)
         {
             return;
         }
 
-        _tappedSubject.OnNext(new(++_tappedCount, card.Anime));
+        ViewModel?.PaneNavigator.NavigateToData(card.Anime);
     }
 
-    private void Rectangle_Tapped(object sender, TappedRoutedEventArgs e)
+    private void BackgroundTapped(object sender, TappedRoutedEventArgs e)
     {
-        if(SplitView.IsPaneOpen)
+        if (SplitView.IsPaneOpen)
         {
             SplitView.IsPaneOpen = false;
             e.Handled = true;
         }
     }
+
 }

@@ -78,9 +78,12 @@
             <ScrollView
                 Grid.Row="1"
                 Background="Transparent"
-                Tapped="Rectangle_Tapped">
+                Tapped="BackgroundTapped">
                 <Grid>
-                    <Rectangle Fill="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    <Rectangle
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Fill="Transparent" />
                     <ItemsRepeater ElementPrepared="AnimeList_ElementPrepared" ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}">
                         <ItemsRepeater.ItemTransitionProvider>
                             <LinedFlowLayoutItemCollectionTransitionProvider />
@@ -90,9 +93,9 @@
                                 <ItemContainer>
                                     <uc:AnimeCard
                                         Anime="{x:Bind}"
-                                        DoubleTapped="AnimeCard_DoubleTapped"
-                                        IsDoubleTapEnabled="True"
+                                        IsRightTapEnabled="True"
                                         IsTapEnabled="True"
+                                        RightTapped="AnimeCard_RightTapped"
                                         Tapped="AnimeCard_Tapped" />
                                 </ItemContainer>
                             </DataTemplate>

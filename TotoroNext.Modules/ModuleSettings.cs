@@ -59,13 +59,13 @@ public class ResourceHelper
 {
     public static string GetResource(string name)
     {
-#if DEBUG
-		return new Uri($"{Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location ?? "") ?? "",
+    #if DEBUG
+        return new Uri($"{Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location ?? "") ?? "",
 		                Assembly.GetCallingAssembly().GetName().Name ?? "",
 		                "Assets",
 		                name)}").AbsoluteUri;
 
-#elif WINDOWS
+    #elif WINDOWS
         return new Uri($"{Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "TotoroNext",
                 "Modules",
@@ -73,7 +73,7 @@ public class ResourceHelper
                 "net9.0-windows10.0.26100",
                 "Assets",
                 name)}").AbsoluteUri;
-#else
+    #else
         return new Uri($"{Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "TotoroNext",
                 "Modules",
@@ -82,6 +82,6 @@ public class ResourceHelper
                 Assembly.GetCallingAssembly().GetName().Name ?? "",
                 "Assets",
                 name)}").AbsoluteUri;
-#endif
-	}
+    #endif
+    }
 }
