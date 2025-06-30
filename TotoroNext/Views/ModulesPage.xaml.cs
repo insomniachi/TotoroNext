@@ -1,7 +1,8 @@
 
 using TotoroNext.Module;
+using TotoroNext.ViewModels;
 
-namespace TotoroNext.Presentation;
+namespace TotoroNext.Views;
 
 public sealed partial class ModulesPage : Page
 {
