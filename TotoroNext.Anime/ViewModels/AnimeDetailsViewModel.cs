@@ -20,10 +20,10 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
     public partial ListItemStatus? Status { get; set; } = anime.Tracking?.Status;
 
     [ObservableProperty]
-    public partial double Progress { get; set; } = anime.Tracking?.WatchedEpisodes ?? 0;
+    public partial double Progress { get; set; } = anime.Tracking?.WatchedEpisodes ?? double.NaN;
 
     [ObservableProperty]
-    public partial double Score { get; set; } = anime.Tracking?.Score ?? 0;
+    public partial double Score { get; set; } = anime.Tracking?.Score ?? double.NaN;
 
     [ObservableProperty]
     public partial DateTimeOffset? StartDate { get; set; } = anime.Tracking?.StartDate;
