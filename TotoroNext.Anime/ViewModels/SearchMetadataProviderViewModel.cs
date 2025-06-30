@@ -1,4 +1,6 @@
 using System.Reactive.Linq;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -12,30 +14,31 @@ namespace TotoroNext.Anime.ViewModels;
 
 public partial class SearchMetadataProviderViewModel(IFactory<IMetadataService, Guid> factory,
                                                      IFactory<IAnimeProvider, Guid> providerFactory,
-                                                     IEvent<NavigateToDataRequest> dataNavRequest) : ReactiveObject, IInitializable
+                                                     IEvent<NavigateToDataRequest> dataNavRequest) : ObservableObject, IInitializable
 {
     private readonly IMetadataService? _metadataService = factory.CreateDefault();
     private readonly IAnimeProvider? _provider = providerFactory.CreateDefault();
 
 
-    [Reactive]
+    [ObservableProperty]
     public partial string Query { get; set; }
 
-    [ObservableAsProperty(PropertyName = "Items")]
-    private IObservable<List<AnimeModel>> ItemsObservable() =>
+    [ObservableProperty]
+    public partial List<AnimeModel> Items { get; set; }
+
+    public void Initialize()
+    {
         this.WhenAnyValue(x => x.Query)
             .Where(_ => _metadataService is not null)
             .Where(query => query is { Length: > 3 })
             .Throttle(TimeSpan.FromMilliseconds(500))
             .SelectMany(_metadataService!.SearchAnimeAsync)
-            .ObserveOn(RxApp.MainThreadScheduler);
-
-    public void Initialize()
-    {
-        InitializeOAPH();
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(items => Items = items);
     }
 
-    public async Task AnimeSelected(AnimeModel model)
+    [RelayCommand]
+    private async Task ItemInvoked(AnimeModel model)
     {
         if(_provider is null)
         {
