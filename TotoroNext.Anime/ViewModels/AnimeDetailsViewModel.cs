@@ -10,11 +10,9 @@ namespace TotoroNext.Anime.ViewModels;
 
 public partial class AnimeDetailsViewModel(AnimeModel anime,
                                            IFactory<IMetadataService, Guid> metaFactory,
-                                           IFactory<IAnimeProvider, Guid> providerFactory,
                                            IFactory<ITrackingService, Guid> trackerFactory) : ObservableObject, IAsyncInitializable, INavigatorHost
 {
     private readonly IMetadataService _metadataService = metaFactory.CreateDefault();
-    private readonly IAnimeProvider _provider = providerFactory.CreateDefault();
 
     [ObservableProperty]
     public partial AnimeModel Anime { get; set; } = anime;
@@ -29,10 +27,10 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
     public partial double Score { get; set; } = anime.Tracking?.Score ?? double.NaN;
 
     [ObservableProperty]
-    public partial DateTimeOffset? StartDate { get; set; } = anime.Tracking!.StartDate;
+    public partial DateTimeOffset? StartDate { get; set; } = anime.Tracking?.StartDate;
 
     [ObservableProperty]
-    public partial DateTimeOffset? FinishDate { get; set; } = anime.Tracking!.FinishDate;
+    public partial DateTimeOffset? FinishDate { get; set; } = anime.Tracking?.FinishDate;
 
     [ObservableProperty]
     public partial LoadableAction InitializeAction { get; set; }
