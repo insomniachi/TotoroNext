@@ -18,8 +18,7 @@ public class Module : IModule
 
         // main navigation
         services.AddNavigationViewItem<UserListPage, UserListViewModel>("My List", new SymbolIcon(Symbol.Library))
-                .AddNavigationViewItem<SearchProviderPage, SearchProviderViewModel>("Watch Now", new FontIcon { Glyph = "\uE7C5" })
-                .AddNavigationViewItem<SearchMetadataProviderPage, SearchMetadataProviderViewModel>("Search Metadata", new FontIcon { Glyph = "\uEDE4" })
+                .AddNavigationViewItem<SearchMetadataProviderPage, SearchMetadataProviderViewModel>("Search", new FontIcon { Glyph = "\uE721" })
                 .AddDataViewMap<WatchPage, WatchViewModel, WatchViewModelNavigationParameter>();
 
         // Pane navigation

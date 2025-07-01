@@ -6,7 +6,6 @@ namespace TotoroNext.Module;
 
 public static class ServiceCollectionExtensions
 {
-
     public static IServiceCollection AddCoreServices(this IServiceCollection services)
     {
         services.AddHttpClient();

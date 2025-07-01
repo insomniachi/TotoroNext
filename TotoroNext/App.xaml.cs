@@ -97,8 +97,8 @@ public partial class App : Application
 
                     services.AddDataViewMap<ModuleDetailsView, ModuleDetailsViewModel, ModuleManifest>();
 
-                    services.AddFooterNavigationViewItem<ModulesPage, ModulesViewModel>("My Modules", new FontIcon { Glyph = "\uED35" });
-                    services.AddNavigationViewItem<ModulesStorePage, ModulesStoreViewModel>("Store", new FontIcon { Glyph = "\uEA40" });
+                    services.AddFooterNavigationViewItem<ModulesPage, ModulesViewModel>("Installed", new FontIcon { Glyph = "\uE7B8" });
+                    services.AddNavigationViewItem<ModulesStorePage, ModulesStoreViewModel>("Store", new FontIcon { Glyph = "\uE719" });
                     services.AddTransient<ViewMap>(_ => new ViewMap<SettingsPage, SettingsViewModel>());
                     services.AddSingleton<SettingsViewModel>();
                     services.AddTransient(sp =>

@@ -34,6 +34,33 @@ public partial class MainViewModel : ReactiveObject, INavigatorHost
             .Subscribe(req => Navigator?.NavigateViewModel(req.Type));
         dataNavRequest.OnNext()
             .Subscribe(req => Navigator?.NavigateToData(req.Data));
+
+        this.WhenAnyValue(x => x.Navigator)
+            .WhereNotNull()
+            .FirstAsync()
+            .Subscribe(navigator =>
+            {
+                navigator.Navigated += (_, type) =>
+                {
+                    UpdateSelections(navigationViewItems, type);
+                };
+            });
+    }
+
+    private static void UpdateSelections(IEnumerable<NavigationViewItem> items, Type viewType)
+    {
+        foreach (var item in items)
+        {
+            if(item.Tag is not NavigationViewItemTag tag)
+            {
+                return;
+            }
+
+            item.DispatcherQueue.TryEnqueue(() =>
+            {
+                item.IsSelected = tag.ViewType == viewType;
+            });
+        }
     }
 
     public string? Title { get; }

@@ -4,129 +4,107 @@ using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Anime.UserInteractions;
 
-internal class SelectProviderResult(XamlRoot xamlRoot) : ISelectionUserInteraction<SearchResult>
+
+internal abstract class SelectResult<T>(XamlRoot xamlRoot) : ISelectionUserInteraction<T>
+    where T : class
 {
-    public async Task<SearchResult?> GetValue(List<SearchResult> input)
+    public async Task<T?> GetValue(List<T> input)
     {
         var dialog = new ContentDialog
         {
-            Title = "Select",
+            Title = GetTitle(),
             CloseButtonText = "Close",
             PrimaryButtonText = "Select",
             DefaultButton = ContentDialogButton.Primary,
             Content = new ListView()
-            .ItemsSource(input)
-            .Name(out var listView)
-            .SelectionMode(ListViewSelectionMode.Single)
-            .ItemTemplate<SearchResult>(item =>
-                new Grid()
-                .Margin(8)
-                .ColumnDefinitions("Auto,*")
-                .ColumnSpacing(8)
-                .Children(
-                [
-                    new Image()
-                    .Source(() => item.Image, x => Converters.UriToImage(x)!)
-                    .Height(100).Width(75)
-                    .Stretch(Stretch.UniformToFill)
-                    .Grid(column: 0),
-
-                    new TextBlock()
-                    .Text(() => item.Title)
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .TextWrapping(TextWrapping.WrapWholeWords)
-                    .Grid(column: 1)
-                ])),
+                .ItemsSource(input)
+                .Name(out var listView)
+                .SelectionMode(ListViewSelectionMode.Single)
+                .ItemTemplate<T>(CreateElement),
             XamlRoot = xamlRoot
         };
 
         var result = await dialog.ShowAsync();
 
         return result is ContentDialogResult.Primary
-            ? listView.SelectedItem as SearchResult
+            ? listView.SelectedItem as T
             : null;
+    }
+
+    public abstract UIElement CreateElement(T model);
+    public virtual string GetTitle() => "Select";
+    public virtual string GetCloseButtonText() => "Close";
+    public virtual string GetPrimaryButtonText() => "Select";
+}
+
+internal class SelectProviderResult(XamlRoot xamlRoot) : SelectResult<SearchResult>(xamlRoot)
+{
+    public override UIElement CreateElement(SearchResult model)
+    {
+        return new Grid()
+            .Margin(8)
+            .ColumnDefinitions("Auto,*")
+            .ColumnSpacing(8)
+            .Children(
+            [
+                new Image()
+                .Source(() => model.Image, x => Converters.UriToImage(x)!)
+                .Height(100).Width(75)
+                .Stretch(Stretch.UniformToFill)
+                .Grid(column: 0),
+
+                new TextBlock()
+                .Text(() => model.Title)
+                .VerticalAlignment(VerticalAlignment.Center)
+                .TextWrapping(TextWrapping.WrapWholeWords)
+                .Grid(column: 1)
+            ]);
     }
 }
 
-internal class SelectAnimeResult(XamlRoot xamlRoot) : ISelectionUserInteraction<AnimeModel>
+internal class SelectAnimeResult(XamlRoot xamlRoot) : SelectResult<AnimeModel>(xamlRoot)
 {
-    public async Task<AnimeModel?> GetValue(List<AnimeModel> input)
+    public override UIElement CreateElement(AnimeModel model)
     {
-        var dialog = new ContentDialog
-        {
-            Title = "Select",
-            CloseButtonText = "Close",
-            PrimaryButtonText = "Select",
-            DefaultButton = ContentDialogButton.Primary,
-            Content = new ListView()
-            .ItemsSource(input)
-            .Name(out var listView)
-            .SelectionMode(ListViewSelectionMode.Single)
-            .ItemTemplate<AnimeModel>(item =>
-                new Grid()
-                .Margin(8)
-                .ColumnDefinitions("Auto,*")
-                .ColumnSpacing(8)
-                .Children(
-                [
-                    new Image()
-                    .Source(() => item.Image, x => Converters.StringToImage(x)!)
-                    .Height(100).Width(75)
-                    .Stretch(Stretch.UniformToFill)
-                    .Grid(column: 0),
+        return new Grid()
+            .Margin(8)
+            .ColumnDefinitions("Auto,*")
+            .ColumnSpacing(8)
+            .Children(
+            [
+                new Image()
+                .Source(() => model.Image, x => Converters.StringToImage(x)!)
+                .Height(100).Width(75)
+                .Stretch(Stretch.UniformToFill)
+                .Grid(column: 0),
 
-                    new TextBlock()
-                    .Text(() => item.Title)
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .TextWrapping(TextWrapping.WrapWholeWords)
-                    .Grid(column: 1)
-                ])),
-            XamlRoot = xamlRoot
-        };
-
-        var result = await dialog.ShowAsync();
-
-        return result is ContentDialogResult.Primary
-            ? listView.SelectedItem as AnimeModel
-            : null;
+                new TextBlock()
+                .Text(() => model.Title)
+                .VerticalAlignment(VerticalAlignment.Center)
+                .TextWrapping(TextWrapping.WrapWholeWords)
+                .Grid(column: 1)
+            ]);
     }
 }
 
 
-internal class SelectServerResult(XamlRoot xamlRoot) : ISelectionUserInteraction<VideoServer>
+internal class SelectServerResult(XamlRoot xamlRoot) : SelectResult<VideoServer>(xamlRoot)
 {
-    public async Task<VideoServer?> GetValue(List<VideoServer> input)
+    public override UIElement CreateElement(VideoServer model)
     {
-        var dialog = new ContentDialog
-        {
-            Title = "Select Server",
-            CloseButtonText = "Close",
-            PrimaryButtonText = "Select",
-            DefaultButton = ContentDialogButton.Primary,
-            Content = new ListView()
-            .ItemsSource(input)
-            .Name(out var listView)
-            .SelectionMode(ListViewSelectionMode.Single)
-            .ItemTemplate<VideoServer>(item =>
-                new Grid()
-                .Margin(8)
-                .ColumnDefinitions("Auto,*")
-                .ColumnSpacing(8)
-                .Children(
-                [
-                    new TextBlock()
-                    .Text(() => item.Name)
-                    .VerticalAlignment(VerticalAlignment.Center)
-                    .TextWrapping(TextWrapping.WrapWholeWords)
-                    .Grid(column: 1)
-                ])),
-            XamlRoot = xamlRoot
-        };
-
-        var result = await dialog.ShowAsync();
-
-        return result is ContentDialogResult.Primary
-            ? listView.SelectedItem as VideoServer
-            : null;
+        return new Grid()
+            .Margin(8)
+            .ColumnDefinitions("Auto,*")
+            .ColumnSpacing(8)
+            .Children(
+            [
+                new TextBlock()
+                .Text(() => model.Name)
+                .VerticalAlignment(VerticalAlignment.Center)
+                .TextWrapping(TextWrapping.WrapWholeWords)
+                .Grid(column: 1)
+            ]);
     }
+
+    public override string GetTitle() => "Select Server";
 }

@@ -118,7 +118,7 @@ public class ControlNavigator(UIElement host,
     {
         if (Control is SplitView sv)
         {
-            if(NavigationExtensions.GetPaneWidth(page) is { } width)
+            if(NavigationExtensions.GetPaneWidth(page) is { } width && width > 0)
             {
                 sv.OpenPaneLength = width;
             }
