@@ -30,11 +30,11 @@ public static class Converters
         return bitmapImage;
     }
 
-    public static ImageSource StringToImage(string? uri)
+    public static ImageSource? StringToImage(string? uri)
     {
         if (uri is null)
         {
-            return new BitmapImage();
+            return null;
         }
 
         try
@@ -43,7 +43,7 @@ public static class Converters
         }
         catch
         {
-            return new BitmapImage();
+            return null;
         }
     }
 
