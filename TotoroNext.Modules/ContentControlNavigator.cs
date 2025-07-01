@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using TotoroNext.Module.Abstractions;
+using Uno.Logging;
 using Uno.UI.Extensions;
 
 namespace TotoroNext.Module;
@@ -52,8 +53,9 @@ public class ControlNavigator(UIElement host,
             Navigated?.Invoke(this, viewType);
             return true;
         }
-        catch
+        catch(Exception ex)
         {
+            this.Log().Error("Unable to Navigate", ex);
             return false;
         }
     }
