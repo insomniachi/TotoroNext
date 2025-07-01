@@ -55,18 +55,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Page Update="Views\SearchMetadataProviderPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Update="Views\SearchMetadataProviderPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </AdditionalFiles>
-  </ItemGroup>
-
-  <ItemGroup>
     <Page Update="Views\UserListPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -91,25 +79,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Update="Views\UserListFilterView.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </AdditionalFiles>
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Update="Views\AnimeDetailsView.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </AdditionalFiles>
-  </ItemGroup>
-
-  <ItemGroup>
     <AdditionalFiles Update="Views\AnimeEpisodesListView.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </AdditionalFiles>
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Update="Views\AnimeGridView.xaml">
       <Generator>MSBuild:Compile</Generator>
     </AdditionalFiles>
   </ItemGroup>
