@@ -14,7 +14,7 @@ namespace TotoroNext.Anime.ViewModels;
 
 public partial class SearchMetadataProviderViewModel(IFactory<IMetadataService, Guid> factory,
                                                      IFactory<IAnimeProvider, Guid> providerFactory,
-                                                     IEvent<NavigateToDataRequest> dataNavRequest) : ObservableObject, IInitializable, IPaneNavigatable
+                                                     IEvent<NavigateToDataRequest> dataNavRequest) : ObservableObject, IInitializable
 {
     private readonly IMetadataService? _metadataService = factory.CreateDefault();
     private readonly IAnimeProvider? _provider = providerFactory.CreateDefault();
@@ -25,8 +25,6 @@ public partial class SearchMetadataProviderViewModel(IFactory<IMetadataService, 
 
     [ObservableProperty]
     public partial List<AnimeModel> Items { get; set; }
-
-    public INavigator PaneNavigator { get; set; } = null!;
 
     public void Initialize()
     {
@@ -39,7 +37,8 @@ public partial class SearchMetadataProviderViewModel(IFactory<IMetadataService, 
             .Subscribe(items => Items = items);
     }
 
-    public async Task Watch(AnimeModel model)
+    [RelayCommand]
+    private async Task ItemInvoked(AnimeModel model)
     {
         if(_provider is null)
         {

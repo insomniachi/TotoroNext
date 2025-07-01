@@ -1,4 +1,3 @@
-using CommunityToolkit.WinUI;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.ViewModels;
 
@@ -10,11 +9,7 @@ public partial class SearchMetadataProviderPage : Page
     {
         this.DataContext<SearchMetadataProviderViewModel>((page, vm) =>
         {
-            page.Content(new SplitView()
-                .Name(out SplitView splitView)
-                .DisplayMode(SplitViewDisplayMode.Inline)
-                .PanePlacement(SplitViewPanePlacement.Right)
-                .Content(new Grid()
+            page.Content(new Grid()
                 .Margin(36)
                 .RowSpacing(16)
                 .RowDefinitions("Auto,*")
@@ -30,13 +25,11 @@ public partial class SearchMetadataProviderPage : Page
                     .Content(new ItemsRepeater()
                         .ItemsSource(x => x.Binding(() => vm.Items).OneWay())
                         .ItemTemplate<AnimeModel>(item => new Grid()
-                            .IsRightTapEnabled(true)
-                            .IsTapEnabled(true)
                             .RowDefinitions("*,Auto")
                             .Children([
 
                                     new Image()
-                                    .Source(s => s
+                                    .Source(x => x
                                         .Binding(() => item.Image)
                                         .Convert(Converters.StringToImage))
                                     .Stretch(Stretch.Fill),
@@ -57,7 +50,6 @@ public partial class SearchMetadataProviderPage : Page
                                         .Text(x => x.Binding(() => item.Title)))
 
                             ])
-                            .Name(out Grid _, HandleTaps)
                         )
                         .Layout(new UniformGridLayout
                         {
@@ -68,47 +60,10 @@ public partial class SearchMetadataProviderPage : Page
                             MinItemWidth = 250,
                             MinRowSpacing = 16 
                         })
+                        .CommandExtensions(x => x.Command(() => vm.ItemInvokedCommand))
                     )
-                    .Name(out ScrollView _, c => HandleTap(c, splitView))
 
-                ])));
+                ]));
         });
-    }
-
-    private static void HandleTaps(Grid container)
-    {
-        container.Tapped += async (sender, _) =>
-        {
-            if (sender is not Grid { DataContext: AnimeModel { } model } grid)
-            {
-                return;
-            }
-
-            if (grid.FindAscendant<Page>()?.DataContext is SearchMetadataProviderViewModel vm)
-            {
-                await vm.Watch(model);
-            }
-
-        };
-        container.RightTapped += (sender, _) =>
-        {
-            if (sender is not Grid { DataContext: AnimeModel { } model } grid)
-            {
-                return;
-            }
-
-            if (grid.FindAscendant<Page>()?.DataContext is SearchMetadataProviderViewModel vm)
-            {
-                vm.PaneNavigator.NavigateToData(model);
-            }
-        };
-    }
-
-    private static void HandleTap(ScrollView scrollView, SplitView sv)
-    {
-        scrollView.Tapped += (_, _) =>
-        {
-            sv.IsPaneOpen = false;
-        };
     }
 }

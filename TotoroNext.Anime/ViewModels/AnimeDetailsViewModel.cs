@@ -2,6 +2,7 @@ using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ReactiveUI;
 using TotoroNext.Anime.Abstractions;
+using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
 
@@ -9,27 +10,29 @@ namespace TotoroNext.Anime.ViewModels;
 
 public partial class AnimeDetailsViewModel(AnimeModel anime,
                                            IFactory<IMetadataService, Guid> metaFactory,
+                                           IFactory<IAnimeProvider, Guid> providerFactory,
                                            IFactory<ITrackingService, Guid> trackerFactory) : ObservableObject, IAsyncInitializable, INavigatorHost
 {
     private readonly IMetadataService _metadataService = metaFactory.CreateDefault();
+    private readonly IAnimeProvider _provider = providerFactory.CreateDefault();
 
     [ObservableProperty]
     public partial AnimeModel Anime { get; set; } = anime;
 
     [ObservableProperty]
-    public partial ListItemStatus? Status { get; set; } = anime.Tracking?.Status;
+    public partial ListItemStatus Status { get; set; } = anime.Tracking!.Status!.Value;
 
     [ObservableProperty]
-    public partial double Progress { get; set; } = anime.Tracking?.WatchedEpisodes ?? 0;
+    public partial double Progress { get; set; } = anime.Tracking!.WatchedEpisodes!.Value;
 
     [ObservableProperty]
-    public partial double Score { get; set; } = anime.Tracking?.Score ?? 0;
+    public partial double Score { get; set; } = anime.Tracking!.Score!.Value;
 
     [ObservableProperty]
-    public partial DateTimeOffset? StartDate { get; set; } = anime.Tracking?.StartDate;
+    public partial DateTimeOffset? StartDate { get; set; } = anime.Tracking!.StartDate;
 
     [ObservableProperty]
-    public partial DateTimeOffset? FinishDate { get; set; } = anime.Tracking?.FinishDate;
+    public partial DateTimeOffset? FinishDate { get; set; } = anime.Tracking!.FinishDate;
 
     [ObservableProperty]
     public partial LoadableAction InitializeAction { get; set; }
