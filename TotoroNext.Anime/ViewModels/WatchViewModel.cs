@@ -16,6 +16,7 @@ namespace TotoroNext.Anime.ViewModels;
 public sealed partial class WatchViewModel(WatchViewModelNavigationParameter navigationParameter,
                                            IFactory<IMediaSegmentsProvider, Guid> segmentsFactory,
                                            IFactory<IMediaPlayer, Guid> mediaPlayerFactory,
+                                           IPlaybackProgressService progressService,
                                            IMessenger messenger) : ObservableObject, IInitializable, IDisposable
 {
     private TimeSpan _duration;
@@ -64,8 +65,23 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(eps =>
                 {
-                    var watched = (Anime?.Tracking?.WatchedEpisodes ?? 0) + 1;
-                    SelectedEpisode = eps.FirstOrDefault(x => x.Number == watched);
+                    var nextUp = (Anime?.Tracking?.WatchedEpisodes ?? 0) + 1;
+                    
+                    if(eps.FirstOrDefault(x => x.Number == nextUp) is not { } nextEp)
+                    {
+                        return;
+                    }
+
+                    if (Anime?.Id is { } id)
+                    {
+                        var progress = progressService.GetProgress(id);
+                        if(progress.TryGetValue(nextUp, out var epProgress))
+                        {
+                            nextEp.StartPosition = TimeSpan.FromSeconds(epProgress.Position);
+                        }
+                    }
+                    
+                    SelectedEpisode = nextEp;
                 });
         }
 
