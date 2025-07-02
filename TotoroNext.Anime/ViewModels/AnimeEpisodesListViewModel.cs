@@ -1,6 +1,7 @@
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Abstractions.Models;
@@ -14,7 +15,7 @@ namespace TotoroNext.Anime.ViewModels;
 public partial class AnimeEpisodesListViewModel(EpisodesListViewModelNagivationParameters @params,
                                                 IPlaybackProgressService playbackProgressService,
                                                 IFactory<IAnimeProvider, Guid> providerFactory,
-                                                IEvent<NavigateToDataRequest> dataNavRequest) : ObservableObject, IAsyncInitializable
+                                                IMessenger messenger) : ObservableObject, IAsyncInitializable
 {
     [ObservableProperty]
     public partial AnimeModel Anime { get; set; } = @params.Anime;
@@ -62,11 +63,11 @@ public partial class AnimeEpisodesListViewModel(EpisodesListViewModelNagivationP
             selectedEpisode.StartPosition = TimeSpan.FromSeconds(info.Position);
         }
 
-        dataNavRequest.Publish(new(new WatchViewModelNavigationParameter(searchResult,
-                                                                                              Anime,
-                                                                                              episodes,
-                                                                                              selectedEpisode,
-                                                                                              false)));
+        messenger.Send(new NavigateToDataMessage(new WatchViewModelNavigationParameter(searchResult,
+                                                                                                   Anime,
+                                                                                                   episodes,
+                                                                                                   selectedEpisode,
+                                                                                                   false)));
     }
 
     private async Task UpdateEpisodes()

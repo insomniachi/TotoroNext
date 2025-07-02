@@ -1,4 +1,5 @@
 using System.Reactive.Subjects;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using TotoroNext.Module.Abstractions;
 
@@ -11,8 +12,8 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient();
         services.AddSingleton<IComponentRegistry, ComponentRegistry>();
         services.AddSingleton<IViewRegistry, ViewRegistry>();
-        services.AddTransient(typeof(IEvent<>), typeof(Event<>));
         services.AddSingleton<ILocalSettingsService, LocalSettingsService>();
+        services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
 
         return services;
     }
@@ -27,7 +28,7 @@ public static class ServiceCollectionExtensions
         services.AddKeyedViewMap<TView, TViewModel>(title);
         services.AddTransient(sp =>
         {
-            var navigator = sp.GetRequiredService<IEvent<NavigateToViewModelRequest>>();
+            var messenger = sp.GetRequiredService<IMessenger>();
 
             var item = new NavigationViewItem
             {
@@ -38,7 +39,7 @@ public static class ServiceCollectionExtensions
 
             item.Tapped += (_, _) =>
             {
-                navigator.Publish(new(typeof(TViewModel)));
+                messenger.Send(new NavigateToViewModelMessage(typeof(TViewModel)));
             };
 
             return item;

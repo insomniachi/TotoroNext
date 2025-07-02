@@ -1,65 +1,78 @@
 using System.Reactive.Linq;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Hosting;
 using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.Module;
-using TotoroNext.Module.Abstractions;
-using Uno.Disposables;
+using Uno.Logging;
 
 namespace TotoroNext.Anime.Abstractions;
 
 public class TrackingUpdater(IFactory<ITrackingService, Guid> factory,
-                             IEvent<PlaybackProgressEventArgs> playbackProgressEvent,
-                             IEvent<TrackingUpdateEventArgs> trackingUpdated) : IHostedService
+                             IMessenger messenger) : IHostedService, IRecipient<PlaybackState>
 {
-    private readonly SerialDisposable _subscription = new();
-
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        playbackProgressEvent.OnNext()
-            .Where(e => (e.Anime.Tracking?.WatchedEpisodes ?? 0) < e.Episode.Number)
-            .Where(e => e.Duration - e.Position < TimeSpan.FromMinutes(2))
-            .SelectMany(e =>
-            {
-                if(e.Anime.Tracking is null)
-                {
-                    e.Anime.Tracking = new Tracking
-                    {
-                        Status = ListItemStatus.Watching,
-                        StartDate = DateTime.Now,
-                    };
-                }
-
-                e.Episode.IsCompleted = true;
-                var tracking = e.Anime.Tracking;
-                
-                tracking.WatchedEpisodes = (int)e.Episode.Number;
-                tracking.Status = e.Anime.TotalEpisodes == e.Episode.Number ? ListItemStatus.Completed : ListItemStatus.Watching;
-
-                var tasks = factory.CreateAll()
-                                   .Select(service => new Tuple<ITrackingService, long?>(service, e.Anime.ExternalIds.GetId(service.ServiceName)))
-                                   .Where(x => x.Item2 is not null)
-                                   .Select(tuple => tuple.Item1.Update(tuple.Item2!.Value, tracking));
-
-                trackingUpdated.Publish(new TrackingUpdateEventArgs(e.Anime, e.Episode));
-
-                return Task.WhenAll(tasks);
-            })
-            .Subscribe()
-            .DisposeWith(_subscription);
-
+        messenger.Register(this);
         return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        if (_subscription.IsDisposed)
+        messenger.Unregister<PlaybackState>(this);
+        return Task.CompletedTask;
+    }
+
+    public void Receive(PlaybackState message)
+    {
+        _ = ReceiveInternal(message);
+    }
+
+    private async Task ReceiveInternal(PlaybackState message)
+    {
+        if ((message.Anime.Tracking?.WatchedEpisodes ?? 0) < message.Episode.Number)
         {
-            return Task.CompletedTask;
+            return;
         }
 
-        _subscription.Dispose();
+        if (message.Duration - message.Position < TimeSpan.FromMinutes(2))
+        {
+            return;
+        }
 
-        return Task.CompletedTask;
+        if (message.Anime.Tracking is null)
+        {
+            message.Anime.Tracking = new Tracking
+            {
+                Status = ListItemStatus.Watching,
+                StartDate = DateTime.Now,
+            };
+        }
+
+        message.Episode.IsCompleted = true;
+        var tracking = message.Anime.Tracking;
+
+        tracking.WatchedEpisodes = (int)message.Episode.Number;
+        tracking.Status = message.Anime.TotalEpisodes == message.Episode.Number ? ListItemStatus.Completed : ListItemStatus.Watching;
+
+        var tasks = factory.CreateAll()
+                           .Select(service => new Tuple<ITrackingService, long?>(service, message.Anime.ExternalIds.GetId(service.ServiceName)))
+                           .Where(x => x.Item2 is not null)
+                           .Select(tuple => tuple.Item1.Update(tuple.Item2!.Value, tracking));
+
+        messenger.Send(new TrackingUpdated
+        {
+            Anime = message.Anime,
+            Episode = message.Episode
+        });
+
+        try
+        {
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception ex)
+        {
+            this.Log().Error("Unable to update tracking", ex);
+        }
     }
 
     protected virtual long GetId(AnimeModel anime) => anime.Id;

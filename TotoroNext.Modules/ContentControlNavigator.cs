@@ -142,7 +142,15 @@ public class ControlNavigator(UIElement host,
             }
             if (vm is IAsyncInitializable { } ia)
             {
-                await ia.InitializeAsync();
+                try
+                {
+                    await ia.InitializeAsync();
+                }
+                catch (Exception ex)
+                {
+
+                    throw;
+                }
             }
             if(vm is IPaneNavigatable { } pn && page.FindFirstDescendant<SplitView>() is { } sv)
             {

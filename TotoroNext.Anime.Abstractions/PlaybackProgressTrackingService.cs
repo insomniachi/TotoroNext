@@ -1,13 +1,13 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.Hosting;
+using CommunityToolkit.Mvvm.Messaging;
 using TotoroNext.Anime.Abstractions.Models;
-using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Anime.Abstractions;
 
-public class PlaybackProgressTrackingService(IEvent<PlaybackProgressEventArgs> progressEvent,
-                                             IEvent<TrackingUpdateEventArgs> trackingUpdateEvent) : IPlaybackProgressService
+public class PlaybackProgressTrackingService(IMessenger messenger) : IPlaybackProgressService,
+                                                                     IRecipient<PlaybackState>,
+                                                                     IRecipient<TrackingUpdated>
 {
     private readonly string _file = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TotoroNext", $"progress.json");
     private Dictionary<string, ProgressInfo> _progress = [];
@@ -33,52 +33,54 @@ public class PlaybackProgressTrackingService(IEvent<PlaybackProgressEventArgs> p
         return result;
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    public void Receive(PlaybackState message)
+    {
+        var key = $"{message.Anime.Id}_{message.Episode.Number}";
+        if (_progress.TryGetValue(key, out var info))
+        {
+            info.Position = message.Position.TotalSeconds;
+        }
+        else
+        {
+            _progress[key] = new ProgressInfo
+            {
+                Position = message.Position.TotalSeconds,
+                Total = message.Duration.TotalSeconds,
+            };
+        }
+    }
+
+    public void Receive(TrackingUpdated message)
+    {
+        var key = $"{message.Anime.Id}_{message.Episode.Number}";
+        if (_progress.TryGetValue(key, out var info))
+        {
+            info.IsCompleted = true;
+        }
+    }
+
+
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
         if (File.Exists(_file))
         {
-            _progress = JsonSerializer.Deserialize<Dictionary<string, ProgressInfo>>(File.ReadAllText(_file)) ?? [];
+            var text = await File.ReadAllTextAsync(_file, cancellationToken);
+            _progress = JsonSerializer.Deserialize<Dictionary<string, ProgressInfo>>(text) ?? [];
         }
 
-        progressEvent.OnNext()
-            .Subscribe(e =>
-            {
-                var key = $"{e.Anime.Id}_{e.Episode.Number}";
-                if (_progress.TryGetValue(key, out var info))
-                {
-                    info.Position = e.Position.TotalSeconds;
-                }
-                else
-                {   
-                    _progress[key] = new ProgressInfo
-                    {
-                        Position = e.Position.TotalSeconds,
-                        Total = e.Duration.TotalSeconds,
-                    };
-                }
-            });
-
-        trackingUpdateEvent.OnNext()
-            .Subscribe(e =>
-            {
-                var key = $"{e.Anime.Id}_{e.Episode.Number}";
-                if (_progress.TryGetValue(key, out var info))
-                {
-                    info.IsCompleted = true;
-                }
-            });
-
-        return Task.CompletedTask;
+        messenger.Register<PlaybackState>(this);
+        messenger.Register<TrackingUpdated>(this);
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    public async Task StopAsync(CancellationToken cancellationToken)
     {
         var completed = _progress.Where(x => x.Value.IsCompleted).Select(x => x.Key);
         _progress.RemoveKeys(completed);
-
         
-        File.WriteAllText(_file, JsonSerializer.Serialize(_progress));
-        return Task.CompletedTask;
+        await File.WriteAllTextAsync(_file, JsonSerializer.Serialize(_progress), cancellationToken);
+
+        messenger.Unregister<PlaybackState>(this);
+        messenger.Unregister<TrackingUpdated>(this);
     }
 }
 

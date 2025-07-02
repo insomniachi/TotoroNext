@@ -9,13 +9,12 @@ public partial class UserListFilter : ReactiveObject
 {
     public UserListFilter()
     {
-        Status = ListItemStatus.Watching;
         Term = "";
         Year = "";
     }
 
     [Reactive]
-    public partial ListItemStatus Status { get; set; }
+    public partial ListItemStatus? Status { get; set; }
 
     [Reactive]
     public partial string Term { get; set; }

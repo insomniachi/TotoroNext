@@ -13,6 +13,17 @@ public interface INavigatorHost
     INavigator? Navigator { get; set; }
 }
 
-public record NavigateToViewModelRequest(Type Type);
-public record NavigateToDataRequest(object Data);
-public record NavigateToRouteRequest(string Path);
+public class NavigateToViewModelMessage(Type vm)
+{
+    public Type ViewModel { get; } = vm;
+}
+
+public class NavigateToDataMessage(object data)
+{
+    public object Data { get; } = data;
+}
+
+public class NavigateToRouteMessage(string path)
+{
+    public string Path { get; } = path;
+}

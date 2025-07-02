@@ -1,5 +1,5 @@
 using System.Reactive.Linq;
-using Microsoft.Extensions.DependencyInjection;
+using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using TotoroNext.Anime.Abstractions;
@@ -12,7 +12,7 @@ namespace TotoroNext.Anime.ViewModels;
 
 public partial class SearchMetadataProviderViewModel(IFactory<IMetadataService, Guid> factory,
                                                      IFactory<IAnimeProvider, Guid> providerFactory,
-                                                     IEvent<NavigateToDataRequest> dataNavRequest) : ReactiveObject, IInitializable, IPaneNavigatable
+                                                     IMessenger messenger) : ReactiveObject, IInitializable, IPaneNavigatable
 {
     private readonly IMetadataService? _metadataService = factory.CreateDefault();
     private readonly IAnimeProvider? _provider = providerFactory.CreateDefault();
@@ -48,6 +48,6 @@ public partial class SearchMetadataProviderViewModel(IFactory<IMetadataService, 
             return;
         }
 
-        dataNavRequest.Publish(new(new WatchViewModelNavigationParameter(result, model)));
+        messenger.Send(new NavigateToDataMessage(new WatchViewModelNavigationParameter(result, model)));
     }
 }

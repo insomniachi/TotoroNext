@@ -27,10 +27,6 @@ public class Module : IModule
                 .AddDataViewMap<AnimeEpisodesListView, AnimeEpisodesListViewModel, EpisodesListViewModelNagivationParameters>()
                 .AddDataViewMap<AnimeGridView, AnimeGridViewModel, List<AnimeModel>>();
 
-        services.RegisterEvent<PlaybackProgressEventArgs>()
-                .RegisterEvent<PlaybackEndedEventArgs>()
-                .RegisterEvent<TrackingUpdateEventArgs>();
-
         services.AddSelectionUserInteraction<SelectProviderResult, SearchResult>()
                 .AddSelectionUserInteraction<SelectAnimeResult, AnimeModel>()
                 .AddSelectionUserInteraction<SelectServerResult, VideoServer>();

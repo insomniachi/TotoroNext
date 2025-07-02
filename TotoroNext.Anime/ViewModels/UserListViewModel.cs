@@ -1,5 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Reactive.Linq;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using DynamicData;
 using DynamicData.Binding;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,38 +16,21 @@ using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Anime.ViewModels;
 
-public partial class UserListViewModel : ReactiveObject, IAsyncInitializable, IPaneNavigatable
+public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
+                         IFactory<IAnimeProvider, Guid> providerFactory,
+                         IMessenger messenger) : ObservableObject, IAsyncInitializable, IPaneNavigatable
 {
-    private readonly ITrackingService? _trackingService;
-    private readonly IAnimeProvider? _provider;
-    private readonly SourceCache<AnimeModel, long> _animeCache = new(x => x.Id);
-    private readonly ReadOnlyObservableCollection<AnimeModel> _anime;
-    private readonly IEvent<NavigateToDataRequest> _navigateToData;
-
-    public UserListViewModel(IFactory<ITrackingService, Guid> factory,
-                             IFactory<IAnimeProvider, Guid> providerFactory,
-                             IEvent<NavigateToDataRequest> navigateToData)
-    {
-        _trackingService = factory.CreateDefault();
-        _provider = providerFactory.CreateDefault();
-        _navigateToData = navigateToData;
-
-        _animeCache
-            .Connect()
-            .ObserveOn(RxApp.MainThreadScheduler)
-            .RefCount()
-            .AutoRefresh()
-            .Filter(Filter.WhenAnyPropertyChanged().Select(x => (Func<AnimeModel, bool>)x!.IsVisible))
-            .Bind(out _anime)
-            .DisposeMany()
-            .Subscribe();
-    }
+    private readonly ITrackingService? _trackingService = factory.CreateDefault();
+    private readonly IAnimeProvider? _provider = providerFactory.CreateDefault();
+    private readonly IMessenger _messenger = messenger;
+    private IEnumerable<AnimeModel>? _allItems;
 
     public UserListFilter Filter { get; } = new();
 
     public List<ListItemStatus> AllStatus { get; } = [ListItemStatus.Watching, ListItemStatus.PlanToWatch, ListItemStatus.Completed, ListItemStatus.OnHold];
 
-    public ReadOnlyObservableCollection<AnimeModel> Items => _anime;
+    [ObservableProperty]
+    public partial List<AnimeModel> Items { get; set; } = [];
 
     public INavigator PaneNavigator { get; set; } = null!;
 
@@ -55,9 +41,14 @@ public partial class UserListViewModel : ReactiveObject, IAsyncInitializable, IP
             return;
         }
 
-        var items = await _trackingService.GetUserList();
+        _allItems = await _trackingService.GetUserList();
+        Items = [.. _allItems];
 
-        _animeCache.Edit(x => x.AddOrUpdate(items));
+        Filter.WhenAnyPropertyChanged().Subscribe(x =>
+        {
+            Items = [.. _allItems.Where(Filter.IsVisible)];
+        });
+
         Filter.RaisePropertyChanged(nameof(Filter.Status));
     }
 
@@ -75,16 +66,16 @@ public partial class UserListViewModel : ReactiveObject, IAsyncInitializable, IP
             return;
         }
 
-        _navigateToData.Publish(new(new WatchViewModelNavigationParameter(result, anime)));
+        _messenger.Send(new NavigateToDataMessage(new WatchViewModelNavigationParameter(result, anime)));
     }
 
-    [ReactiveCommand]
+    [RelayCommand]
     private void ToggleFilterPane()
     {
         PaneNavigator.NavigateToData(Filter);
     }
 
-    [ReactiveCommand] 
+    [RelayCommand] 
     private void ClearFilters() => Filter.Clear();
 }
 

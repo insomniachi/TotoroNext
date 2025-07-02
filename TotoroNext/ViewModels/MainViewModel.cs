@@ -1,4 +1,5 @@
 using System.Reactive.Linq;
+using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using TotoroNext.Module;
@@ -6,7 +7,10 @@ using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Presentation;
 
-public partial class MainViewModel : ReactiveObject, INavigatorHost
+public partial class MainViewModel : ReactiveObject,
+                                     INavigatorHost, 
+                                     IRecipient<NavigateToViewModelMessage>,
+                                     IRecipient<NavigateToDataMessage>
 {
 
     [Reactive]
@@ -21,8 +25,7 @@ public partial class MainViewModel : ReactiveObject, INavigatorHost
     public MainViewModel(IStringLocalizer localizer,
                          IOptions<AppConfig> appInfo,
                          IEnumerable<NavigationViewItem> navigationViewItems,
-                         IEvent<NavigateToViewModelRequest> viewNavRequest,
-                         IEvent<NavigateToDataRequest> dataNavRequest)
+                         IMessenger messenger)
     {
         MenuItems = [.. navigationViewItems.Where(x => x.Tag is NavigationViewItemTag { IsFooterItem: false })];
         FooterItems = [.. navigationViewItems.Where(x => x.Tag is NavigationViewItemTag { IsFooterItem: true })];
@@ -30,10 +33,8 @@ public partial class MainViewModel : ReactiveObject, INavigatorHost
         Title += $" - {localizer["ApplicationName"]}";
         Title += $" - {appInfo?.Value?.Environment}";
 
-        viewNavRequest.OnNext()
-            .Subscribe(req => Navigator?.NavigateViewModel(req.Type));
-        dataNavRequest.OnNext()
-            .Subscribe(req => Navigator?.NavigateToData(req.Data));
+        messenger.Register<NavigateToDataMessage>(this);
+        messenger.Register<NavigateToViewModelMessage>(this);
 
         this.WhenAnyValue(x => x.Navigator)
             .WhereNotNull()
@@ -61,6 +62,16 @@ public partial class MainViewModel : ReactiveObject, INavigatorHost
                 item.IsSelected = tag.ViewType == viewType;
             });
         }
+    }
+
+    public void Receive(NavigateToViewModelMessage message)
+    {
+        Navigator?.NavigateViewModel(message.ViewModel);
+    }
+
+    public void Receive(NavigateToDataMessage message)
+    {
+        Navigator?.NavigateToData(message.Data);
     }
 
     public string? Title { get; }

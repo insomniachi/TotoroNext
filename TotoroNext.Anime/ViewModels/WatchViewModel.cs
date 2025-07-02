@@ -1,6 +1,7 @@
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using JetBrains.Annotations;
 using ReactiveUI;
 using TotoroNext.Anime.Abstractions;
@@ -8,16 +9,14 @@ using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.Anime.ViewModels.Parameters;
 using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.Module;
-using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Anime.ViewModels;
 
 [UsedImplicitly]
 public sealed partial class WatchViewModel(WatchViewModelNavigationParameter navigationParameter,
-                                           IEvent<PlaybackProgressEventArgs> playbackProgressEvent,
-                                           IEvent<PlaybackEndedEventArgs> playbackEndedEvent,
                                            IFactory<IMediaSegmentsProvider, Guid> segmentsFactory,
-                                           IFactory<IMediaPlayer, Guid> mediaPlayerFactory) : ObservableObject, IInitializable, IDisposable
+                                           IFactory<IMediaPlayer, Guid> mediaPlayerFactory,
+                                           IMessenger messenger) : ObservableObject, IInitializable, IDisposable
 {
     private TimeSpan _duration;
 
@@ -102,7 +101,7 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
 
     public void Dispose()
     {
-        playbackEndedEvent.Publish(new());
+        messenger.Send(new PlaybackEnded());
     }
 
     private void InitializePublishers()
@@ -110,7 +109,13 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
         MediaPlayer
             .PositionChanged
             .Where(_ => Anime is not null && SelectedEpisode is not null)
-            .Subscribe(position => playbackProgressEvent.Publish(new(Anime!, SelectedEpisode!, _duration, position)));
+            .Subscribe(position => messenger.Send(new PlaybackState
+            {
+                Anime = Anime!,
+                Episode = SelectedEpisode!,
+                Position = position,
+                Duration = _duration
+            }));
 
         MediaPlayer
             .DurationChanged
@@ -118,7 +123,7 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
 
         MediaPlayer
             .PlaybackStopped
-            .Do(_ => playbackEndedEvent.Publish(new()))
+            .Do(_ => messenger.Send(new PlaybackEnded()))
             .Where(_ => SelectedEpisode is not null && Episodes is not null)
             .ObserveOn(RxApp.MainThreadScheduler)
             .Do(_ =>
