@@ -35,6 +35,11 @@ public class PlaybackProgressTrackingService(IMessenger messenger) : IPlaybackPr
 
     public void Receive(PlaybackState message)
     {
+        if(message.Position < TimeSpan.FromSeconds(30))
+        {
+            return;
+        }
+
         var key = $"{message.Anime.Id}_{message.Episode.Number}";
         if (_progress.TryGetValue(key, out var info))
         {
