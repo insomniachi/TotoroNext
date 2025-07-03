@@ -1,7 +1,10 @@
+using System.Reactive;
 using System.Reactive.Concurrency;
+using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using TotoroNext.Anime;
 using TotoroNext.Anime.Abstractions;
+using TotoroNext.Anime.ViewModels.Parameters;
 using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
@@ -79,6 +82,7 @@ public partial class App : Application
 
                         return openPicker;
                     });
+                    services.AddSingleton<IAnimeOverridesRepository, AnimeOverridesRepository>();
 
                     foreach (var module in modules)
                     {

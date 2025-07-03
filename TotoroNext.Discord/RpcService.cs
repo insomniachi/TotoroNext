@@ -7,14 +7,17 @@ using TotoroNext.Module.Abstractions;
 namespace TotoroNext.Discord;
 
 internal class RpcService(IModuleSettings<Settings> settings,
-                          IMessenger messenger) : IHostedService, IRecipient<PlaybackState>, IRecipient<PlaybackEnded>
+                          IMessenger messenger) : IHostedService,
+                                                  IRecipient<PlaybackState>, 
+                                                  IRecipient<PlaybackEnded>,
+                                                  IRecipient<AnimeOverrides>
 {
     private readonly DiscordRpcClient _client = new("997177919052984622");
-    private readonly Settings _settings = settings.Value;
+    private bool _isEnabled = settings.Value.IsEnabled;
 
     public void Receive(PlaybackState message)
     {
-        if(!_settings.IsEnabled)
+        if(_isEnabled)
         {
             return;
         }
@@ -40,11 +43,31 @@ internal class RpcService(IModuleSettings<Settings> settings,
         _client.ClearPresence();
     }
 
+    public void Receive(AnimeOverrides message)
+    {
+        _isEnabled = !message.IsNsfw;
+
+        message.Reverted += OnRevert;
+    }
+
+    private void OnRevert(object? sender, EventArgs e)
+    {
+        if(sender is not AnimeOverrides overrides)
+        {
+            return;
+        }
+
+        _isEnabled = settings.Value.IsEnabled;
+
+        overrides.Reverted -= OnRevert;
+    }
+
     public Task StartAsync(CancellationToken cancellationToken)
     {
         _client.Initialize();
         messenger.Register<PlaybackState>(this);
         messenger.Register<PlaybackEnded>(this);
+        messenger.Register<AnimeOverrides>(this);
         return Task.CompletedTask;
     }
 
@@ -53,6 +76,8 @@ internal class RpcService(IModuleSettings<Settings> settings,
         _client.Deinitialize();
         messenger.Unregister<PlaybackState>(this);
         messenger.Unregister<PlaybackEnded>(this);
+        messenger.Unregister<AnimeOverrides>(this);
         return Task.CompletedTask;
     }
+
 }

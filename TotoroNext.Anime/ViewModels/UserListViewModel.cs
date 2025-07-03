@@ -18,10 +18,10 @@ namespace TotoroNext.Anime.ViewModels;
 
 public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
                          IFactory<IAnimeProvider, Guid> providerFactory,
+                         IAnimeOverridesRepository animeOverridesRepository,
                          IMessenger messenger) : ObservableObject, IAsyncInitializable, IPaneNavigatable
 {
     private readonly ITrackingService? _trackingService = factory.CreateDefault();
-    private readonly IAnimeProvider? _provider = providerFactory.CreateDefault();
     private readonly IMessenger _messenger = messenger;
     private IEnumerable<AnimeModel>? _allItems;
 
@@ -54,12 +54,18 @@ public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
 
     public async Task NavigateToWatch(AnimeModel anime)
     {
-        if(_provider is null)
+        var overrides = animeOverridesRepository.GetOverrides(anime.Id);
+        
+        var provider = overrides?.Provider is { } providerId
+            ? providerFactory.Create(providerId)
+            : providerFactory.CreateDefault();
+
+        if(provider is null)
         {
             return;
         }
 
-        var result = await _provider.SearchAndSelectAsync(anime);
+        var result = await provider.SearchAndSelectAsync(anime);
 
         if (result is null)
         {

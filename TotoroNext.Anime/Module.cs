@@ -25,7 +25,8 @@ public class Module : IModule
         services.AddDataViewMap<AnimeDetailsView, AnimeDetailsViewModel, AnimeModel>()
                 .AddDataViewMap<UserListFilterView, UserListFilterViewModel, UserListFilter>()
                 .AddDataViewMap<AnimeEpisodesListView, AnimeEpisodesListViewModel, EpisodesListViewModelNagivationParameters>()
-                .AddDataViewMap<AnimeGridView, AnimeGridViewModel, List<AnimeModel>>();
+                .AddDataViewMap<AnimeGridView, AnimeGridViewModel, List<AnimeModel>>()
+                .AddDataViewMap<AnimeOverridesView, AnimeOverridesViewModel, OverridesViewModelNavigationParameters>();
 
         services.AddSelectionUserInteraction<SelectProviderResult, SearchResult>()
                 .AddSelectionUserInteraction<SelectAnimeResult, AnimeModel>()

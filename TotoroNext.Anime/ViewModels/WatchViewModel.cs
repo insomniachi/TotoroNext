@@ -17,6 +17,7 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
                                            IFactory<IMediaSegmentsProvider, Guid> segmentsFactory,
                                            IFactory<IMediaPlayer, Guid> mediaPlayerFactory,
                                            IPlaybackProgressService progressService,
+                                           IAnimeOverridesRepository animeOverridesRepository,
                                            IMessenger messenger) : ObservableObject, IInitializable, IDisposable
 {
     private TimeSpan _duration;
@@ -118,6 +119,10 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
     public void Dispose()
     {
         messenger.Send(new PlaybackEnded());
+        if(Anime?.Id is { } id)
+        {
+            animeOverridesRepository.Revert(id);
+        }
     }
 
     private void InitializePublishers()

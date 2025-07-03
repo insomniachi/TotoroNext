@@ -139,6 +139,7 @@
             <SelectorBarItem IsSelected="True" Text="Episodes" />
             <SelectorBarItem Text="Related" />
             <SelectorBarItem Text="Recommended" />
+            <SelectorBarItem Text="Overrides" />
         </SelectorBar>
 
         <ContentControl

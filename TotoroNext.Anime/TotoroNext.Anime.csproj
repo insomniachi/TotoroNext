@@ -113,4 +113,16 @@
       <Generator>MSBuild:Compile</Generator>
     </AdditionalFiles>
   </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Update="Views\AnimeOverridesViewModel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </AdditionalFiles>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\AnimeOverridesView.xaml.cs">
+      <DependentUpon>AnimeOverridesView.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>
