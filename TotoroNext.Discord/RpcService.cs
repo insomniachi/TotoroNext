@@ -17,7 +17,7 @@ internal class RpcService(IModuleSettings<Settings> settings,
 
     public void Receive(PlaybackState message)
     {
-        if(_isEnabled)
+        if(!_isEnabled)
         {
             return;
         }

@@ -67,6 +67,11 @@ public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
 
         var result = await provider.SearchAndSelectAsync(anime);
 
+        if(overrides is not null)
+        {
+            _messenger.Send(overrides);
+        }
+
         if (result is null)
         {
             return;
