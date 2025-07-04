@@ -44,12 +44,13 @@ public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
         _allItems = await _trackingService.GetUserList();
         Items = [.. _allItems];
 
-        Filter.WhenAnyPropertyChanged().Subscribe(x =>
-        {
-            Items = [.. _allItems.Where(Filter.IsVisible)];
-        });
-
-        Filter.RaisePropertyChanged(nameof(Filter.Status));
+        Filter
+            .WhenAnyValue(x => x.Year, x => x.Status, x => x.Term)
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(_ =>
+            {
+                Items = [.. _allItems.Where(Filter.IsVisible)];
+            });
     }
 
     public async Task NavigateToWatch(AnimeModel anime)

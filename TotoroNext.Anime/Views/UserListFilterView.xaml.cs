@@ -11,5 +11,5 @@ public sealed partial class UserListFilterView : UserControl
 		InitializeComponent();
 	}
 
-    public UserListViewModel? ViewModel => DataContext as UserListViewModel;
+    public UserListFilterViewModel? ViewModel => DataContext as UserListFilterViewModel;
 }

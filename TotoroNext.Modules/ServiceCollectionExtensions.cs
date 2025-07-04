@@ -14,6 +14,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IViewRegistry, ViewRegistry>();
         services.AddSingleton<ILocalSettingsService, LocalSettingsService>();
         services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
+        services.AddTransient<IDialogService, DialogService>();
 
         return services;
     }

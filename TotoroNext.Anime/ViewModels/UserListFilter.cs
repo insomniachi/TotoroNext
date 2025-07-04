@@ -1,25 +1,18 @@
 using System.Text.RegularExpressions;
-using ReactiveUI;
-using ReactiveUI.SourceGenerators;
+using CommunityToolkit.Mvvm.ComponentModel;
 using TotoroNext.Anime.Abstractions;
 
 namespace TotoroNext.Anime.ViewModels;
 
-public partial class UserListFilter : ReactiveObject
+public partial class UserListFilter : ObservableObject
 {
-    public UserListFilter()
-    {
-        Term = "";
-        Year = "";
-    }
+    [ObservableProperty]
+    public partial ListItemStatus? Status { get; set; } = ListItemStatus.Watching;
 
-    [Reactive]
-    public partial ListItemStatus? Status { get; set; }
-
-    [Reactive]
+    [ObservableProperty]
     public partial string Term { get; set; }
 
-    [Reactive]
+    [ObservableProperty]
     public partial string Year { get; set; }
 
     public bool IsVisible(AnimeModel model)

@@ -9,6 +9,7 @@ using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.Anime.ViewModels.Parameters;
 using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.Module;
+using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Anime.ViewModels;
 
@@ -18,6 +19,7 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
                                            IFactory<IMediaPlayer, Guid> mediaPlayerFactory,
                                            IPlaybackProgressService progressService,
                                            IAnimeOverridesRepository animeOverridesRepository,
+                                           IDialogService dialogService,
                                            IMessenger messenger) : ObservableObject, IInitializable, IDisposable
 {
     private TimeSpan _duration;
@@ -145,16 +147,12 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
         MediaPlayer
             .PlaybackStopped
             .Do(_ => messenger.Send(new PlaybackEnded()))
-            .Where(_ => SelectedEpisode is not null && Episodes is not null)
+            .Where(_ => SelectedEpisode is { IsCompleted : true } && Episodes is not null)
             .ObserveOn(RxApp.MainThreadScheduler)
-            .Do(_ =>
-            {
-                if (SelectedEpisode!.IsCompleted)
-                {
-                    SelectedEpisode = Episodes!.FirstOrDefault(x => x.Number > SelectedEpisode!.Number);
-                }
-            })
-            .Subscribe();
+            .SelectMany(_ => AskIfContinueWatching())
+            .WhereNotNull()
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(nexEp => SelectedEpisode = nexEp);
     }
 
     private async Task Play(VideoSource source)
@@ -178,5 +176,24 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
         var metadata = new MediaMetadata(title, source.Headers, segments);
 
         MediaPlayer.Play(new Media(source.Url, metadata), SelectedEpisode.StartPosition);
+    }
+
+    private async Task<Episode?> AskIfContinueWatching()
+    {
+        if(SelectedEpisode is null || Episodes is null)
+        {
+            return null;
+        }
+
+        if(Episodes.FirstOrDefault(x => x.Number > SelectedEpisode.Number) is not { } nextEp)
+        {
+            return null;
+        }
+
+        var question = $"Completed watching {Anime?.Title} - Episode {SelectedEpisode.Number}, play the next episode ?";
+        var answer = await dialogService.Ask("Tracking Updated", question);
+        return answer is DialogResult.Yes
+            ? nextEp
+            : null;
     }
 }

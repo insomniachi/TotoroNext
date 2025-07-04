@@ -61,21 +61,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Update="Views\SearchMetadataProviderPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </AdditionalFiles>
-  </ItemGroup>
-
-  <ItemGroup>
     <Page Update="Views\UserListPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Update="Views\UserListPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </AdditionalFiles>
   </ItemGroup>
 
     <ItemGroup>
@@ -85,44 +73,36 @@
     </ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Update="UserControls\AnimeCard.xaml">
+      <Page Update="Views\UserListFilterView.xaml">
       <Generator>MSBuild:Compile</Generator>
-    </AdditionalFiles>
-  </ItemGroup>
+    </Page>
+  
+</ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Update="Views\UserListFilterView.xaml">
+      <Page Update="Views\AnimeDetailsView.xaml">
       <Generator>MSBuild:Compile</Generator>
-    </AdditionalFiles>
-  </ItemGroup>
+    </Page>
+  
+</ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Update="Views\AnimeDetailsView.xaml">
+      <Page Update="Views\AnimeEpisodesListView.xaml">
       <Generator>MSBuild:Compile</Generator>
-    </AdditionalFiles>
-  </ItemGroup>
+    </Page>
+  
+</ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Update="Views\AnimeEpisodesListView.xaml">
+      <Page Update="Views\AnimeGridView.xaml">
       <Generator>MSBuild:Compile</Generator>
-    </AdditionalFiles>
-  </ItemGroup>
+    </Page>
+  
+</ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Update="Views\AnimeGridView.xaml">
+    <Page Update="Views\AnimeOverridesViewModel.xaml">
       <Generator>MSBuild:Compile</Generator>
-    </AdditionalFiles>
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Update="Views\AnimeOverridesViewModel.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </AdditionalFiles>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Views\AnimeOverridesView.xaml.cs">
-      <DependentUpon>AnimeOverridesView.xaml</DependentUpon>
-    </Compile>
+    </Page>
   </ItemGroup>
 </Project>
