@@ -1,5 +1,7 @@
+using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using TotoroNext.Module;
+using TotoroNext.Module.Abstractions;
 using TotoroNext.ViewModels;
 
 namespace TotoroNext.Presentation;
@@ -11,6 +13,11 @@ public sealed partial class MainPage : Page
     {
         InitializeComponent();
 
+        WeakReferenceMessenger.Default.Register<ClosePaneMessage>(this, (_, _) =>
+        {
+            MainSplitView.DispatcherQueue.TryEnqueue(() => MainSplitView.IsPaneOpen = false);
+        });
+
 #if WINDOWS
         //NavFrame.Navigated += (s, e) =>
         //{
@@ -19,6 +26,8 @@ public sealed partial class MainPage : Page
 #endif
         Loaded += MainPage_Loaded;
     }
+
+    public MainViewModel? ViewModel => DataContext as MainViewModel;
 
     private void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
@@ -32,31 +41,11 @@ public sealed partial class MainPage : Page
                 }
             };
 
-            vm.WhenAnyValue(x => x.Navigator)
-              .WhereNotNull()
-              .Subscribe(navigator =>
-              {
-                  navigator.Navigated += (s, e) =>
-                  {
-                      if (e is { } view)
-                      {
-                          NavView.SelectedItem = NavView.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(x =>
-                          {
-                              if(x.Tag is not NavigationViewItemTag tag)
-                              {
-                                  return false;
-                              }
-
-                              return tag.ViewType == view;
-                          });
-                      }
-                  };
-                  navigator.NavigateToRoute("My List");
-                  NavView.UpdateLayout();
-
-              });
+            vm.PaneNavigator = ActivatorUtilities.CreateInstance<ControlNavigator>(Container.Services, MainSplitView);
         }
     }
+
+    public static SplitViewDisplayMode ConvertDisplayMode(bool isInline) => isInline ? SplitViewDisplayMode.Inline : SplitViewDisplayMode.Overlay;
 
 #if WINDOWS
     private void TitleBar_PaneToggleRequested(TitleBar sender, object args)

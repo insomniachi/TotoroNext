@@ -24,7 +24,7 @@ public class ControlNavigator(UIElement host,
                               IViewRegistry locator,
                               IServiceScopeFactory serviceScopeFactory) : INavigator
 {
-    public event EventHandler<Type>? Navigated;
+    public event EventHandler<NavigationResult>? Navigated;
     
     public UIElement Control { get; } = host;
 
@@ -50,7 +50,7 @@ public class ControlNavigator(UIElement host,
 
             ConfigurePage(page, vmObj);
             Navigate(page);
-            Navigated?.Invoke(this, viewType);
+            Navigated?.Invoke(this, new(viewType, vmType));
             return true;
         }
         catch(Exception ex)
@@ -66,18 +66,18 @@ public class ControlNavigator(UIElement host,
         {
             var map = locator.FindByKey(path);
 
-            if (map is not { View: { } view, ViewModel: { } vm })
+            if (map is not { View: { } viewType, ViewModel: { } vmType })
             {
                 return false;
             }
 
-            var page = (FrameworkElement)Activator.CreateInstance(view)!;
+            var page = (FrameworkElement)Activator.CreateInstance(viewType)!;
             using var scope = serviceScopeFactory.CreateScope();
-            var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vm);
+            var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType);
 
             ConfigurePage(page, vmObj);
             Navigate(page);
-            Navigated?.Invoke(this, view);
+            Navigated?.Invoke(this, new(viewType, vmType));
 
             return true;
         }
@@ -93,18 +93,18 @@ public class ControlNavigator(UIElement host,
         {
             var map = locator.FindByViewModel(vmType);
 
-            if (map is not { View: { } view })
+            if (map is not { View: { } viewType })
             {
                 return false;
             }
 
-            var page = (FrameworkElement)Activator.CreateInstance(view)!;
+            var page = (FrameworkElement)Activator.CreateInstance(viewType)!;
             using var scope = serviceScopeFactory.CreateScope();
             var vmObj = ActivatorUtilities.CreateInstance(scope.ServiceProvider, vmType);
 
             ConfigurePage(page, vmObj);
             Navigate(page);
-            Navigated?.Invoke(this, view);
+            Navigated?.Invoke(this, new(viewType, vmType));
 
             return true;
         }
@@ -146,11 +146,7 @@ public class ControlNavigator(UIElement host,
                 {
                     await ia.InitializeAsync();
                 }
-                catch (Exception ex)
-                {
-
-                    throw;
-                }
+                catch { }
             }
             if(vm is IPaneNavigatable { } pn && page.FindFirstDescendant<SplitView>() is { } sv)
             {

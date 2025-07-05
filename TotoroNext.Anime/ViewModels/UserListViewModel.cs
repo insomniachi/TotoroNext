@@ -1,13 +1,8 @@
-using System.Collections.ObjectModel;
 using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using DynamicData;
-using DynamicData.Binding;
-using Microsoft.Extensions.DependencyInjection;
 using ReactiveUI;
-using ReactiveUI.SourceGenerators;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Extensions;
 using TotoroNext.Module;
@@ -16,9 +11,9 @@ using TotoroNext.Module.Abstractions;
 namespace TotoroNext.Anime.ViewModels;
 
 public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
-                         IFactory<IAnimeProvider, Guid> providerFactory,
-                         IAnimeOverridesRepository animeOverridesRepository,
-                         IMessenger messenger) : ObservableObject, IAsyncInitializable, IPaneNavigatable
+                                       IFactory<IAnimeProvider, Guid> providerFactory,
+                                       IAnimeOverridesRepository animeOverridesRepository,
+                                       IMessenger messenger) : ObservableObject, IAsyncInitializable
 {
     private readonly ITrackingService? _trackingService = factory.CreateDefault();
     private readonly IMessenger _messenger = messenger;
@@ -31,7 +26,7 @@ public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
     [ObservableProperty]
     public partial List<AnimeModel> Items { get; set; } = [];
 
-    public INavigator PaneNavigator { get; set; } = null!;
+    public bool IsPaneOpen { get; set; }
 
     public async Task InitializeAsync()
     {
@@ -39,6 +34,9 @@ public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
         {
             return;
         }
+
+        _messenger.Register<ClosePaneMessage>(this, (_, _) => IsPaneOpen = false);
+
 
         _allItems = await _trackingService.GetUserList();
         Items = [.. _allItems];
@@ -80,10 +78,16 @@ public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
         _messenger.Send(new NavigateToDataMessage(new WatchViewModelNavigationParameter(result, anime)));
     }
 
-    [RelayCommand]
-    private void ToggleFilterPane()
+    public void OpenAnimeDetails(AnimeModel anime)
     {
-        PaneNavigator.NavigateToData(Filter);
+        _messenger.Send(new PaneNavigateToDataMessage(anime, 750));
+    }
+
+    [RelayCommand]
+    private void OpenFilterPane()
+    {
+        _messenger.Send(new PaneNavigateToDataMessage(Filter));
+        IsPaneOpen = true;
     }
 
     [RelayCommand] 

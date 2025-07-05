@@ -34,20 +34,37 @@
             win:IsPaneToggleButtonVisible="False"
             FooterMenuItemsSource="{Binding FooterItems}"
             MenuItemsSource="{Binding MenuItems}">
-            <ContentControl
-                x:Name="NavFrame"
+            <SplitView
+                x:Name="MainSplitView"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 HorizontalContentAlignment="Stretch"
                 VerticalContentAlignment="Stretch"
-                mod:NavigationExtensions.IsAttached="True">
-                <ContentControl.ContentTransitions>
-                    <TransitionCollection>
-                        <EntranceThemeTransition />
-                        <ContentThemeTransition />
-                    </TransitionCollection>
-                </ContentControl.ContentTransitions>
-            </ContentControl>
+                DisplayMode="{x:Bind local:MainPage.ConvertDisplayMode(ViewModel.IsPaneInline), Mode=OneWay}"
+                IsPaneOpen="{Binding IsPaneOpen, Mode=TwoWay}"
+                OpenPaneLength="{Binding PaneWidth, Mode=TwoWay}"
+                PanePlacement="Right">
+                <SplitView.PaneBackground>
+                    <AcrylicBrush
+                        TintColor="Black"
+                        TintLuminosityOpacity="0.6"
+                        TintOpacity="0.1" />
+                </SplitView.PaneBackground>
+                <ContentControl
+                    x:Name="NavFrame"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    VerticalContentAlignment="Stretch"
+                    mod:NavigationExtensions.IsAttached="True">
+                    <ContentControl.ContentTransitions>
+                        <TransitionCollection>
+                            <EntranceThemeTransition />
+                            <ContentThemeTransition />
+                        </TransitionCollection>
+                    </ContentControl.ContentTransitions>
+                </ContentControl>
+            </SplitView>
         </NavigationView>
     </Grid>
 

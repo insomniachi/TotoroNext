@@ -1,5 +1,6 @@
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using TotoroNext.Module;
@@ -8,7 +9,8 @@ using TotoroNext.Module.Abstractions;
 namespace TotoroNext.Presentation;
 
 public partial class ModulesStoreViewModel(IModuleStore store,
-                                           IEnumerable<Descriptor> descriptors) : ReactiveObject, IInitializable, IPaneNavigatable
+                                           IEnumerable<Descriptor> descriptors,
+                                           IMessenger messenger) : ReactiveObject, IInitializable
 {
     [Reactive]
     public partial List<ModuleManifest> Modules { get; set; }
@@ -22,7 +24,7 @@ public partial class ModulesStoreViewModel(IModuleStore store,
 
         this.WhenAnyValue(x => x.SelectedModule)
             .WhereNotNull()
-            .Subscribe(manifest => PaneNavigator.NavigateToData(manifest));
+            .Subscribe(manifest => messenger.Send(new PaneNavigateToDataMessage(manifest, 600)));
     }
 
     [Reactive]
@@ -41,8 +43,6 @@ public partial class ModulesStoreViewModel(IModuleStore store,
     }
 
     private IObservable<bool> CanDownloadObservable => this.WhenAnyValue(x => x.SelectedModule).Select(CanDownload);
-
-    public INavigator PaneNavigator { get; set; } = null!;
 
     private bool CanDownload(ModuleManifest? manifest)
     {

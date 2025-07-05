@@ -10,50 +10,47 @@
     xmlns:uc="using:TotoroNext.Anime.UserControls"
     mc:Ignorable="d">
 
-    <SplitView
-        x:Name="SplitView"
-        DisplayMode="Inline"
-        PanePlacement="Right">
-        <Grid Margin="36" RowSpacing="8">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
 
-            <AutoSuggestBox
-                PlaceholderText="Search"
-                QueryIcon="Find"
-                Text="{x:Bind ViewModel.Query, Mode=TwoWay}" />
+    <Grid Margin="36" RowSpacing="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-            <ScrollView Grid.Row="1" Tapped="BackgroundTapped">
-                <ItemsRepeater
-                    Grid.Row="1"
-                    ElementPrepared="ItemsRepeater_ElementPrepared"
-                    ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}">
-                    <ItemsRepeater.ItemTemplate>
-                        <DataTemplate x:DataType="taa:AnimeModel">
-                            <ItemContainer>
-                                <uc:AnimeCard
-                                    Anime="{x:Bind}"
-                                    IsRightTapEnabled="True"
-                                    IsTapEnabled="True"
-                                    RightTapped="AnimeCard_RightTapped"
-                                    Tapped="AnimeCard_Tapped" />
-                            </ItemContainer>
-                        </DataTemplate>
-                    </ItemsRepeater.ItemTemplate>
-                    <ItemsRepeater.Layout>
-                        <UniformGridLayout
-                            ItemsJustification="Start"
-                            ItemsStretch="Fill"
-                            MinColumnSpacing="16"
-                            MinItemHeight="400"
-                            MinItemWidth="250"
-                            MinRowSpacing="16" />
-                    </ItemsRepeater.Layout>
-                </ItemsRepeater>
-            </ScrollView>
+        <AutoSuggestBox
+            PlaceholderText="Search"
+            QueryIcon="Find"
+            Text="{x:Bind ViewModel.Query, Mode=TwoWay}" />
 
-        </Grid>
-    </SplitView>
+        <ScrollView Grid.Row="1" Tapped="BackgroundTapped">
+            <ItemsRepeater
+                Grid.Row="1"
+                ElementPrepared="ItemsRepeater_ElementPrepared"
+                ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}">
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate x:DataType="taa:AnimeModel">
+                        <ItemContainer>
+                            <uc:AnimeCard
+                                Anime="{x:Bind}"
+                                IsRightTapEnabled="True"
+                                IsTapEnabled="True"
+                                RightTapped="AnimeCard_RightTapped"
+                                Tapped="AnimeCard_Tapped" />
+                        </ItemContainer>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+                <ItemsRepeater.Layout>
+                    <UniformGridLayout
+                        ItemsJustification="Start"
+                        ItemsStretch="Fill"
+                        MinColumnSpacing="16"
+                        MinItemHeight="400"
+                        MinItemWidth="250"
+                        MinRowSpacing="16" />
+                </ItemsRepeater.Layout>
+            </ItemsRepeater>
+        </ScrollView>
+
+    </Grid>
+
 </Page>

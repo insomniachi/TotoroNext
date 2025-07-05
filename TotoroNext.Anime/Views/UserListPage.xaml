@@ -12,107 +12,91 @@
     xmlns:utu="using:Uno.Toolkit.UI"
     mc:Ignorable="d">
 
-    <SplitView
-        x:Name="SplitView"
-        DisplayMode="Inline"
-        OpenPaneLength="750"
-        PanePlacement="Right">
-        <Grid Margin="36" RowSpacing="16">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
 
-            <ctk:PropertySizer
-                Grid.RowSpan="2"
-                Margin="-36"
-                HorizontalAlignment="Right"
-                VerticalContentAlignment="Stretch"
-                Binding="{x:Bind SplitView.OpenPaneLength, Mode=TwoWay}"
-                IsDragInverted="True"
-                Maximum="900"
-                Minimum="500"
-                Visibility="{x:Bind SplitView.IsPaneOpen, Mode=OneWay}" />
+    <Grid Margin="36" RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-            <StackPanel
-                HorizontalAlignment="Center"
-                Orientation="Horizontal"
-                Spacing="32">
-                <utu:ChipGroup
-                    ItemsSource="{x:Bind ViewModel.AllStatus, Mode=OneWay}"
-                    SelectedItem="{x:Bind ViewModel.Filter.Status, Mode=TwoWay}"
-                    SelectionMode="Single">
-                    <utu:ChipGroup.ItemTemplate>
-                        <DataTemplate x:DataType="taa:ListItemStatus">
-                            <TextBlock
-                                Width="200"
-                                Style="{ThemeResource SubtitleTextBlockStyle}"
-                                Text="{x:Bind root:Converters.EnumToDescription((taa:ListItemStatus))}"
-                                TextAlignment="Center" />
+        <StackPanel
+            HorizontalAlignment="Center"
+            Orientation="Horizontal"
+            Spacing="32">
+            <utu:ChipGroup
+                ItemsSource="{x:Bind ViewModel.AllStatus, Mode=OneWay}"
+                SelectedItem="{x:Bind ViewModel.Filter.Status, Mode=TwoWay}"
+                SelectionMode="Single">
+                <utu:ChipGroup.ItemTemplate>
+                    <DataTemplate x:DataType="taa:ListItemStatus">
+                        <TextBlock
+                            Width="200"
+                            Style="{ThemeResource SubtitleTextBlockStyle}"
+                            Text="{x:Bind root:Converters.EnumToDescription((taa:ListItemStatus))}"
+                            TextAlignment="Center" />
+                    </DataTemplate>
+                </utu:ChipGroup.ItemTemplate>
+                <utu:ChipGroup.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </utu:ChipGroup.ItemsPanel>
+            </utu:ChipGroup>
+
+            <SplitButton Height="38" Command="{x:Bind ViewModel.OpenFilterPaneCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="16">
+                    <FontIcon Glyph="&#xE71C;" />
+                    <TextBlock Text="Filter" />
+                </StackPanel>
+                <SplitButton.Flyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ClearFiltersCommand}" Text="Clear Filters">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE894;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </SplitButton.Flyout>
+            </SplitButton>
+        </StackPanel>
+
+        <ScrollView
+            Grid.Row="1"
+            Background="Transparent"
+            Tapped="BackgroundTapped">
+            <Grid>
+                <Rectangle
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    Fill="Transparent" />
+                <ItemsRepeater ElementPrepared="AnimeList_ElementPrepared" ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}">
+                    <ItemsRepeater.ItemTransitionProvider>
+                        <LinedFlowLayoutItemCollectionTransitionProvider />
+                    </ItemsRepeater.ItemTransitionProvider>
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="taa:AnimeModel">
+                            <ItemContainer>
+                                <uc:AnimeCard
+                                    Anime="{x:Bind}"
+                                    IsRightTapEnabled="True"
+                                    IsTapEnabled="True"
+                                    RightTapped="AnimeCard_RightTapped"
+                                    Tapped="AnimeCard_Tapped" />
+                            </ItemContainer>
                         </DataTemplate>
-                    </utu:ChipGroup.ItemTemplate>
-                    <utu:ChipGroup.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </utu:ChipGroup.ItemsPanel>
-                </utu:ChipGroup>
+                    </ItemsRepeater.ItemTemplate>
+                    <ItemsRepeater.Layout>
+                        <UniformGridLayout
+                            ItemsJustification="Start"
+                            ItemsStretch="Fill"
+                            MinColumnSpacing="16"
+                            MinItemHeight="400"
+                            MinItemWidth="250"
+                            MinRowSpacing="16" />
+                    </ItemsRepeater.Layout>
+                </ItemsRepeater>
+            </Grid>
+        </ScrollView>
 
-                <SplitButton Height="38" Command="{x:Bind ViewModel.ToggleFilterPaneCommand}">
-                    <StackPanel Orientation="Horizontal" Spacing="16">
-                        <FontIcon Glyph="&#xE71C;" />
-                        <TextBlock Text="Filter" />
-                    </StackPanel>
-                    <SplitButton.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem Command="{x:Bind ViewModel.ClearFiltersCommand}" Text="Clear Filters">
-                                <MenuFlyoutItem.Icon>
-                                    <FontIcon Glyph="&#xE894;" />
-                                </MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                        </MenuFlyout>
-                    </SplitButton.Flyout>
-                </SplitButton>
-            </StackPanel>
-
-            <ScrollView
-                Grid.Row="1"
-                Background="Transparent"
-                Tapped="BackgroundTapped">
-                <Grid>
-                    <Rectangle
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        Fill="Transparent" />
-                    <ItemsRepeater ElementPrepared="AnimeList_ElementPrepared" ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}">
-                        <ItemsRepeater.ItemTransitionProvider>
-                            <LinedFlowLayoutItemCollectionTransitionProvider />
-                        </ItemsRepeater.ItemTransitionProvider>
-                        <ItemsRepeater.ItemTemplate>
-                            <DataTemplate x:DataType="taa:AnimeModel">
-                                <ItemContainer>
-                                    <uc:AnimeCard
-                                        Anime="{x:Bind}"
-                                        IsRightTapEnabled="True"
-                                        IsTapEnabled="True"
-                                        RightTapped="AnimeCard_RightTapped"
-                                        Tapped="AnimeCard_Tapped" />
-                                </ItemContainer>
-                            </DataTemplate>
-                        </ItemsRepeater.ItemTemplate>
-                        <ItemsRepeater.Layout>
-                            <UniformGridLayout
-                                ItemsJustification="Start"
-                                ItemsStretch="Fill"
-                                MinColumnSpacing="16"
-                                MinItemHeight="400"
-                                MinItemWidth="250"
-                                MinRowSpacing="16" />
-                        </ItemsRepeater.Layout>
-                    </ItemsRepeater>
-                </Grid>
-            </ScrollView>
-
-        </Grid>
-    </SplitView>
+    </Grid>
 </Page>

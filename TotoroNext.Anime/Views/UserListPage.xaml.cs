@@ -1,11 +1,8 @@
-using System.Reactive;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Reactive.Threading.Tasks;
-using ReactiveUI;
-using TotoroNext.Anime.Abstractions;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.WinUI;
 using TotoroNext.Anime.UserControls;
 using TotoroNext.Anime.ViewModels;
+using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Anime.Views;
 
@@ -35,7 +32,7 @@ public sealed partial class UserListPage : Page
 
     private async void AnimeCard_Tapped(object sender, TappedRoutedEventArgs e)
     {
-        if (SplitView.IsPaneOpen)
+        if (this.FindAscendant<SplitView>() is { } sv && sv.IsPaneOpen)
         {
             return;
         }
@@ -55,16 +52,12 @@ public sealed partial class UserListPage : Page
             return;
         }
 
-        ViewModel?.PaneNavigator.NavigateToData(card.Anime);
+        ViewModel?.OpenAnimeDetails(card.Anime);
     }
 
     private void BackgroundTapped(object sender, TappedRoutedEventArgs e)
     {
-        if (SplitView.IsPaneOpen)
-        {
-            SplitView.IsPaneOpen = false;
-            e.Handled = true;
-        }
+        WeakReferenceMessenger.Default.Send(new ClosePaneMessage());
     }
 
 }

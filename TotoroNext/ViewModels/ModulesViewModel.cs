@@ -1,13 +1,13 @@
+using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.ViewModels;
 
-public partial class ModulesViewModel(IEnumerable<Descriptor> modules) : ReactiveObject, IPaneNavigatable
+public partial class ModulesViewModel(IEnumerable<Descriptor> modules, IMessenger messenger) : ReactiveObject
 {
     public List<Descriptor> Descriptors { get; } = [.. modules];
-    public INavigator PaneNavigator { get; set; } = null!;
 
     public void NavigateToSettings(Descriptor descriptor)
     {
@@ -16,6 +16,6 @@ public partial class ModulesViewModel(IEnumerable<Descriptor> modules) : Reactiv
             return;
         }
 
-        PaneNavigator.NavigateViewModel(vmType);
+        messenger.Send(new PaneNavigateToViewModelMessage(vmType, 600));
     }
 }

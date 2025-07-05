@@ -94,10 +94,6 @@ public partial class App : Application
                             .RegisterFactory<IAnimeProvider>(nameof(SettingsModel.SelectedAnimeProvider))
                             .RegisterFactory<IMediaSegmentsProvider>(nameof(SettingsModel.SelectedSegmentsProvider));
 
-                    services.RegisterEvent<NavigateToViewModelMessage>()
-                            .RegisterEvent<NavigateToRouteMessage>()
-                            .RegisterEvent<NavigateToDataMessage>();
-
                     services.AddDataViewMap<ModuleDetailsView, ModuleDetailsViewModel, ModuleManifest>();
 
                     services.AddFooterNavigationViewItem<ModulesPage, ModulesViewModel>("Installed", new FontIcon { Glyph = "\uE7B8" });

@@ -20,4 +20,5 @@ public sealed partial class ModulesPage : Page
             ViewModel?.NavigateToSettings(d);
         }
     }
+
 }
