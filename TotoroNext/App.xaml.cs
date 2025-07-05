@@ -4,7 +4,6 @@ using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using TotoroNext.Anime;
 using TotoroNext.Anime.Abstractions;
-using TotoroNext.Anime.ViewModels.Parameters;
 using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;

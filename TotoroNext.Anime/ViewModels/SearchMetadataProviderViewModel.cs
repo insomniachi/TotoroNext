@@ -4,7 +4,6 @@ using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Extensions;
-using TotoroNext.Anime.ViewModels.Parameters;
 using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
 

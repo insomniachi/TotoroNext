@@ -1,6 +1,5 @@
 using Microsoft.UI.Xaml.Media.Animation;
 using TotoroNext.Anime.ViewModels;
-using TotoroNext.Anime.ViewModels.Parameters;
 
 namespace TotoroNext.Anime.Views;
 
@@ -46,6 +45,9 @@ public sealed partial class AnimeDetailsView : UserControl
                 break;
             case "Overrides":
                 vm.Navigator?.NavigateToData(new OverridesViewModelNavigationParameters(vm.Anime));
+                break;
+            case "Songs":
+                vm.Navigator?.NavigateToData(new SongsViewModelNavigationParameters(vm.Anime));
                 break;
             default:
                 break;

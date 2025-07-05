@@ -11,6 +11,7 @@
         Http;
         Toolkit;
         Mvvm;
+        MediaElement;
     </UnoFeatures>
 
   </PropertyGroup>

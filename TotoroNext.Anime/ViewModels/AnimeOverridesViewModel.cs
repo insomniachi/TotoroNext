@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using ReactiveUI;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Abstractions.Models;
-using TotoroNext.Anime.ViewModels.Parameters;
 using TotoroNext.Module;
 
 namespace TotoroNext.Anime.ViewModels;

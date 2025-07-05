@@ -140,6 +140,7 @@
             <SelectorBarItem Text="Related" />
             <SelectorBarItem Text="Recommended" />
             <SelectorBarItem Text="Overrides" />
+            <SelectorBarItem Text="Songs" />
         </SelectorBar>
 
         <ContentControl

@@ -37,7 +37,7 @@ public partial class AniListModelToAnimeModelConverter
             ServiceType = ServiceType,
             Description = DescriptionCleanRegex().Replace(media.Description ?? string.Empty, string.Empty),
             Related = ConvertSimple(media.Relations?.Nodes ?? []),
-            Recommended = ConvertSimple(media.Recommendations?.Nodes.Select(x => x.MediaRecommendation).Where(x => x.Type == MediaType.Anime) ?? [])
+            Recommended = ConvertSimple(media.Recommendations?.Nodes.Select(x => x.MediaRecommendation).Where(x => x is not null).Where(x => x.Type == MediaType.Anime) ?? [])
         };
     }
 

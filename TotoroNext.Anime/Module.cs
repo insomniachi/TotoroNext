@@ -1,9 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Abstractions.Models;
+using TotoroNext.Anime.Services;
 using TotoroNext.Anime.UserInteractions;
 using TotoroNext.Anime.ViewModels;
-using TotoroNext.Anime.ViewModels.Parameters;
 using TotoroNext.Anime.Views;
 using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
@@ -14,7 +14,8 @@ public class Module : IModule
 {
     public void ConfigureServices(IServiceCollection services)
     {
-        services.AddSingleton<IPlaybackProgressService, PlaybackProgressTrackingService>();
+        services.AddSingleton<IPlaybackProgressService, PlaybackProgressTrackingService>()
+                .AddTransient<IAnimeThemes, AnimeThemes>();
 
         // main navigation
         services.AddNavigationViewItem<UserListPage, UserListViewModel>("My List", new SymbolIcon(Symbol.Library))
@@ -26,7 +27,8 @@ public class Module : IModule
                 .AddDataViewMap<UserListFilterView, UserListFilterViewModel, UserListFilter>()
                 .AddDataViewMap<AnimeEpisodesListView, AnimeEpisodesListViewModel, EpisodesListViewModelNagivationParameters>()
                 .AddDataViewMap<AnimeGridView, AnimeGridViewModel, List<AnimeModel>>()
-                .AddDataViewMap<AnimeOverridesView, AnimeOverridesViewModel, OverridesViewModelNavigationParameters>();
+                .AddDataViewMap<AnimeOverridesView, AnimeOverridesViewModel, OverridesViewModelNavigationParameters>()
+                .AddDataViewMap<AnimeSongsView, AnimeSongsViweModel, SongsViewModelNavigationParameters>();
 
         services.AddSelectionUserInteraction<SelectProviderResult, SearchResult>()
                 .AddSelectionUserInteraction<SelectAnimeResult, AnimeModel>()
