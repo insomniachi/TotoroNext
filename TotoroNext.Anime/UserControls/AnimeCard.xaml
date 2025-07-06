@@ -46,10 +46,12 @@
         </Grid>
 
         <Border
+            x:Name="StatusBorder"
             Grid.Row="1"
             Height="60"
             Padding="3"
             Background="{ThemeResource CardBackgroundFillColorDefault}"
+            BorderBrush="{x:Bind local:AnimeCard.GetBrush(Anime), Mode=OneWay}"
             BorderThickness="0,4,0,0">
             <TextBlock
                 Padding="3"

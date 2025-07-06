@@ -38,7 +38,6 @@ public sealed partial class AnimeDetailsViewModel(AnimeModel anime,
 
     public INavigator? Navigator { get; set; }
 
-    public event EventHandler? OnDisposed;
 
     public async Task InitializeAsync()
     {

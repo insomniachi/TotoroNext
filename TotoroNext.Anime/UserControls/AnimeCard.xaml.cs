@@ -1,5 +1,7 @@
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
 
+using System.Reactive.Linq;
+using ReactiveUI;
 using TotoroNext.Anime.Abstractions;
 
 namespace TotoroNext.Anime.UserControls;
@@ -22,6 +24,17 @@ public sealed partial class AnimeCard : UserControl
     public void UpdateBindings()
     {
         Bindings.Update();
+    }
+
+    public static SolidColorBrush GetBrush(AnimeModel anime)
+    {
+        return anime?.AiringStatus switch
+        {
+            AiringStatus.CurrentlyAiring => new SolidColorBrush(Colors.LimeGreen),
+            AiringStatus.FinishedAiring => new SolidColorBrush(Colors.MediumSlateBlue),
+            AiringStatus.NotYetAired => new SolidColorBrush(Colors.LightSlateGray),
+            _ => new SolidColorBrush(Colors.Navy),
+        };
     }
 
 }
