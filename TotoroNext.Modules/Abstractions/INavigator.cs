@@ -43,3 +43,4 @@ public class NavigateToRouteMessage(string path)
 public record NavigationResult(Type ViewType, Type ViewModelType);
 
 public class ClosePaneMessage;
+public class PaneClosingMessange;

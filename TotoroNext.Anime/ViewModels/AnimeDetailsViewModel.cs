@@ -2,13 +2,12 @@ using System.Reactive.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ReactiveUI;
 using TotoroNext.Anime.Abstractions;
-using TotoroNext.Anime.Abstractions.Models;
 using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Anime.ViewModels;
 
-public partial class AnimeDetailsViewModel(AnimeModel anime,
+public sealed partial class AnimeDetailsViewModel(AnimeModel anime,
                                            IFactory<IMetadataService, Guid> metaFactory,
                                            IFactory<ITrackingService, Guid> trackerFactory) : ObservableObject, IAsyncInitializable, INavigatorHost
 {
@@ -38,6 +37,8 @@ public partial class AnimeDetailsViewModel(AnimeModel anime,
     public ListItemStatus[] Statuses { get; } = [.. Enum.GetValues<ListItemStatus>()];
 
     public INavigator? Navigator { get; set; }
+
+    public event EventHandler? OnDisposed;
 
     public async Task InitializeAsync()
     {

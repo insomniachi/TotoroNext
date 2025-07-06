@@ -43,6 +43,7 @@
                 DisplayMode="{x:Bind local:MainPage.ConvertDisplayMode(ViewModel.IsPaneInline), Mode=OneWay}"
                 IsPaneOpen="{Binding IsPaneOpen, Mode=TwoWay}"
                 OpenPaneLength="{Binding PaneWidth, Mode=TwoWay}"
+                PaneClosing="MainSplitView_PaneClosing"
                 PanePlacement="Right">
                 <SplitView.PaneBackground>
                     <AcrylicBrush

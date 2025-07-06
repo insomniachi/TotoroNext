@@ -22,7 +22,7 @@ internal class AnimeThemes(IHttpClientFactory httpClientFactory) : IAnimeThemes
             return animeResponse?.Anime.AnimeThemes.Select(x => new Abstractions.AnimeTheme
             {
                 Type = Enum.Parse<AnimeThemeType>(x.Type),
-                Number = int.Parse(x.Slug.Replace(x.Type, "")),
+                Slug = x.Slug,
                 SongName = x.Song.Title,
                 Video = Enumerable.MaxBy(x.AnimeThemeEntries.SelectMany(x => x.Videos), x => x.Resolution)?.Link is { } link ? new Uri(link) : null,
                 Audio = x.AnimeThemeEntries.SelectMany(x => x.Videos.Select(x => x.Audio)).FirstOrDefault() is { Link: not null } audio ? new Uri(audio.Link) : null,

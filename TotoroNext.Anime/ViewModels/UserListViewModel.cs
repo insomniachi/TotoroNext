@@ -27,15 +27,24 @@ public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
     public partial List<AnimeModel> Items { get; set; } = [];
 
     [ObservableProperty]
-    public partial LoadableAction InitializeAction { get; set; }
+    public partial bool IsLoading { get; set; }
 
     public bool IsPaneOpen { get; set; }
 
 
     public async Task InitializeAsync()
     {
-        InitializeAction = LoadableAction.Create(FetchData);
-        await InitializeAction.Execute();
+        if (_trackingService is null)
+        {
+            return;
+        }
+
+        IsLoading = true;
+
+        _allItems = await _trackingService.GetUserList();
+        Items = [.. _allItems];
+
+        IsLoading = false;
 
         _messenger.Register<ClosePaneMessage>(this, (_, _) => IsPaneOpen = false);
 
@@ -79,17 +88,6 @@ public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
     public void OpenAnimeDetails(AnimeModel anime)
     {
         _messenger.Send(new PaneNavigateToDataMessage(anime, 750));
-    }
-
-    private async Task FetchData()
-    {
-        if (_trackingService is null)
-        {
-            return;
-        }
-
-        _allItems = await _trackingService.GetUserList();
-        Items = [.. _allItems];
     }
 
 

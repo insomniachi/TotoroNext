@@ -8,9 +8,9 @@ using TotoroNext.Module;
 
 namespace TotoroNext.Anime.ViewModels;
 
-public sealed partial class AnimeSongsViweModel(SongsViewModelNavigationParameters @params,
+public sealed partial class AnimeSongsViewModel(SongsViewModelNavigationParameters @params,
                                                 IAnimeThemes animeThemes,
-                                                IFactory<IMediaPlayer, Guid> mediaPlayerFactory) : ObservableObject, IAsyncInitializable, IDisposable
+                                                IFactory<IMediaPlayer, Guid> mediaPlayerFactory) : ObservableObject, IAsyncInitializable
 {
     [ObservableProperty]
     public partial List<AnimeTheme> Themes { get; set; } = [];
@@ -18,9 +18,18 @@ public sealed partial class AnimeSongsViweModel(SongsViewModelNavigationParamete
     [ObservableProperty]
     public partial Uri? SelectedTheme { get; set; }
 
+    [ObservableProperty]
+    public partial bool IsLoading { get; set; }
+
+    public event EventHandler OnDisposed;
+
     public async Task InitializeAsync()
     {
+        IsLoading = true;
+
         Themes = await animeThemes.FindById(@params.Anime.Id, @params.Anime.ServiceType ?? "MyAnimeList");
+
+        IsLoading = false;
     }
 
     [RelayCommand]
@@ -44,11 +53,6 @@ public sealed partial class AnimeSongsViweModel(SongsViewModelNavigationParamete
         }
 
         var player = mediaPlayerFactory.CreateDefault();
-        player.Play(new Media(uri, new MediaMetadata(theme.DisplayName)), TimeSpan.Zero);
-    }
-
-    public void Dispose()
-    {
-        RxApp.MainThreadScheduler.Schedule(() => SelectedTheme = null);
+        player.Play(new Media(uri, new MediaMetadata(theme.GetDisplayName())), TimeSpan.Zero);
     }
 }

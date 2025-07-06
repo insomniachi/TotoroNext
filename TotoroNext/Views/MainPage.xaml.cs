@@ -41,11 +41,40 @@ public sealed partial class MainPage : Page
                 }
             };
 
+            vm.WhenAnyValue(x => x.Navigator)
+              .WhereNotNull()
+              .Subscribe(navigator =>
+              {
+                  navigator.Navigated += (s, e) =>
+                  {
+                      List<NavigationViewItem> items = [.. (List<NavigationViewItem>)NavView.MenuItemsSource, .. (List<NavigationViewItem>)NavView.FooterMenuItemsSource];
+
+                      var selected = items.FirstOrDefault(x =>
+                      {
+                          if (x.Tag is not NavigationViewItemTag tag)
+                          {
+                              return false;
+                          }
+
+                          return tag.ViewType == e.ViewType;
+                      });
+                      NavView.SelectedItem = selected;
+                  };
+                  navigator.NavigateToRoute("My List");
+                  NavView.UpdateLayout();
+              });
+
+
             vm.PaneNavigator = ActivatorUtilities.CreateInstance<ControlNavigator>(Container.Services, MainSplitView);
         }
     }
 
     public static SplitViewDisplayMode ConvertDisplayMode(bool isInline) => isInline ? SplitViewDisplayMode.Inline : SplitViewDisplayMode.Overlay;
+
+    private void MainSplitView_PaneClosing(SplitView sender, SplitViewPaneClosingEventArgs args)
+    {
+        WeakReferenceMessenger.Default.Send(new PaneClosingMessange());
+    }
 
 #if WINDOWS
     private void TitleBar_PaneToggleRequested(TitleBar sender, object args)

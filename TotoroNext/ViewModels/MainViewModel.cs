@@ -16,6 +16,7 @@ public partial class MainViewModel : ObservableObject,
                                      IRecipient<PaneNavigateToDataMessage>
 {
     public const double DefaultPaneLength = 500;
+    private readonly List<NavigationViewItem> _allItems;
 
 
     [ObservableProperty]
@@ -49,6 +50,7 @@ public partial class MainViewModel : ObservableObject,
                          IEnumerable<NavigationViewItem> navigationViewItems,
                          IMessenger messenger)
     {
+        _allItems = [.. navigationViewItems];
         MenuItems = [.. navigationViewItems.Where(x => x.Tag is NavigationViewItemTag { IsFooterItem: false })];
         FooterItems = [.. navigationViewItems.Where(x => x.Tag is NavigationViewItemTag { IsFooterItem: true })];
         Title = "Main";
@@ -68,9 +70,7 @@ public partial class MainViewModel : ObservableObject,
                 navigator.Navigated += (_, result) =>
                 {
                     CurrentView = result.ViewModelType;
-                    UpdateSelections(navigationViewItems, result.ViewModelType);
                 };
-                navigator.NavigateToRoute("My List");
             });
 
         this.WhenAnyValue(x => x.PaneNavigator)
@@ -83,22 +83,6 @@ public partial class MainViewModel : ObservableObject,
                     CurrentPaneView = result.ViewModelType;
                 };
             });
-    }
-
-    private static void UpdateSelections(IEnumerable<NavigationViewItem> items, Type viewType)
-    {
-        foreach (var item in items)
-        {
-            if(item.Tag is not NavigationViewItemTag tag)
-            {
-                return;
-            }
-
-            item.DispatcherQueue.TryEnqueue(() =>
-            {
-                item.IsSelected = tag.ViewType == viewType;
-            });
-        }
     }
 
     public void Receive(NavigateToViewModelMessage message)

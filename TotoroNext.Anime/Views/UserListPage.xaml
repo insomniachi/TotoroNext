@@ -60,8 +60,19 @@
             </SplitButton>
         </StackPanel>
 
-        <utu:LoadingView Grid.Row="1" Source="{x:Bind ViewModel.InitializeAction, Mode=OneWay}">
-            <utu:LoadingView.Content>
+        <ctk:SwitchPresenter
+            Grid.Row="1"
+            TargetType="x:Boolean"
+            Value="{x:Bind ViewModel.IsLoading, Mode=OneWay}">
+            <ctk:Case Value="True">
+                <Grid>
+                    <ProgressRing
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        IsIndeterminate="True" />
+                </Grid>
+            </ctk:Case>
+            <ctk:Case Value="False">
                 <ScrollView Background="Transparent" Tapped="BackgroundTapped">
                     <Grid>
                         <Rectangle
@@ -96,26 +107,7 @@
                         </ItemsRepeater>
                     </Grid>
                 </ScrollView>
-            </utu:LoadingView.Content>
-            <utu:LoadingView.LoadingContent>
-                <ItemsRepeater ItemsSource="{x:Bind tc:Shimmer.ShimmerSource(10)}">
-                    <ItemsRepeater.ItemTemplate>
-                        <DataTemplate>
-                            <tc:Shimmer />
-                        </DataTemplate>
-                    </ItemsRepeater.ItemTemplate>
-                    <ItemsRepeater.Layout>
-                        <UniformGridLayout
-                            ItemsJustification="Start"
-                            ItemsStretch="Fill"
-                            MinColumnSpacing="16"
-                            MinItemHeight="400"
-                            MinItemWidth="250"
-                            MinRowSpacing="16" />
-                    </ItemsRepeater.Layout>
-                </ItemsRepeater>
-            </utu:LoadingView.LoadingContent>
-        </utu:LoadingView>
-
+            </ctk:Case>
+        </ctk:SwitchPresenter>
     </Grid>
 </Page>

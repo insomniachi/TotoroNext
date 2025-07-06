@@ -28,7 +28,7 @@ public class Module : IModule
                 .AddDataViewMap<AnimeEpisodesListView, AnimeEpisodesListViewModel, EpisodesListViewModelNagivationParameters>()
                 .AddDataViewMap<AnimeGridView, AnimeGridViewModel, List<AnimeModel>>()
                 .AddDataViewMap<AnimeOverridesView, AnimeOverridesViewModel, OverridesViewModelNavigationParameters>()
-                .AddDataViewMap<AnimeSongsView, AnimeSongsViweModel, SongsViewModelNavigationParameters>();
+                .AddDataViewMap<AnimeSongsView, AnimeSongsViewModel, SongsViewModelNavigationParameters>();
 
         services.AddSelectionUserInteraction<SelectProviderResult, SearchResult>()
                 .AddSelectionUserInteraction<SelectAnimeResult, AnimeModel>()
