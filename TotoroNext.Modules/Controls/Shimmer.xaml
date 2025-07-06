@@ -1,0 +1,48 @@
+﻿<UserControl
+    x:Class="TotoroNext.Module.Controls.Shimmer"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:TotoroNext.Module.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    d:DesignHeight="300"
+    d:DesignWidth="400"
+    Loaded="UserControl_Loaded"
+    mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <Storyboard x:Name="LoaderAnimation">
+            <ColorAnimationUsingKeyFrames
+                AutoReverse="True"
+                RepeatBehavior="Forever"
+                Storyboard.TargetName="RectItemBrush"
+                Storyboard.TargetProperty="Color"
+                Duration="0:0:2.2">
+
+                <SplineColorKeyFrame
+                    KeySpline="0.3,0.0 0.7,1.0"
+                    KeyTime="0:0:0.0"
+                    Value="#555555" />
+
+                <SplineColorKeyFrame
+                    KeySpline="0.3,0.0 0.7,1.0"
+                    KeyTime="0:0:1.1"
+                    Value="#888888" />
+
+                <SplineColorKeyFrame
+                    KeySpline="0.3,0.0 0.7,1.0"
+                    KeyTime="0:0:2.2"
+                    Value="#555555" />
+            </ColorAnimationUsingKeyFrames>
+
+        </Storyboard>
+    </UserControl.Resources>
+
+    <Border CornerRadius="10">
+        <Rectangle x:Name="RectItem">
+            <Rectangle.Fill>
+                <SolidColorBrush x:Name="RectItemBrush" Color="DarkGray" />
+            </Rectangle.Fill>
+        </Rectangle>
+    </Border>
+</UserControl>

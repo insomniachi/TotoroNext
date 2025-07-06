@@ -39,5 +39,13 @@
     <PackageReference Include="System.Linq.Async" />
     <PackageReference Include="System.Reactive" />
     <PackageReference Include="Uno.WinUI.Markup" />
+
   </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="Controls\Shimmer.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+
 </Project>

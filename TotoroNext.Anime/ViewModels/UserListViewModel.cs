@@ -17,7 +17,7 @@ public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
 {
     private readonly ITrackingService? _trackingService = factory.CreateDefault();
     private readonly IMessenger _messenger = messenger;
-    private IEnumerable<AnimeModel>? _allItems;
+    private IEnumerable<AnimeModel> _allItems = [];
 
     public UserListFilter Filter { get; } = new();
 
@@ -26,20 +26,18 @@ public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
     [ObservableProperty]
     public partial List<AnimeModel> Items { get; set; } = [];
 
+    [ObservableProperty]
+    public partial LoadableAction InitializeAction { get; set; }
+
     public bool IsPaneOpen { get; set; }
+
 
     public async Task InitializeAsync()
     {
-        if(_trackingService is null)
-        {
-            return;
-        }
+        InitializeAction = LoadableAction.Create(FetchData);
+        await InitializeAction.Execute();
 
         _messenger.Register<ClosePaneMessage>(this, (_, _) => IsPaneOpen = false);
-
-
-        _allItems = await _trackingService.GetUserList();
-        Items = [.. _allItems];
 
         Filter
             .WhenAnyValue(x => x.Year, x => x.Status, x => x.Term)
@@ -82,6 +80,18 @@ public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
     {
         _messenger.Send(new PaneNavigateToDataMessage(anime, 750));
     }
+
+    private async Task FetchData()
+    {
+        if (_trackingService is null)
+        {
+            return;
+        }
+
+        _allItems = await _trackingService.GetUserList();
+        Items = [.. _allItems];
+    }
+
 
     [RelayCommand]
     private void OpenFilterPane()
