@@ -102,13 +102,8 @@ public partial class App : Application
                     services.AddFooterNavigationViewItem<ModulesPage, ModulesViewModel>("Installed", new FontIcon { Glyph = "\uE7B8" });
                     services.AddNavigationViewItem<ModulesStorePage, ModulesStoreViewModel>("Store", new FontIcon { Glyph = "\uE719" });
                     services.AddTransient<ViewMap>(_ => new ViewMap<SettingsPage, SettingsViewModel>());
-                    services.AddSingleton<SettingsViewModel>();
-                    services.AddTransient(sp =>
-                    {
-                        var vm = sp.GetRequiredService<SettingsViewModel>();
-                        vm.Initialize();
-                        return vm.Settings ?? new();
-                    });
+                    services.AddSingleton<SettingsModel>();
+                    services.AddTransient<SettingsViewModel>();
                 })
             );
 
