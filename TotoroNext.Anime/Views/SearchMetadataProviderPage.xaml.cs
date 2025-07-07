@@ -34,7 +34,7 @@ public sealed partial class SearchMetadataProviderPage : Page
     {
         if (sender is AnimeCard { Anime: not null } card)
         {
-            ViewModel?.PaneNavigator.NavigateToData(card.Anime);
+            WeakReferenceMessenger.Default.Send(new PaneNavigateToDataMessage(card.Anime));
         }
     }
 
