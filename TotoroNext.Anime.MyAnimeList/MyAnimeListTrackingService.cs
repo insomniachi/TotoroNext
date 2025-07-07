@@ -4,6 +4,7 @@ using MalApi.Interfaces;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.MyAnimeList.Views;
 using TotoroNext.Module.Abstractions;
+using Uno.Logging;
 
 namespace TotoroNext.Anime.MyAnimeList;
 
@@ -116,15 +117,24 @@ internal class MyAnimeListTrackingService : ITrackingService
             request.WithFinishDate(fd);
         }
 
-        var response = await request.Publish();
-        var newTracking = new Tracking
+        try
         {
-            WatchedEpisodes = response.WatchedEpisodes,
-            Status = (ListItemStatus)(int)response.Status,
-            Score = (int)response.Score,
-            UpdatedAt = response.UpdatedAt
-        };
+            var response = await request.Publish();
 
-        return newTracking;
+            var newTracking = new Tracking
+            {
+                WatchedEpisodes = response.WatchedEpisodes,
+                Status = (ListItemStatus)(int)response.Status,
+                Score = (int)response.Score,
+                UpdatedAt = response.UpdatedAt
+            };
+
+            return newTracking;
+        }
+        catch (Exception ex)
+        {
+            this.Log().Error("Unable to update tracking", ex)
+            return tracking;
+        }
     }
 }

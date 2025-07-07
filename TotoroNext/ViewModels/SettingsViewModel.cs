@@ -72,8 +72,6 @@ public partial class SettingsViewModel : ObservableObject, IInitializable
         AnimeProviders = [..allModules.Where(x => x.Components.Contains(ComponentTypes.AnimeProvider))];
         TrackingServices = [.. allModules.Where(x => x.Components.Contains(ComponentTypes.Tracking))];
         SegmentProviders = [.. allModules.Where(x => x.Components.Contains(ComponentTypes.MediaSegments))];
-
-        OnPropertyChanged("");
     }
 
     public List<Descriptor> MediaEngines { get; } 
