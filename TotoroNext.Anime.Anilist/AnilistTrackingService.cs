@@ -73,6 +73,8 @@ internal class AnilistTrackingService(GraphQLHttpClient client) : ITrackingServi
     {
         var mediaListEntryBuilder = new MediaListQueryBuilder();
 
+        mediaListEntryBuilder.WithNotes();
+
         if (tracking.Status is ListItemStatus)
         {
             mediaListEntryBuilder.WithStatus();
@@ -101,7 +103,8 @@ internal class AnilistTrackingService(GraphQLHttpClient client) : ITrackingServi
                 completedAt: AniListModelToAnimeModelConverter.ConvertDate(tracking.FinishDate),
                 scoreRaw: tracking.Score * 10,
                 progress: tracking.WatchedEpisodes,
-                mediaId: (int)id)
+                mediaId: (int)id,
+                notes: "#Totoro")
             .Build();
 
         var response = await client.SendMutationAsync<Mutation>(new GraphQL.GraphQLRequest

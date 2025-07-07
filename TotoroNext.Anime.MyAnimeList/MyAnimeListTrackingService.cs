@@ -133,7 +133,7 @@ internal class MyAnimeListTrackingService : ITrackingService
         }
         catch (Exception ex)
         {
-            this.Log().Error("Unable to update tracking", ex)
+            this.Log().Error("Unable to update tracking", ex);
             return tracking;
         }
     }
