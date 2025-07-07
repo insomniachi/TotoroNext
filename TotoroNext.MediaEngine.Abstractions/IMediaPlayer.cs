@@ -1,4 +1,5 @@
 using System.Reactive;
+using Windows.Media.Playback;
 
 namespace TotoroNext.MediaEngine.Abstractions;
 
@@ -8,6 +9,11 @@ public interface IMediaPlayer
     IObservable<TimeSpan> DurationChanged { get; }
     IObservable<TimeSpan> PositionChanged { get; }
     IObservable<Unit> PlaybackStopped { get; }
+}
+
+public interface IInternalMediaPlayer : IMediaPlayer
+{
+    MediaPlayer MediaPlayer { get; }
 }
 
 

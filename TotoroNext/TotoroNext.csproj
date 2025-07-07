@@ -19,6 +19,7 @@
             SkiaRenderer;
             WebView;
             Material;
+            MediaElement;
         </UnoFeatures>
     </PropertyGroup>
 

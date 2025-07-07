@@ -29,6 +29,11 @@ public class TrackingUpdater(IFactory<ITrackingService, Guid> factory,
 
     private async Task ReceiveInternal(PlaybackState message)
     {
+        if(message.Duration == TimeSpan.Zero)
+        {
+            return;
+        }
+
         if (message.Episode.Number < (message.Anime.Tracking?.WatchedEpisodes ?? 0))
         {
             return;

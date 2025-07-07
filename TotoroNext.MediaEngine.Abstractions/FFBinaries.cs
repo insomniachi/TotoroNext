@@ -9,7 +9,7 @@ public static class FFBinaries
 {
     public static async Task DownloadLatest()
     {
-        var files = Directory.GetFiles(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!);
+        var files = Directory.GetFiles(System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!);
 
         if (files.Any(x => x.Contains("ffprob")))
         {

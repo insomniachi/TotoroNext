@@ -1,3 +1,5 @@
+using CommunityToolkit.Mvvm.Messaging.Messages;
+
 namespace TotoroNext.Module.Abstractions;
 
 public interface INavigator
@@ -44,3 +46,6 @@ public record NavigationResult(Type ViewType, Type ViewModelType);
 
 public class ClosePaneMessage;
 public class PaneClosingMessange;
+public class ToggleAppWindowPresenterMessage;
+public class FullScreenEntered;
+public class FullScreenExited;

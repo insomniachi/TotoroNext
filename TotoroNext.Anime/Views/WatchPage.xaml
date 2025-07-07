@@ -14,15 +14,24 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
-            <RowDefinition Height="100" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
+        <MediaPlayerElement
+            x:Name="InternalMediaPlayer"
+            AreTransportControlsEnabled="True"
+            DoubleTapped="InternalMediaPlayer_DoubleTapped"
+            IsDoubleTapEnabled="True"
+            Visibility="Collapsed" />
+
         <Grid
+            x:Name="ServerList"
             Grid.Row="1"
+            MaxHeight="100"
             Padding="16"
             VerticalAlignment="Stretch"
             Background="{ThemeResource LayerFillColorDefaultBrush}"
@@ -56,6 +65,7 @@
         </Grid>
 
         <StackPanel
+            x:Name="EpisodeList"
             Grid.RowSpan="2"
             Grid.Column="1"
             MinWidth="200"

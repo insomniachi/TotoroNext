@@ -18,6 +18,18 @@ public sealed partial class MainPage : Page
             MainSplitView.DispatcherQueue.TryEnqueue(() => MainSplitView.IsPaneOpen = false);
         });
 
+        WeakReferenceMessenger.Default.Register<FullScreenEntered>(this, (_, _) =>
+        {
+            NavView.IsPaneVisible = false;
+            TitleBarControl.Visibility = Visibility.Collapsed;
+        });
+
+        WeakReferenceMessenger.Default.Register<FullScreenExited>(this, (_, _) =>
+        {
+            NavView.IsPaneVisible = true;
+            TitleBarControl.Visibility = Visibility.Visible;
+        });
+
 #if WINDOWS
         //NavFrame.Navigated += (s, e) =>
         //{

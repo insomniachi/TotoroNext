@@ -49,8 +49,13 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
     [ObservableProperty]
     public partial List<VideoSource> Sources { get; set; } = [];
 
+    [ObservableProperty]
+    public partial bool IsInternalPlayer { get; set; }
+
     public void Initialize()
     {
+        IsInternalPlayer = MediaPlayer is IInternalMediaPlayer;
+
         (ProviderResult, Anime, Episodes, SelectedEpisode, bool continueWatching) = navigationParameter;
 
         this.WhenAnyValue(x => x.ProviderResult)

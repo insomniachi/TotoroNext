@@ -1,6 +1,6 @@
-using System.Reactive;
 using System.Reactive.Concurrency;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.UI.Windowing;
 using ReactiveUI;
 using TotoroNext.Anime;
 using TotoroNext.Anime.Abstractions;
@@ -9,8 +9,9 @@ using TotoroNext.Module;
 using TotoroNext.Module.Abstractions;
 using TotoroNext.ViewModels;
 using TotoroNext.Views;
-using Uno.Resizetizer;
 using Windows.Storage.Pickers;
+using Windows.UI.ViewManagement;
+using WinRT.Interop;
 
 namespace TotoroNext;
 public partial class App : Application
@@ -75,8 +76,8 @@ public partial class App : Application
 
                         if (OperatingSystem.IsWindows())
                         {
-                            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
-                            WinRT.Interop.InitializeWithWindow.Initialize(openPicker, hWnd);
+                            var hWnd = WindowNative.GetWindowHandle(window);
+                            InitializeWithWindow.Initialize(openPicker, hWnd);
                         }
 
                         return openPicker;
@@ -95,6 +96,8 @@ public partial class App : Application
                             .RegisterFactory<IMediaSegmentsProvider>(nameof(SettingsModel.SelectedSegmentsProvider));
 
                     services.AddDataViewMap<ModuleDetailsView, ModuleDetailsViewModel, ModuleManifest>();
+
+                    services.AddInternalMediaPlayer();
 
                     services.AddFooterNavigationViewItem<ModulesPage, ModulesViewModel>("Installed", new FontIcon { Glyph = "\uE7B8" });
                     services.AddNavigationViewItem<ModulesStorePage, ModulesStoreViewModel>("Store", new FontIcon { Glyph = "\uE719" });
@@ -115,6 +118,11 @@ public partial class App : Application
         MainWindow.UseStudio();
 #endif
         MainWindow.SetWindowIcon();
+
+        WeakReferenceMessenger.Default.Register<ToggleAppWindowPresenterMessage>(this, (_, _) =>
+        {
+            OnToggleFullscreen();
+        });
 
         Host = builder.Build();
 
@@ -162,6 +170,25 @@ public partial class App : Application
         {
             await Host.StopAsync();
         };
+    }
+
+    private void OnToggleFullscreen()
+    {
+        if(MainWindow?.AppWindow is not { } appWindow)
+        {
+            return;
+        }
+
+        if (appWindow.Presenter?.Kind is AppWindowPresenterKind.FullScreen)
+        {
+            appWindow.SetPresenter(AppWindowPresenterKind.Default);
+            WeakReferenceMessenger.Default.Send<FullScreenExited>();
+        }
+        else
+        {
+            appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
+            WeakReferenceMessenger.Default.Send<FullScreenEntered>();
+        }
     }
 }
 

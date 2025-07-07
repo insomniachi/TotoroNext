@@ -11,9 +11,12 @@
       UnoFeatures let's you quickly add and manage implicit package references based on the features you want to use.
       https://aka.platform.uno/singleproject-features
     -->
-    <!--
-    <UnoFeatures></UnoFeatures>
-    -->
+    
+    <UnoFeatures>
+        Hosting;
+        MediaElement;
+    </UnoFeatures>
+    
   </PropertyGroup>
 
   <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
@@ -34,6 +37,10 @@
   <ItemGroup>
     <PackageReference Include="FFMpegCore" />
     <PackageReference Include="System.Reactive" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TotoroNext.Modules\TotoroNext.Module.csproj" />
   </ItemGroup>
 
 

@@ -7,7 +7,7 @@ namespace TotoroNext.ViewModels;
 
 public partial class ModulesViewModel(IEnumerable<Descriptor> modules, IMessenger messenger) : ReactiveObject
 {
-    public List<Descriptor> Descriptors { get; } = [.. modules];
+    public List<Descriptor> Descriptors { get; } = [.. modules.Where(x => !x.IsInternal)];
 
     public void NavigateToSettings(Descriptor descriptor)
     {

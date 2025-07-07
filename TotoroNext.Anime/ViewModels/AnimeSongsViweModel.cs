@@ -1,7 +1,5 @@
-using System.Reactive.Concurrency;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using ReactiveUI;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.Module;
@@ -20,8 +18,6 @@ public sealed partial class AnimeSongsViewModel(SongsViewModelNavigationParamete
 
     [ObservableProperty]
     public partial bool IsLoading { get; set; }
-
-    public event EventHandler OnDisposed;
 
     public async Task InitializeAsync()
     {

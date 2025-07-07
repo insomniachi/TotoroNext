@@ -15,4 +15,5 @@ public record Descriptor
     public string? Description { get; init; }
     public string? HeroImage { get; init; }
     public Type? SettingViewModel { get; init; }
+    public bool IsInternal { get; set; } = false;
 }
