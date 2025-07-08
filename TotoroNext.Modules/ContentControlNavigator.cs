@@ -25,7 +25,7 @@ public class ControlNavigator(UIElement host,
                               IServiceScopeFactory serviceScopeFactory) : INavigator
 {
     public event EventHandler<NavigationResult>? Navigated;
-    
+
     public UIElement Control { get; } = host;
 
     public bool NavigateToData(object data)
@@ -53,7 +53,7 @@ public class ControlNavigator(UIElement host,
             Navigated?.Invoke(this, new(viewType, vmType));
             return true;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             this.Log().Error("Unable to Navigate", ex);
             return false;
@@ -118,7 +118,7 @@ public class ControlNavigator(UIElement host,
     {
         if (Control is SplitView sv)
         {
-            if(NavigationExtensions.GetPaneWidth(page) is { } width && width > 0)
+            if (NavigationExtensions.GetPaneWidth(page) is { } width && width > 0)
             {
                 sv.OpenPaneLength = width;
             }
@@ -148,7 +148,7 @@ public class ControlNavigator(UIElement host,
                 }
                 catch { }
             }
-            if(vm is IPaneNavigatable { } pn && page.FindFirstDescendant<SplitView>() is { } sv)
+            if (vm is IPaneNavigatable { } pn && page.FindFirstDescendant<SplitView>() is { } sv)
             {
                 var navigator = new ControlNavigator(sv, locator, serviceScopeFactory);
                 pn.PaneNavigator = navigator;

@@ -60,19 +60,19 @@ public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
     public async Task NavigateToWatch(AnimeModel anime)
     {
         var overrides = animeOverridesRepository.GetOverrides(anime.Id);
-        
+
         var provider = overrides?.Provider is { } providerId
             ? providerFactory.Create(providerId)
             : providerFactory.CreateDefault();
 
-        if(provider is null)
+        if (provider is null)
         {
             return;
         }
 
         var result = await provider.SearchAndSelectAsync(anime);
 
-        if(overrides is not null)
+        if (overrides is not null)
         {
             _messenger.Send(overrides);
         }
@@ -98,7 +98,7 @@ public partial class UserListViewModel(IFactory<ITrackingService, Guid> factory,
         IsPaneOpen = true;
     }
 
-    [RelayCommand] 
+    [RelayCommand]
     private void ClearFilters() => Filter.Clear();
 }
 

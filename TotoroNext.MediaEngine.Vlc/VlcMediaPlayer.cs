@@ -23,11 +23,11 @@ internal class VlcMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
 
     public void Play(Media media, TimeSpan startPosition)
     {
-        if(_disposable is null)
+        if (_disposable is null)
         {
             _disposable = [];
         }
-        else if(!_disposable.IsDisposed)
+        else if (!_disposable.IsDisposed)
         {
             _disposable.Dispose();
             _disposable = [];

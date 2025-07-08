@@ -43,7 +43,7 @@ public sealed partial class AnimeSongsViewModel(SongsViewModelNavigationParamete
     [RelayCommand]
     private void OpenInMediaPlayer(AnimeTheme theme)
     {
-        if(theme.Video is not { } uri)
+        if (theme.Video is not { } uri)
         {
             return;
         }

@@ -1,6 +1,4 @@
 using System.Collections;
-using System.Windows.Input;
-using Microsoft.UI.Xaml.Controls;
 
 namespace TotoroNext.Module;
 
@@ -60,35 +58,35 @@ public static class ItemsViewSelectionHelper
         }
     }
 
-	public static readonly DependencyProperty CommandProperty =
-		DependencyProperty.RegisterAttached(
-			"Command",
-			typeof(ICommand),
-			typeof(ItemsViewSelectionHelper),
-			new PropertyMetadata(null, OnCommandChanged));
+    public static readonly DependencyProperty CommandProperty =
+        DependencyProperty.RegisterAttached(
+            "Command",
+            typeof(ICommand),
+            typeof(ItemsViewSelectionHelper),
+            new PropertyMetadata(null, OnCommandChanged));
 
-	public static ICommand GetCommand(DependencyObject obj) => (ICommand)obj.GetValue(CommandProperty);
-	public static void SetCommand(DependencyObject obj, ICommand value) => obj.SetValue(CommandProperty, value);
+    public static ICommand GetCommand(DependencyObject obj) => (ICommand)obj.GetValue(CommandProperty);
+    public static void SetCommand(DependencyObject obj, ICommand value) => obj.SetValue(CommandProperty, value);
 
-	private static void OnCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-	{
-		if (d is ItemsView itemsView)
-		{
-			itemsView.ItemInvoked -= ItemInvoked;
+    private static void OnCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is ItemsView itemsView)
+        {
+            itemsView.ItemInvoked -= ItemInvoked;
 
-			if (e.NewValue is ICommand)
-			{
-				itemsView.ItemInvoked += ItemInvoked;
-			}
-		}
-	}
+            if (e.NewValue is ICommand)
+            {
+                itemsView.ItemInvoked += ItemInvoked;
+            }
+        }
+    }
 
-	private static void ItemInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
-	{
-		var command = GetCommand(sender);
-		if (command != null && command.CanExecute(args.InvokedItem))
-		{
-			command.Execute(args.InvokedItem);
-		}
-	}
+    private static void ItemInvoked(ItemsView sender, ItemsViewItemInvokedEventArgs args)
+    {
+        var command = GetCommand(sender);
+        if (command != null && command.CanExecute(args.InvokedItem))
+        {
+            command.Execute(args.InvokedItem);
+        }
+    }
 }

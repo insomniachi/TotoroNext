@@ -8,7 +8,7 @@ namespace TotoroNext.Discord;
 
 internal class RpcService(IModuleSettings<Settings> settings,
                           IMessenger messenger) : IHostedService,
-                                                  IRecipient<PlaybackState>, 
+                                                  IRecipient<PlaybackState>,
                                                   IRecipient<PlaybackEnded>,
                                                   IRecipient<AnimeOverrides>
 {
@@ -17,7 +17,7 @@ internal class RpcService(IModuleSettings<Settings> settings,
 
     public void Receive(PlaybackState message)
     {
-        if(!_isEnabled)
+        if (!_isEnabled)
         {
             return;
         }
@@ -52,7 +52,7 @@ internal class RpcService(IModuleSettings<Settings> settings,
 
     private void OnRevert(object? sender, EventArgs e)
     {
-        if(sender is not AnimeOverrides overrides)
+        if (sender is not AnimeOverrides overrides)
         {
             return;
         }

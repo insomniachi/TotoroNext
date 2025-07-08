@@ -36,7 +36,7 @@ public partial class SearchMetadataProviderViewModel(IFactory<IMetadataService, 
 
     public async Task WatchAnime(AnimeModel model)
     {
-        if(_provider is null)
+        if (_provider is null)
         {
             return;
         }

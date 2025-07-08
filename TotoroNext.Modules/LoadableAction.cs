@@ -3,7 +3,7 @@ namespace TotoroNext.Module;
 public class LoadableAction : ILoadable
 {
     private readonly Func<Task> _action;
-    
+
     private LoadableAction(Func<Task> action)
     {
         _action = action ?? throw new ArgumentNullException(nameof(action));

@@ -1,7 +1,5 @@
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
 
-using System.Reactive.Linq;
-using ReactiveUI;
 using TotoroNext.Anime.Abstractions;
 
 namespace TotoroNext.Anime.UserControls;

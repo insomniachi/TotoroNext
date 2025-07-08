@@ -11,7 +11,7 @@ public record SongsViewModelNavigationParameters(AnimeModel Anime);
 
 public record WatchViewModelNavigationParameter(SearchResult ProviderResult,
                                                         AnimeModel? Anime = null,
-                                                        List<Episode>? Episodes = null, 
-                                                        Episode? SelectedEpisode = null, 
+                                                        List<Episode>? Episodes = null,
+                                                        Episode? SelectedEpisode = null,
                                                         bool ContinueWatching = true);
 

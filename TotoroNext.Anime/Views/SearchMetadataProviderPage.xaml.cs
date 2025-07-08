@@ -1,7 +1,6 @@
 
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
-using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.UserControls;
 using TotoroNext.Anime.ViewModels;
 using TotoroNext.Module.Abstractions;
@@ -19,12 +18,12 @@ public sealed partial class SearchMetadataProviderPage : Page
 
     private async void AnimeCard_Tapped(object sender, TappedRoutedEventArgs e)
     {
-        if(this.FindAscendant<SplitView>() is { } sv && sv.IsPaneOpen)
+        if (this.FindAscendant<SplitView>() is { } sv && sv.IsPaneOpen)
         {
             return;
         }
 
-        if (sender is AnimeCard { Anime: not null } card )
+        if (sender is AnimeCard { Anime: not null } card)
         {
             await (ViewModel?.WatchAnime(card.Anime) ?? Task.CompletedTask);
         }

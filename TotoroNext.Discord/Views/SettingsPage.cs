@@ -24,7 +24,7 @@ internal partial class SettingsPage : Page
                         .Children(
                         [
                             new Image().Source(ResourceHelper.GetResource("discord-logo.jpg")).Stretch(Stretch.Uniform),
-   
+
                             SettingsCard("Show discord rich presence while watching","Enabled", new FontIcon {Glyph = "\uE90A"})
                             .Content(new ToggleSwitch().IsOn(x => x.Binding(() => vm.IsEnabled).TwoWay())),
                         ]))));

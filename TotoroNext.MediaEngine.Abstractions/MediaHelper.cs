@@ -52,7 +52,7 @@ public static class MediaHelper
         for (var i = 0; i < segments.Count - 1; i++)
         {
             var current = segments[i];
-            var next = segments[i+1];
+            var next = segments[i + 1];
             if (current.End != next.Start)
             {
                 newSegments.Add(new MediaSegment(MediaSectionType.Content, current.End, next.Start));
@@ -64,7 +64,7 @@ public static class MediaHelper
             newSegments.Add(new MediaSegment(MediaSectionType.Content, last.End, mediaLength));
         }
         segments.AddRange(newSegments);
-        
+
         return segments.OrderBy(x => x.Start);
     }
 }

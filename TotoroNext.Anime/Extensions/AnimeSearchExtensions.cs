@@ -21,7 +21,7 @@ internal static class AnimeSearchExtensions
             return null;
         }
 
-        if(results.Count == 1)
+        if (results.Count == 1)
         {
             return results[0];
         }
@@ -64,12 +64,12 @@ internal static class AnimeSearchExtensions
     {
         var servers = await ep.GetServersAsync().ToListAsync();
 
-        if (servers is not { Count : > 0})
+        if (servers is not { Count: > 0 })
         {
             return null;
         }
 
-        if(servers.Count == 1)
+        if (servers.Count == 1)
         {
             return servers[0];
         }
@@ -96,7 +96,7 @@ internal static class AnimeSearchExtensions
 
         foreach (var property in episodesObj)
         {
-            if(property.Value.Deserialize<EpisodeInfo>() is not { } ep)
+            if (property.Value.Deserialize<EpisodeInfo>() is not { } ep)
             {
                 continue;
             }

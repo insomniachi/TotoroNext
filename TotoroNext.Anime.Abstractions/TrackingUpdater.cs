@@ -29,7 +29,7 @@ public class TrackingUpdater(IFactory<ITrackingService, Guid> factory,
 
     private async Task ReceiveInternal(PlaybackState message)
     {
-        if(message.Duration == TimeSpan.Zero)
+        if (message.Duration == TimeSpan.Zero)
         {
             return;
         }

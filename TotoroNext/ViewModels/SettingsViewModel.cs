@@ -69,14 +69,14 @@ public partial class SettingsViewModel : ObservableObject, IInitializable
         var allModules = modules.ToList();
 
         MediaEngines = [.. allModules.Where(x => x.Components.Contains(ComponentTypes.MediaEngine))];
-        AnimeProviders = [..allModules.Where(x => x.Components.Contains(ComponentTypes.AnimeProvider))];
+        AnimeProviders = [.. allModules.Where(x => x.Components.Contains(ComponentTypes.AnimeProvider))];
         TrackingServices = [.. allModules.Where(x => x.Components.Contains(ComponentTypes.Tracking))];
         SegmentProviders = [.. allModules.Where(x => x.Components.Contains(ComponentTypes.MediaSegments))];
     }
 
-    public List<Descriptor> MediaEngines { get; } 
-    public List<Descriptor> AnimeProviders { get; } 
-    public List<Descriptor> TrackingServices { get; } 
+    public List<Descriptor> MediaEngines { get; }
+    public List<Descriptor> AnimeProviders { get; }
+    public List<Descriptor> TrackingServices { get; }
     public List<Descriptor> SegmentProviders { get; }
 
 

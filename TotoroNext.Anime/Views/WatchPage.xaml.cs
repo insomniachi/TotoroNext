@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.Messaging;
-using Microsoft.UI.Xaml.Controls;
 using TotoroNext.Anime.ViewModels;
 using TotoroNext.MediaEngine.Abstractions;
 using TotoroNext.Module.Abstractions;
@@ -30,12 +29,12 @@ public sealed partial class WatchPage : Page
 
     private void WatchPage_Loaded(object sender, RoutedEventArgs e)
     {
-        if(ViewModel is not { } vm)
+        if (ViewModel is not { } vm)
         {
             return;
         }
 
-        if(vm.MediaPlayer is not IInternalMediaPlayer mp)
+        if (vm.MediaPlayer is not IInternalMediaPlayer mp)
         {
             return;
         }

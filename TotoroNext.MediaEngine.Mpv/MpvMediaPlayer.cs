@@ -9,7 +9,7 @@ using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.MediaEngine.Mpv;
 
-internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
+internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer, ISeekable
 {
     private Process? _process;
     private readonly Settings _settings = settings.Value;
@@ -21,6 +21,16 @@ internal class MpvMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
     public IObservable<TimeSpan> DurationChanged => _durationSubject;
     public IObservable<TimeSpan> PositionChanged => _positionSubject;
     public IObservable<Unit> PlaybackStopped => _playbackStoped;
+
+    public async Task SeekTo(TimeSpan timestamp)
+    {
+        if(_ipcStream is null)
+        {
+            return;
+        }
+
+        await SendIpcCommand(_ipcStream, new { command = new object[] { "seek", timestamp.TotalSeconds, "absolute+exact" } });
+    }
 
     public void Play(Media media, TimeSpan startPosition)
     {

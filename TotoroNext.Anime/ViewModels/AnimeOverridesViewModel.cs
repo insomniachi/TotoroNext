@@ -22,7 +22,7 @@ public partial class AnimeOverridesViewModel(OverridesViewModelNavigationParamet
     public void Initialize()
     {
         var overrides = animeOverridesRepository.GetOverrides(paramters.Anime.Id);
-        
+
         IsNsfw = overrides?.IsNsfw ?? false;
         ProviderId = overrides?.Provider;
 

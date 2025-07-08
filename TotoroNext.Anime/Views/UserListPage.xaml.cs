@@ -17,12 +17,12 @@ public sealed partial class UserListPage : Page
 
     private void AnimeList_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
-        if(args.Element is not ItemContainer container)
+        if (args.Element is not ItemContainer container)
         {
             return;
         }
 
-        if(container.Child is not AnimeCard card)
+        if (container.Child is not AnimeCard card)
         {
             return;
         }

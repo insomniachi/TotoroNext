@@ -35,7 +35,7 @@ public class PlaybackProgressTrackingService(IMessenger messenger) : IPlaybackPr
 
     public void Receive(PlaybackState message)
     {
-        if(message.Position < TimeSpan.FromSeconds(30))
+        if (message.Position < TimeSpan.FromSeconds(30))
         {
             return;
         }
@@ -81,7 +81,7 @@ public class PlaybackProgressTrackingService(IMessenger messenger) : IPlaybackPr
     {
         var completed = _progress.Where(x => x.Value.IsCompleted).Select(x => x.Key);
         _progress.RemoveKeys(completed);
-        
+
         await File.WriteAllTextAsync(_file, JsonSerializer.Serialize(_progress), cancellationToken);
 
         messenger.Unregister<PlaybackState>(this);

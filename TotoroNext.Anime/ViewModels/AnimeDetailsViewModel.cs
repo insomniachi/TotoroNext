@@ -45,7 +45,7 @@ public sealed partial class AnimeDetailsViewModel(AnimeModel anime,
 
         this.WhenAnyValue(x => x.Status, x => x.Progress, x => x.Score, x => x.StartDate, x => x.FinishDate)
             .Skip(1)
-            .Select(x => new Tracking 
+            .Select(x => new Tracking
             {
                 Status = x.Item1,
                 WatchedEpisodes = (int)x.Item2,

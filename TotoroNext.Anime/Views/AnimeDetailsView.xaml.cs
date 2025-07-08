@@ -17,7 +17,7 @@ public sealed partial class AnimeDetailsView : UserControl
 
     private void Pivot_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
-        if(ViewModel is not { } vm)
+        if (ViewModel is not { } vm)
         {
             return;
         }

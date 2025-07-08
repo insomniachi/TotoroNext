@@ -20,7 +20,7 @@ public class AnimeTheme
     {
         var sb = new StringBuilder();
         sb.Append($"({Slug}) - {SongName}");
-        if(!string.IsNullOrEmpty(Artist))
+        if (!string.IsNullOrEmpty(Artist))
         {
             sb.Append($" by {Artist}");
         }

@@ -23,7 +23,7 @@ public class Factory<TService, TId>(IServiceScopeFactory serviceScopeFactory,
 {
     public TService Create(TId? id)
     {
-        if(id is null)
+        if (id is null)
         {
             ArgumentNullException.ThrowIfNull(id, nameof(id));
         }
@@ -38,7 +38,7 @@ public class Factory<TService, TId>(IServiceScopeFactory serviceScopeFactory,
 
         var key = localSettingsService.ReadSetting<TId>(defaultKey, default);
 
-        if(EqualityComparer<TId>.Default.Equals(key, default))
+        if (EqualityComparer<TId>.Default.Equals(key, default))
         {
             return scope.ServiceProvider.GetKeyedServices<TService>(KeyedService.AnyKey).First();
         }

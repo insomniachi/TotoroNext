@@ -47,7 +47,7 @@ public sealed partial class MainPage : Page
         {
             NavView.ItemInvoked += (_, e) =>
             {
-                if(e.IsSettingsInvoked)
+                if (e.IsSettingsInvoked)
                 {
                     vm.Navigator?.NavigateViewModel(typeof(SettingsViewModel));
                 }

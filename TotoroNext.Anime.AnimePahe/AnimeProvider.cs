@@ -12,20 +12,20 @@ namespace TotoroNext.Anime.AnimePahe;
 public partial class AnimeProvider(IHttpClientFactory httpClientFactory) : IAnimeProvider
 {
     private readonly KwikExtractor _extractor = new(httpClientFactory);
-    
+
     public async IAsyncEnumerable<SearchResult> SearchAsync(string query)
     {
         using var client = GetClient();
-        
-         var json = await client.Request()
-            .AppendPathSegment("api")
-            .SetQueryParams(new
-            {
-                m = "search",
-                q = query,
-                l = 8
-            })
-            .GetStringAsync();
+
+        var json = await client.Request()
+           .AppendPathSegment("api")
+           .SetQueryParams(new
+           {
+               m = "search",
+               q = query,
+               l = 8
+           })
+           .GetStringAsync();
 
         if (string.IsNullOrEmpty(json))
         {
@@ -58,20 +58,20 @@ public partial class AnimeProvider(IHttpClientFactory httpClientFactory) : IAnim
             {
                 continue;
             }
-            
+
             var id = $"{item?["session"]}";
 
             yield return new SearchResult(this, id, title, image);
         }
     }
-    
+
     public async IAsyncEnumerable<Episode> GetEpisodes(string animeId)
     {
         using var client = GetClient();
         var stream = await client.Request("anime", animeId).GetStreamAsync();
         var doc = new HtmlDocument();
         doc.Load(stream);
-        
+
         var releaseId = IdRegex().Match(doc.Text).Groups[1].Value;
         var page = await GetSessionPage(client, releaseId, 1);
 
@@ -103,11 +103,11 @@ public partial class AnimeProvider(IHttpClientFactory httpClientFactory) : IAnim
             yield return new VideoServer(node.InnerText.Replace("&middot;", "•"), new Uri(node.Attributes["href"].Value), _extractor);
         }
     }
-    
+
     [GeneratedRegex("let id = \"(.+?)\"", RegexOptions.Compiled)]
     private static partial Regex IdRegex();
 
-    
+
     private static async Task<AnimePaheEpisodePage> GetSessionPage(FlurlClient client, string releaseId, int page)
     {
         return await client.Request("api").SetQueryParams(new
@@ -118,7 +118,7 @@ public partial class AnimeProvider(IHttpClientFactory httpClientFactory) : IAnim
             page
         }).GetJsonAsync<AnimePaheEpisodePage>();
     }
-    
+
     private FlurlClient GetClient()
     {
         var client = httpClientFactory.CreateClient(Module.Descriptor.Id.ToString());

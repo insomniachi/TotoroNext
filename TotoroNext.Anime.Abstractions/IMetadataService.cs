@@ -43,7 +43,7 @@ public class ExternalIds
 
     public long? GetId(string serviceType)
     {
-        if(GetType().GetProperties().FirstOrDefault(x => x.Name.Equals(serviceType, StringComparison.OrdinalIgnoreCase)) is not { } property)
+        if (GetType().GetProperties().FirstOrDefault(x => x.Name.Equals(serviceType, StringComparison.OrdinalIgnoreCase)) is not { } property)
         {
             return null;
         }

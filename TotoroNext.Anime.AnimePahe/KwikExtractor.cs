@@ -10,7 +10,7 @@ public partial class KwikExtractor(IHttpClientFactory httpClientFactory) : IVide
 {
     internal const string ClientName = "RedirectOff";
     private const string CharacterMap = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/";
-    
+
     public async IAsyncEnumerable<VideoSource> Extract(Uri url)
     {
         var httpClient = httpClientFactory.CreateClient(ClientName);
@@ -24,7 +24,7 @@ public partial class KwikExtractor(IHttpClientFactory httpClientFactory) : IVide
         {
             yield break;
         }
-        
+
         var fullKey = match.Groups[1].Value;
         var key = match.Groups[2].Value;
         var v1 = match.Groups[3].Value;
@@ -46,7 +46,7 @@ public partial class KwikExtractor(IHttpClientFactory httpClientFactory) : IVide
             yield return new VideoSource() { Url = new(httpResponse!.Headers!.Location!.AbsoluteUri) };
         }
     }
-    
+
     private static string Decrypt(string fullString, string key, int v1, int v2)
     {
         var r = "";
@@ -71,7 +71,7 @@ public partial class KwikExtractor(IHttpClientFactory httpClientFactory) : IVide
 
         return r;
     }
-    
+
     private static string GetString(string content, int s1, int s2)
     {
         var slice = CharacterMap.AsSpan()[0..s2];
@@ -93,17 +93,17 @@ public partial class KwikExtractor(IHttpClientFactory httpClientFactory) : IVide
         return string.IsNullOrEmpty(k) ? "0" : k;
     }
 
-    
+
     [GeneratedRegex(@"\(""href"",\s*""(https://[^()]+)""\)")]
     private static partial Regex KwikRedirectionRegex();
-    
+
     [GeneratedRegex(@"\(""(\w+)"",\d+,""(\w+)"",(\d+),(\d+),\d+\)")]
     private static partial Regex KwikParamsRegex();
-    
+
     [GeneratedRegex(@"action=""(.+?)""")]
     private static partial Regex KwikDecryptUrlRegex();
 
     [GeneratedRegex(@"value=""(.+?)""")]
     private static partial Regex KwikDecryptTokenRegex();
-    
+
 }

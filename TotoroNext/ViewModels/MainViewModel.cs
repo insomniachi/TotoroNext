@@ -9,7 +9,7 @@ using TotoroNext.Module.Abstractions;
 namespace TotoroNext.Presentation;
 
 public partial class MainViewModel : ObservableObject,
-                                     INavigatorHost, 
+                                     INavigatorHost,
                                      IRecipient<NavigateToViewModelMessage>,
                                      IRecipient<NavigateToDataMessage>,
                                      IRecipient<PaneNavigateToViewModelMessage>,
@@ -32,11 +32,11 @@ public partial class MainViewModel : ObservableObject,
     public partial bool IsPaneInline { get; set; }
 
     public Type? CurrentView { get; set; }
-   
+
     public Type? CurrentPaneView { get; set; }
 
     public IList<NavigationViewItem> MenuItems { get; }
-    
+
     public IList<NavigationViewItem> FooterItems { get; }
 
     [ObservableProperty]

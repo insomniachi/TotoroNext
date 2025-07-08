@@ -18,7 +18,7 @@ public sealed partial class AnimeSongsView : UserControl
 
     public static MediaSource? GetVideoSource(Uri? uri)
     {
-        if(uri is null)
+        if (uri is null)
         {
             return null;
         }

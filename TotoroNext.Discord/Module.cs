@@ -21,7 +21,7 @@ public class Module : IModule<Settings>
     {
         services.AddTransient(_ => Descriptor);
         services.AddModuleSettings(this);
-        services.AddViewMap<SettingsPage, SettingsViewModel>(); 
+        services.AddViewMap<SettingsPage, SettingsViewModel>();
         services.AddHostedService<RpcService>();
     }
 }

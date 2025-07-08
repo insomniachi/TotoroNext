@@ -11,7 +11,7 @@ internal class AnimeOverridesRepository : IAnimeOverridesRepository
 
     public AnimeOverridesRepository()
     {
-        if(File.Exists(_file))
+        if (File.Exists(_file))
         {
             _overrides = JsonSerializer.Deserialize<Dictionary<long, AnimeOverrides>>(File.ReadAllText(_file)) ?? [];
         }
@@ -29,7 +29,7 @@ internal class AnimeOverridesRepository : IAnimeOverridesRepository
 
     public AnimeOverrides? GetOverrides(long id)
     {
-        if(!_overrides.TryGetValue(id, out var @override))
+        if (!_overrides.TryGetValue(id, out var @override))
         {
             return null;
         }
@@ -40,6 +40,6 @@ internal class AnimeOverridesRepository : IAnimeOverridesRepository
     public void CreateOrUpdate(long id, AnimeOverrides overrides)
     {
         _overrides[id] = overrides;
-        File.WriteAllText(_file, JsonSerializer.Serialize(_overrides)); 
+        File.WriteAllText(_file, JsonSerializer.Serialize(_overrides));
     }
 }

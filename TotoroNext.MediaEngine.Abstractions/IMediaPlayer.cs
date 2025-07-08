@@ -11,6 +11,11 @@ public interface IMediaPlayer
     IObservable<Unit> PlaybackStopped { get; }
 }
 
+public interface ISeekable
+{
+    Task SeekTo(TimeSpan position);
+}
+
 public interface IInternalMediaPlayer : IMediaPlayer
 {
     MediaPlayer MediaPlayer { get; }

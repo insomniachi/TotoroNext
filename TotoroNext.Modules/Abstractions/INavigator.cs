@@ -1,5 +1,3 @@
-using CommunityToolkit.Mvvm.Messaging.Messages;
-
 namespace TotoroNext.Module.Abstractions;
 
 public interface INavigator

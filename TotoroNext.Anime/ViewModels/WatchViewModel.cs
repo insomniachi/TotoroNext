@@ -22,6 +22,7 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
                                            IMessenger messenger) : ObservableObject, IInitializable, IDisposable
 {
     private TimeSpan _duration;
+    private Media? _media;
 
     public IMediaPlayer MediaPlayer { get; } = mediaPlayerFactory.CreateDefault();
 
@@ -52,6 +53,9 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
     [ObservableProperty]
     public partial bool IsInternalPlayer { get; set; }
 
+    [ObservableProperty]
+    public partial MediaSegment? CurrentSegment { get; set; } 
+
     public void Initialize()
     {
         IsInternalPlayer = MediaPlayer is IInternalMediaPlayer;
@@ -73,8 +77,8 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
                 .Subscribe(eps =>
                 {
                     var nextUp = (Anime?.Tracking?.WatchedEpisodes ?? 0) + 1;
-                    
-                    if(eps.FirstOrDefault(x => x.Number == nextUp) is not { } nextEp)
+
+                    if (eps.FirstOrDefault(x => x.Number == nextUp) is not { } nextEp)
                     {
                         return;
                     }
@@ -82,12 +86,12 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
                     if (Anime?.Id is { } id)
                     {
                         var progress = progressService.GetProgress(id);
-                        if(progress.TryGetValue(nextUp, out var epProgress))
+                        if (progress.TryGetValue(nextUp, out var epProgress))
                         {
                             nextEp.StartPosition = TimeSpan.FromSeconds(epProgress.Position);
                         }
                     }
-                    
+
                     SelectedEpisode = nextEp;
                 });
         }
@@ -119,13 +123,31 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
             .SelectMany(x => Play(x).ToObservable())
             .Subscribe();
 
+        this.WhenAnyValue(x => x.CurrentSegment)
+            .WhereNotNull()
+            .Where(x => x is { Type : MediaSectionType.Opening or MediaSectionType.Ending })
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(async segment =>
+            {
+                if (MediaPlayer is not ISeekable seekable)
+                {
+                    return;
+                }
+
+                var answer = await dialogService.AskSkip();
+                if(answer is DialogResult.Yes)
+                {
+                    await seekable.SeekTo(segment.End);
+                }
+            });
+
         InitializePublishers();
     }
 
     public void Dispose()
     {
         messenger.Send(new PlaybackEnded());
-        if(Anime?.Id is { } id)
+        if (Anime?.Id is { } id)
         {
             animeOverridesRepository.Revert(id);
         }
@@ -151,12 +173,34 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
         MediaPlayer
             .PlaybackStopped
             .Do(_ => messenger.Send(new PlaybackEnded()))
-            .Where(_ => SelectedEpisode is { IsCompleted : true } && Episodes is not null)
+            .Where(_ => SelectedEpisode is { IsCompleted: true } && Episodes is not null)
             .ObserveOn(RxApp.MainThreadScheduler)
             .SelectMany(_ => AskIfContinueWatching())
             .WhereNotNull()
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(nexEp => SelectedEpisode = nexEp);
+
+        if(MediaPlayer is ISeekable seekable)
+        {
+            MediaPlayer
+            .PositionChanged
+            .Where(_ => _media is not null)
+            .Select(position =>
+            {
+                foreach (var item in _media!.Metadata.MedaSections ?? [])
+                {
+                    if(position > item.Start && position < item.End)
+                    {
+                        return item;
+                    }
+                }
+
+                return null;
+            })
+            .WhereNotNull()
+            .DistinctUntilChanged()
+            .Subscribe(segment => CurrentSegment = segment);
+        }
     }
 
     private async Task Play(VideoSource source)
@@ -178,18 +222,19 @@ public sealed partial class WatchViewModel(WatchViewModelNavigationParameter nav
         }
 
         var metadata = new MediaMetadata(title, source.Headers, segments);
+        _media = new Media(source.Url, metadata);
 
-        MediaPlayer.Play(new Media(source.Url, metadata), SelectedEpisode.StartPosition);
+        MediaPlayer.Play(_media, SelectedEpisode.StartPosition);
     }
 
     private async Task<Episode?> AskIfContinueWatching()
     {
-        if(SelectedEpisode is null || Episodes is null)
+        if (SelectedEpisode is null || Episodes is null)
         {
             return null;
         }
 
-        if(Episodes.FirstOrDefault(x => x.Number > SelectedEpisode.Number) is not { } nextEp)
+        if (Episodes.FirstOrDefault(x => x.Number > SelectedEpisode.Number) is not { } nextEp)
         {
             return null;
         }

@@ -10,7 +10,6 @@ using TotoroNext.Module.Abstractions;
 using TotoroNext.ViewModels;
 using TotoroNext.Views;
 using Windows.Storage.Pickers;
-using Windows.UI.ViewManagement;
 using WinRT.Interop;
 
 namespace TotoroNext;
@@ -151,7 +150,7 @@ public partial class App : Application
 
     private void HandleSuspend()
     {
-        if(Host is null)
+        if (Host is null)
         {
             return;
         }
@@ -169,7 +168,7 @@ public partial class App : Application
 
     private void OnToggleFullscreen()
     {
-        if(MainWindow?.AppWindow is not { } appWindow)
+        if (MainWindow?.AppWindow is not { } appWindow)
         {
             return;
         }

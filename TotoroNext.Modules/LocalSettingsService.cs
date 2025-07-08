@@ -10,7 +10,7 @@ public class LocalSettingsService : ILocalSettingsService
     private readonly JsonObject _settings = [];
     private readonly string _file;
     private readonly JsonSerializerOptions _options;
-    
+
     public LocalSettingsService()
     {
         _options = new JsonSerializerOptions()

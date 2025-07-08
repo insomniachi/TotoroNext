@@ -1,5 +1,3 @@
-using CommunityToolkit.Mvvm.Messaging.Messages;
-
 namespace TotoroNext.Anime.Abstractions.Models;
 
 public class PlaybackState

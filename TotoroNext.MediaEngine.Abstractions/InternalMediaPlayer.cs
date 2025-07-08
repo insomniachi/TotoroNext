@@ -24,7 +24,7 @@ public sealed class InternalMediaPlayer : IInternalMediaPlayer
         PositionChanged = Observable
             .Interval(TimeSpan.FromSeconds(1))
             .Select(_ => _mp.PlaybackSession.Position)
-            .DistinctUntilChanged(); 
+            .DistinctUntilChanged();
 
         PlaybackStopped = Observable
             .FromEventPattern<TypedEventHandler<MediaPlayer, object>, object>(
@@ -60,7 +60,7 @@ public sealed class InternalMediaPlayer : IInternalMediaPlayer
     {
         var request = $"http://localhost:{VideoStreamProxyService.Port}/video".AppendQueryParam("url", media.Uri);
 
-        if(media.Metadata.Headers is { Count : > 0})
+        if (media.Metadata.Headers is { Count: > 0 })
         {
             foreach (var kvp in media.Metadata.Headers)
             {

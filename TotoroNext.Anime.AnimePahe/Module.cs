@@ -15,16 +15,16 @@ public class Module : IModule
         HeroImage = ResourceHelper.GetResource("pahe.jpg"),
         Components = [ComponentTypes.AnimeProvider]
     };
-    
+
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddTransient(_ => Descriptor);
         services.AddKeyedTransient<IAnimeProvider, AnimeProvider>(Descriptor.Id);
 
-        services.AddHttpClient(Descriptor.Id.ToString(),client =>
+        services.AddHttpClient(Descriptor.Id.ToString(), client =>
         {
             client.BaseAddress = new Uri("https://animepahe.ru/");
-            client.DefaultRequestHeaders.Referrer =  new Uri("https://animepahe.ru/");
+            client.DefaultRequestHeaders.Referrer = new Uri("https://animepahe.ru/");
             client.DefaultRequestHeaders.Add(HeaderNames.Cookie, "__ddg2_=YW5pbWRsX3NheXNfaGkNCg.;");
         });
 

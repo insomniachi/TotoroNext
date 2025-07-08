@@ -1,13 +1,13 @@
-using TotoroNext.Module;
-using ReactiveUI.SourceGenerators;
-using TotoroNext.Module.Abstractions;
-using ReactiveUI;
 using System.Reactive.Linq;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
+using TotoroNext.Module;
+using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.ViewModels;
 
 public partial class ModuleDetailsViewModel(ModuleManifest manifest,
-                                            IModuleStore store, 
+                                            IModuleStore store,
                                             IEnumerable<Descriptor> descriptors) : ReactiveObject, IInitializable
 {
     public ModuleManifest Manifest { get; } = manifest;
@@ -24,7 +24,7 @@ public partial class ModuleDetailsViewModel(ModuleManifest manifest,
 
     public void Initialize()
     {
-        if(Manifest is null)
+        if (Manifest is null)
         {
             return;
         }
@@ -57,7 +57,7 @@ public partial class ModuleDetailsViewModel(ModuleManifest manifest,
 
         var isNewVersion = Version.Parse(manifest.Versions[0].Version) > installedModule.Version;
 
-        if(isNewVersion)
+        if (isNewVersion)
         {
             DownloadButtonText = "Update";
         }
