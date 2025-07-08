@@ -11,11 +11,13 @@ internal class HttpInterface
 {
     private readonly string _password;
     private readonly string _api;
-    private readonly ReplaySubject<TimeSpan> _durationChanged = new();
-    private readonly ReplaySubject<TimeSpan> _timeChanged = new();
+    private readonly Subject<TimeSpan> _durationChanged = new();
+    private readonly Subject<TimeSpan> _timeChanged = new();
+    private int _prevLength;
+    private int _prevPosition;
 
-    public IObservable<TimeSpan> DurationChanged { get; }
-    public IObservable<TimeSpan> PositionChanged { get; }
+    public IObservable<TimeSpan> DurationChanged => _durationChanged;
+    public IObservable<TimeSpan> PositionChanged => _timeChanged;
 
     public HttpInterface(Process process, string password)
     {
@@ -30,12 +32,18 @@ internal class HttpInterface
             .Where(s => s is not null)
             .Subscribe(status =>
             {
-                _durationChanged.OnNext(TimeSpan.FromSeconds(status!.Length));
-                _timeChanged.OnNext(TimeSpan.FromSeconds(status!.Time));
-            });
+                if(status!.Length != _prevLength)
+                {
+                    _durationChanged.OnNext(TimeSpan.FromSeconds(status.Length));
+                    _prevLength = status.Length;
+                }
 
-        DurationChanged = _durationChanged.DistinctUntilChanged();
-        PositionChanged = _timeChanged.DistinctUntilChanged();
+                if(status.Time !=  _prevPosition)
+                {
+                    _timeChanged.OnNext(TimeSpan.FromSeconds(status.Time));
+                    _prevPosition = status.Time;
+                }
+            });
     }
 
 
@@ -67,9 +75,9 @@ internal class HttpInterface
     public async Task SeekTo(TimeSpan timeSpan)
     {
         _ = await _api
-             .AppendPathSegment("/requets/status.json")
+             .AppendPathSegment("/requests/status.json")
              .SetQueryParam("command", "seek")
-             .SetQueryParam("val", timeSpan.TotalSeconds)
+             .SetQueryParam("val", (int)timeSpan.TotalSeconds)
              .WithBasicAuth("", _password)
              .GetAsync();
     }
@@ -77,7 +85,7 @@ internal class HttpInterface
     public async Task SetVolume(int percent)
     {
         _ = await _api
-         .AppendPathSegment("/requets/status.json")
+         .AppendPathSegment("/requests/status.json")
          .SetQueryParam("command", "volume")
          .SetQueryParam("val", $"{percent}%")
          .WithBasicAuth("", _password)

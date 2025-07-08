@@ -7,7 +7,7 @@ using Windows.Media.Playback;
 
 namespace TotoroNext.MediaEngine.Abstractions;
 
-public sealed class InternalMediaPlayer : IInternalMediaPlayer
+public sealed class InternalMediaPlayer : IInternalMediaPlayer, ISeekable
 {
     private readonly MediaPlayer _mp = new() { AutoPlay = true };
 
@@ -69,5 +69,11 @@ public sealed class InternalMediaPlayer : IInternalMediaPlayer
         }
 
         return request.ToUri();
+    }
+
+    public Task SeekTo(TimeSpan position)
+    {
+        _mp.Position = position;
+        return Task.CompletedTask;
     }
 }

@@ -7,7 +7,7 @@ using Uno.Disposables;
 
 namespace TotoroNext.MediaEngine.Vlc;
 
-internal class VlcMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
+internal class VlcMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer, ISeekable
 {
     private Process? _process;
     private readonly Settings _settings = settings.Value;
@@ -75,7 +75,17 @@ internal class VlcMediaPlayer(IModuleSettings<Settings> settings) : IMediaPlayer
         _process.Start();
 
         _webInterface = new HttpInterface(_process, password);
-        _webInterface.DurationChanged.Subscribe(_positionSubject.OnNext).DisposeWith(_disposable);
-        _webInterface.PositionChanged.Subscribe(_durationSubject.OnNext).DisposeWith(_disposable);
+        _webInterface.DurationChanged.Subscribe(_durationSubject.OnNext).DisposeWith(_disposable);
+        _webInterface.PositionChanged.Subscribe(_positionSubject.OnNext).DisposeWith(_disposable);
+    }
+
+    public async Task SeekTo(TimeSpan position)
+    {
+        if(_webInterface is null)
+        {
+            return;
+        }
+
+        await _webInterface.SeekTo(position);
     }
 }
