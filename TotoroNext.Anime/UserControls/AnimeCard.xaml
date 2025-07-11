@@ -27,6 +27,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock
+                    Grid.ColumnSpan="2"
                     Padding="2"
                     HorizontalAlignment="Stretch"
                     FontSize="14"

@@ -9,6 +9,7 @@ public partial class SettingsViewModel : ModuleSettingsViewModel<Settings>
     {
         IncludeNsfw = settings.Value.IncludeNsfw;
         SearchLimit = settings.Value.SearchLimit;
+        TitleLanguage = settings.Value.TitleLangauge;
     }
 
     public bool IncludeNsfw
@@ -28,4 +29,12 @@ public partial class SettingsViewModel : ModuleSettingsViewModel<Settings>
         get;
         set => SetAndSaveProperty(ref field, value, x => x.SearchLimit = value);
     }
+
+    public TitleLanguage TitleLanguage
+    {
+        get;
+        set => SetAndSaveProperty(ref field, value, x => x.TitleLangauge = value);
+    }
+
+    public TitleLanguage[] TitleLanguages { get; } = [TitleLanguage.English, TitleLanguage.Romaji];
 }

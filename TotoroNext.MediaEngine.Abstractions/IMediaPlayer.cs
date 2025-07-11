@@ -16,7 +16,7 @@ public interface ISeekable
     Task SeekTo(TimeSpan position);
 }
 
-public interface IInternalMediaPlayer : IMediaPlayer
+public interface IInternalMediaPlayer : IMediaPlayer, ISeekable
 {
     MediaPlayer MediaPlayer { get; }
 }

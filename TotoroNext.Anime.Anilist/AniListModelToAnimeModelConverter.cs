@@ -1,7 +1,10 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.DependencyInjection;
 using TotoroNext.Anime.Abstractions;
 using TotoroNext.Anime.Abstractions.Models;
+using TotoroNext.Module;
+using TotoroNext.Module.Abstractions;
 
 namespace TotoroNext.Anime.Anilist;
 
@@ -12,11 +15,25 @@ public partial class AniListModelToAnimeModelConverter
     [GeneratedRegex(@"(</?i>)|(<br>)")]
     private static partial Regex DescriptionCleanRegex();
 
+    private static readonly Settings _settings = Container.Services.GetRequiredService<IModuleSettings<Settings>>().Value;
+
+    private static string GetTitle(Media media)
+    {
+        if(_settings.TitleLangauge == TitleLanguage.English)
+        {
+            return media.Title.English ?? media.Title.Romaji;
+        }
+        else
+        {
+            return media.Title.Romaji ?? media.Title.English;
+        }
+    }
+
     public static AnimeModel ConvertModel(Media media)
     {
         return new AnimeModel
         {
-            Title = media.Title.Romaji ?? media.Title.English ?? string.Empty,
+            Title = GetTitle(media),
             EngTitle = media.Title.English ?? media.Title.Romaji ?? string.Empty,
             RomajiTitle = media.Title.Romaji ?? media.Title.English ?? string.Empty,
             Id = media.Id ?? 0,

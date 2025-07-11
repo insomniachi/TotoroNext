@@ -41,7 +41,10 @@ public partial class SettingsPage : Microsoft.UI.Xaml.Controls.Page
                             .Content(new ToggleSwitch().IsOn(x => x.Binding(() => vm.IncludeNsfw).TwoWay())),
 
                             SettingsCard("Number of results returned when searching by name", "Search limit", new FontIcon{ Glyph = "\uF6FA"})
-                            .Content(new NumberBox().Value(x => x.Binding(() => vm.SearchLimit).TwoWay()))
+                            .Content(new NumberBox().Value(x => x.Binding(() => vm.SearchLimit).TwoWay())),
+
+                            SettingsCard("Title language shown in ui", "Title language", new FontIcon { Glyph = "\uE87C"})
+                            .Content(new ComboBox().SelectedItem(x => x.Binding(() => vm.TitleLanguage).TwoWay()).ItemsSource(x => x.Binding(() => vm.TitleLanguages)))
 
                         ]))));
         });

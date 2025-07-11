@@ -55,6 +55,7 @@ public class Settings
     public AniListAuthToken? Auth { get; set; }
     public bool IncludeNsfw { get; set; }
     public double SearchLimit { get; set; } = 15;
+    public TitleLanguage TitleLangauge { get; set; } = TitleLanguage.Romaji;
 }
 
 public class AniListAuthToken
@@ -62,4 +63,10 @@ public class AniListAuthToken
     public string AccessToken { get; set; } = "";
     public long ExpiresIn { get; set; }
     public DateTime CreatedAt { get; set; }
+}
+
+public enum TitleLanguage
+{
+    English,
+    Romaji
 }

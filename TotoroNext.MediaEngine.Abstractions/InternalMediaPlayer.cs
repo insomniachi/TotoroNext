@@ -7,7 +7,7 @@ using Windows.Media.Playback;
 
 namespace TotoroNext.MediaEngine.Abstractions;
 
-public sealed class InternalMediaPlayer : IInternalMediaPlayer, ISeekable
+public sealed class InternalMediaPlayer : IInternalMediaPlayer
 {
     private readonly MediaPlayer _mp = new() { AutoPlay = true };
 
